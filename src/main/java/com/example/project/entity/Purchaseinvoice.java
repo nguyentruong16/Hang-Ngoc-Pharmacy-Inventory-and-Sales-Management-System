@@ -1,0 +1,51 @@
+package com.example.project.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "purchaseinvoice")
+public class Purchaseinvoice {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "purchaseID", nullable = false)
+    private Integer id;
+
+    @NotNull
+    @Column(name = "date", nullable = false)
+    private Instant date;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplierID")
+    private Supplier supplierID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branchID")
+    private Branch branchID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employeeID")
+    private Account employeeID;
+
+    @Column(name = "additionCost", precision = 15, scale = 2)
+    private BigDecimal additionCost;
+
+    @Column(name = "discount", precision = 15, scale = 2)
+    private BigDecimal discount;
+
+    @Column(name = "totalAmount", precision = 15, scale = 2)
+    private BigDecimal totalAmount;
+
+    @Lob
+    @Column(name = "note")
+    private String note;
+
+
+}

@@ -1,0 +1,44 @@
+package com.example.project.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.Instant;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "procurementplan")
+public class Procurementplan {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "planID", nullable = false)
+    private Integer id;
+
+    @NotNull
+    @Column(name = "date", nullable = false)
+    private Instant date;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branchID")
+    private Branch branchID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employeeID")
+    private Account employeeID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "statusID")
+    private Status statusID;
+
+    @Column(name = "approveAt")
+    private Instant approveAt;
+
+    @Lob
+    @Column(name = "note")
+    private String note;
+
+
+}
