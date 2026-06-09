@@ -28,10 +28,6 @@ public class Financialsetting {
     @Column(name = "vatRate", precision = 5, scale = 2)
     private BigDecimal vatRate;
 
-    @ColumnDefault("0.00")
-    @Column(name = "prescriptionVatRate", precision = 5, scale = 2)
-    private BigDecimal prescriptionVatRate;
-
     @ColumnDefault("1")
     @Column(name = "taxCalculationMethod")
     private Integer taxCalculationMethod;

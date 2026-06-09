@@ -15,7 +15,6 @@ public class FinancialsettingResponse {
     private Integer id;
     private Integer branchId;
     private BigDecimal vatRate;
-    private BigDecimal prescriptionVatRate;
     private Integer taxCalculationMethod;
     private BigDecimal returnProductOnInvoiceValueRate;
     private Boolean autoGenerateVATInvoice;
@@ -28,7 +27,6 @@ public class FinancialsettingResponse {
                 financialsetting.getId(),
                 financialsetting.getBranchID() != null ? financialsetting.getBranchID().getId() : null,
                 financialsetting.getVatRate(),
-                financialsetting.getPrescriptionVatRate(),
                 financialsetting.getTaxCalculationMethod(),
                 financialsetting.getReturnProductOnInvoiceValueRate(),
                 financialsetting.getAutoGenerateVATInvoice(),
