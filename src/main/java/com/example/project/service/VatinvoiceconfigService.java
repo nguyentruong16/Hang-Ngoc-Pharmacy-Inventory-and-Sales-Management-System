@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Vatinvoiceconfig;
+import com.example.project.dto.response.VatinvoiceconfigResponse;
 import com.example.project.repository.VatinvoiceconfigRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class VatinvoiceconfigService {
         this.vatinvoiceconfigRepository = vatinvoiceconfigRepository;
     }
 
-    public List<Vatinvoiceconfig> getAll() {
-        return vatinvoiceconfigRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<VatinvoiceconfigResponse> getAll() {
+        return vatinvoiceconfigRepository.findAll()
+                .stream()
+                .map(VatinvoiceconfigResponse::from)
+                .toList();
     }
 }

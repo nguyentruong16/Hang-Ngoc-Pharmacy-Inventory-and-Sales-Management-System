@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Dailyreport;
+import com.example.project.dto.response.DailyreportResponse;
 import com.example.project.repository.DailyreportRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class DailyreportService {
         this.dailyreportRepository = dailyreportRepository;
     }
 
-    public List<Dailyreport> getAll() {
-        return dailyreportRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<DailyreportResponse> getAll() {
+        return dailyreportRepository.findAll()
+                .stream()
+                .map(DailyreportResponse::from)
+                .toList();
     }
 }

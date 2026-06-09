@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Combocomponent;
+import com.example.project.dto.response.CombocomponentResponse;
 import com.example.project.repository.CombocomponentRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class CombocomponentService {
         this.combocomponentRepository = combocomponentRepository;
     }
 
-    public List<Combocomponent> getAll() {
-        return combocomponentRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<CombocomponentResponse> getAll() {
+        return combocomponentRepository.findAll()
+                .stream()
+                .map(CombocomponentResponse::from)
+                .toList();
     }
 }

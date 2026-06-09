@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Medicineapi;
+import com.example.project.dto.response.MedicineapiResponse;
 import com.example.project.service.MedicineapiService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class MedicineapiController {
     }
 
     @GetMapping
-    public List<Medicineapi> getAll() {
+    public List<MedicineapiResponse> getAll() {
         return medicineapiService.getAll();
     }
 }

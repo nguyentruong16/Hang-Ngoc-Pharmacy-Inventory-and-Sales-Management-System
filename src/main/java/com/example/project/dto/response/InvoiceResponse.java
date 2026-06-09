@@ -1,0 +1,63 @@
+package com.example.project.dto.response;
+
+import com.example.project.entity.Invoice;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import java.math.BigDecimal;
+import java.time.Instant;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class InvoiceResponse {
+    private Integer id;
+    private String invoiceType;
+    private String invoiceMode;
+    private Instant date;
+    private Integer branchId;
+    private Integer employeeId;
+    private Integer customerId;
+    private BigDecimal subtotal;
+    private BigDecimal subimport;
+    private BigDecimal discount;
+    private BigDecimal taxAmount;
+    private BigDecimal total;
+    private BigDecimal paidByCash;
+    private BigDecimal paidByBanking;
+    private BigDecimal debtAmount;
+    private Boolean prescriptionRequired;
+    private String prescriptionRef;
+    private String returnStatus;
+    private Integer statusId;
+    private Integer shiftReportId;
+    private String note;
+
+    public static InvoiceResponse from(Invoice invoice) {
+        return new InvoiceResponse(
+                invoice.getId(),
+                invoice.getInvoiceType(),
+                invoice.getInvoiceMode(),
+                invoice.getDate(),
+                invoice.getBranchID() != null ? invoice.getBranchID().getId() : null,
+                invoice.getEmployeeID() != null ? invoice.getEmployeeID().getId() : null,
+                invoice.getCustomerID() != null ? invoice.getCustomerID().getId() : null,
+                invoice.getSubtotal(),
+                invoice.getSubimport(),
+                invoice.getDiscount(),
+                invoice.getTaxAmount(),
+                invoice.getTotal(),
+                invoice.getPaidByCash(),
+                invoice.getPaidByBanking(),
+                invoice.getDebtAmount(),
+                invoice.getPrescriptionRequired(),
+                invoice.getPrescriptionRef(),
+                invoice.getReturnStatus(),
+                invoice.getStatusID() != null ? invoice.getStatusID().getId() : null,
+                invoice.getShiftReportID() != null ? invoice.getShiftReportID().getId() : null,
+                invoice.getNote()
+        );
+    }
+}

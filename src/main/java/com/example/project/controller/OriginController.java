@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Origin;
+import com.example.project.dto.response.OriginResponse;
 import com.example.project.service.OriginService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class OriginController {
     }
 
     @GetMapping
-    public List<Origin> getAll() {
+    public List<OriginResponse> getAll() {
         return originService.getAll();
     }
 }

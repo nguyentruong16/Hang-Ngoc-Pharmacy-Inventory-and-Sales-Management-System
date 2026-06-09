@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Accountpermission;
+import com.example.project.dto.response.AccountpermissionResponse;
 import com.example.project.service.AccountpermissionService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class AccountpermissionController {
     }
 
     @GetMapping
-    public List<Accountpermission> getAll() {
+    public List<AccountpermissionResponse> getAll() {
         return accountpermissionService.getAll();
     }
 }

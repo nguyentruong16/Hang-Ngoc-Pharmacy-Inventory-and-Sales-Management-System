@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Batch;
+import com.example.project.dto.response.BatchResponse;
 import com.example.project.repository.BatchRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class BatchService {
         this.batchRepository = batchRepository;
     }
 
-    public List<Batch> getAll() {
-        return batchRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<BatchResponse> getAll() {
+        return batchRepository.findAll()
+                .stream()
+                .map(BatchResponse::from)
+                .toList();
     }
 }

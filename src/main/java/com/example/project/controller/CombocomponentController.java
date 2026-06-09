@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Combocomponent;
+import com.example.project.dto.response.CombocomponentResponse;
 import com.example.project.service.CombocomponentService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class CombocomponentController {
     }
 
     @GetMapping
-    public List<Combocomponent> getAll() {
+    public List<CombocomponentResponse> getAll() {
         return combocomponentService.getAll();
     }
 }

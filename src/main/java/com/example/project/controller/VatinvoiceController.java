@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Vatinvoice;
+import com.example.project.dto.response.VatinvoiceResponse;
 import com.example.project.service.VatinvoiceService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class VatinvoiceController {
     }
 
     @GetMapping
-    public List<Vatinvoice> getAll() {
+    public List<VatinvoiceResponse> getAll() {
         return vatinvoiceService.getAll();
     }
 }

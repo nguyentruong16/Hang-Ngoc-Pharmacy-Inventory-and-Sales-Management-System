@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Invoice;
+import com.example.project.dto.response.InvoiceResponse;
 import com.example.project.service.InvoiceService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public List<Invoice> getAll() {
+    public List<InvoiceResponse> getAll() {
         return invoiceService.getAll();
     }
 }

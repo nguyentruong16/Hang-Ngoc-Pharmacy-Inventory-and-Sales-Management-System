@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Status;
+import com.example.project.dto.response.StatusResponse;
 import com.example.project.repository.StatusRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class StatusService {
         this.statusRepository = statusRepository;
     }
 
-    public List<Status> getAll() {
-        return statusRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<StatusResponse> getAll() {
+        return statusRepository.findAll()
+                .stream()
+                .map(StatusResponse::from)
+                .toList();
     }
 }

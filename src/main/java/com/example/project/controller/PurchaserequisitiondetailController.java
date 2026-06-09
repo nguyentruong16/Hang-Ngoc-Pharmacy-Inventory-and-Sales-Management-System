@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Purchaserequisitiondetail;
+import com.example.project.dto.response.PurchaserequisitiondetailResponse;
 import com.example.project.service.PurchaserequisitiondetailService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class PurchaserequisitiondetailController {
     }
 
     @GetMapping
-    public List<Purchaserequisitiondetail> getAll() {
+    public List<PurchaserequisitiondetailResponse> getAll() {
         return purchaserequisitiondetailService.getAll();
     }
 }

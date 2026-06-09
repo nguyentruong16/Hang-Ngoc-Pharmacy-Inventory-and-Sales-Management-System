@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Shiftreport;
+import com.example.project.dto.response.ShiftreportResponse;
 import com.example.project.repository.ShiftreportRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class ShiftreportService {
         this.shiftreportRepository = shiftreportRepository;
     }
 
-    public List<Shiftreport> getAll() {
-        return shiftreportRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<ShiftreportResponse> getAll() {
+        return shiftreportRepository.findAll()
+                .stream()
+                .map(ShiftreportResponse::from)
+                .toList();
     }
 }

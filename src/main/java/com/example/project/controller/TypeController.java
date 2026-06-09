@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Type;
+import com.example.project.dto.response.TypeResponse;
 import com.example.project.service.TypeService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class TypeController {
     }
 
     @GetMapping
-    public List<Type> getAll() {
+    public List<TypeResponse> getAll() {
         return typeService.getAll();
     }
 }

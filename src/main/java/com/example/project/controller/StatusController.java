@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Status;
+import com.example.project.dto.response.StatusResponse;
 import com.example.project.service.StatusService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class StatusController {
     }
 
     @GetMapping
-    public List<Status> getAll() {
+    public List<StatusResponse> getAll() {
         return statusService.getAll();
     }
 }

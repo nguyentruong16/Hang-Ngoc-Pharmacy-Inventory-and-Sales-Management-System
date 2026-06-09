@@ -1,0 +1,51 @@
+package com.example.project.dto.response;
+
+import com.example.project.entity.Income;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import java.math.BigDecimal;
+import java.time.Instant;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class IncomeResponse {
+    private Integer id;
+    private Integer branchId;
+    private Integer applicantId;
+    private String incomeType;
+    private Integer invoiceId;
+    private Integer debtPaymentId;
+    private Integer returnId;
+    private Integer shiftReportId;
+    private Instant date;
+    private String reason;
+    private BigDecimal amount;
+    private BigDecimal paidByCash;
+    private BigDecimal paidByBanking;
+    private Integer statusId;
+    private String note;
+
+    public static IncomeResponse from(Income income) {
+        return new IncomeResponse(
+                income.getId(),
+                income.getBranchID() != null ? income.getBranchID().getId() : null,
+                income.getApplicantID() != null ? income.getApplicantID().getId() : null,
+                income.getIncomeType(),
+                income.getInvoiceID() != null ? income.getInvoiceID().getId() : null,
+                income.getDebtPaymentID() != null ? income.getDebtPaymentID().getId() : null,
+                income.getReturnID() != null ? income.getReturnID().getId() : null,
+                income.getShiftReportID() != null ? income.getShiftReportID().getId() : null,
+                income.getDate(),
+                income.getReason(),
+                income.getAmount(),
+                income.getPaidByCash(),
+                income.getPaidByBanking(),
+                income.getStatusID() != null ? income.getStatusID().getId() : null,
+                income.getNote()
+        );
+    }
+}

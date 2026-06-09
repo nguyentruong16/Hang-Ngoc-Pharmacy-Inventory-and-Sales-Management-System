@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Invoice;
+import com.example.project.dto.response.InvoiceResponse;
 import com.example.project.repository.InvoiceRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class InvoiceService {
         this.invoiceRepository = invoiceRepository;
     }
 
-    public List<Invoice> getAll() {
-        return invoiceRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> getAll() {
+        return invoiceRepository.findAll()
+                .stream()
+                .map(InvoiceResponse::from)
+                .toList();
     }
 }

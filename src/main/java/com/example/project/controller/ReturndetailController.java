@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Returndetail;
+import com.example.project.dto.response.ReturndetailResponse;
 import com.example.project.service.ReturndetailService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class ReturndetailController {
     }
 
     @GetMapping
-    public List<Returndetail> getAll() {
+    public List<ReturndetailResponse> getAll() {
         return returndetailService.getAll();
     }
 }

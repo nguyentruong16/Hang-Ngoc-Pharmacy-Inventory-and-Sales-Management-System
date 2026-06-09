@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Accountpermission;
+import com.example.project.dto.response.AccountpermissionResponse;
 import com.example.project.repository.AccountpermissionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class AccountpermissionService {
         this.accountpermissionRepository = accountpermissionRepository;
     }
 
-    public List<Accountpermission> getAll() {
-        return accountpermissionRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<AccountpermissionResponse> getAll() {
+        return accountpermissionRepository.findAll()
+                .stream()
+                .map(AccountpermissionResponse::from)
+                .toList();
     }
 }

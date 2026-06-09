@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Stockoutdetail;
+import com.example.project.dto.response.StockoutdetailResponse;
 import com.example.project.service.StockoutdetailService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class StockoutdetailController {
     }
 
     @GetMapping
-    public List<Stockoutdetail> getAll() {
+    public List<StockoutdetailResponse> getAll() {
         return stockoutdetailService.getAll();
     }
 }

@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Batch;
+import com.example.project.dto.response.BatchResponse;
 import com.example.project.service.BatchService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class BatchController {
     }
 
     @GetMapping
-    public List<Batch> getAll() {
+    public List<BatchResponse> getAll() {
         return batchService.getAll();
     }
 }

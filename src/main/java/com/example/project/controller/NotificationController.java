@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Notification;
+import com.example.project.dto.response.NotificationResponse;
 import com.example.project.service.NotificationService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class NotificationController {
     }
 
     @GetMapping
-    public List<Notification> getAll() {
+    public List<NotificationResponse> getAll() {
         return notificationService.getAll();
     }
 }

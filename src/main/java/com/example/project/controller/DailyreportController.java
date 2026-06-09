@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Dailyreport;
+import com.example.project.dto.response.DailyreportResponse;
 import com.example.project.service.DailyreportService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class DailyreportController {
     }
 
     @GetMapping
-    public List<Dailyreport> getAll() {
+    public List<DailyreportResponse> getAll() {
         return dailyreportService.getAll();
     }
 }

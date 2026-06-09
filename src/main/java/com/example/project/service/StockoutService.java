@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Stockout;
+import com.example.project.dto.response.StockoutResponse;
 import com.example.project.repository.StockoutRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class StockoutService {
         this.stockoutRepository = stockoutRepository;
     }
 
-    public List<Stockout> getAll() {
-        return stockoutRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<StockoutResponse> getAll() {
+        return stockoutRepository.findAll()
+                .stream()
+                .map(StockoutResponse::from)
+                .toList();
     }
 }

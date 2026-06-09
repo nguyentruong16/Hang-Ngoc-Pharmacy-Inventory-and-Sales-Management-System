@@ -1,6 +1,6 @@
 package com.example.project.controller;
 
-import com.example.project.entity.Shiftreport;
+import com.example.project.dto.response.ShiftreportResponse;
 import com.example.project.service.ShiftreportService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class ShiftreportController {
     }
 
     @GetMapping
-    public List<Shiftreport> getAll() {
+    public List<ShiftreportResponse> getAll() {
         return shiftreportService.getAll();
     }
 }

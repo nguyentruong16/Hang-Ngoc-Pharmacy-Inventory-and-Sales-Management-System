@@ -1,8 +1,9 @@
 package com.example.project.service;
 
-import com.example.project.entity.Medicineapi;
+import com.example.project.dto.response.MedicineapiResponse;
 import com.example.project.repository.MedicineapiRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +15,11 @@ public class MedicineapiService {
         this.medicineapiRepository = medicineapiRepository;
     }
 
-    public List<Medicineapi> getAll() {
-        return medicineapiRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<MedicineapiResponse> getAll() {
+        return medicineapiRepository.findAll()
+                .stream()
+                .map(MedicineapiResponse::from)
+                .toList();
     }
 }
