@@ -1,6 +1,7 @@
 package com.example.project.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,6 +18,10 @@ public class Accountpermission {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "accountID")
     private Account accountID;
+
+    @Size(max = 50)
+    @Column(name = "role", length = 50)
+    private String role;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branchID")

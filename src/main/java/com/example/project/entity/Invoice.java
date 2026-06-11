@@ -22,14 +22,12 @@ public class Invoice {
 
     @NotNull
     @ColumnDefault("'STANDARD'")
-    @Lob
-    @Column(name = "invoiceType", nullable = false)
+    @Column(name = "invoiceType", nullable = false, columnDefinition = "enum('STANDARD','VAT')")
     private String invoiceType;
 
     @NotNull
     @ColumnDefault("'RETAIL'")
-    @Lob
-    @Column(name = "invoiceMode", nullable = false)
+    @Column(name = "invoiceMode", nullable = false, columnDefinition = "enum('RETAIL','BULK_ANONYMOUS')")
     private String invoiceMode;
 
     @NotNull
@@ -90,8 +88,7 @@ public class Invoice {
     private String prescriptionRef;
 
     @ColumnDefault("'NONE'")
-    @Lob
-    @Column(name = "returnStatus")
+    @Column(name = "returnStatus", columnDefinition = "enum('NONE','PARTIAL','FULL')")
     private String returnStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)

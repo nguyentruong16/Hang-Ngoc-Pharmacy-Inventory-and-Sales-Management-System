@@ -1,0 +1,2 @@
+-- Baseline migration for an existing Hibernate-managed schema.
+-- Add future database changes as V2__*.sql, V3__*.sql, and so on.
