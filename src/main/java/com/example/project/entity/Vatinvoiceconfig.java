@@ -37,8 +37,7 @@ public class Vatinvoiceconfig {
     private Integer currentNumber;
 
     @ColumnDefault("'YEARLY'")
-    @Lob
-    @Column(name = "resetCycle")
+    @Column(name = "resetCycle", columnDefinition = "enum('YEARLY','MONTHLY','NEVER')")
     private String resetCycle;
 
 

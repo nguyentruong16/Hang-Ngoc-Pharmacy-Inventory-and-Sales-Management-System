@@ -88,8 +88,7 @@ public class Vatinvoice {
     private Vatinvoice originalVATInvoiceID;
 
     @ColumnDefault("'NONE'")
-    @Lob
-    @Column(name = "adjustmentType")
+    @Column(name = "adjustmentType", columnDefinition = "enum('NONE','ADJUST_REDUCE','REPLACE')")
     private String adjustmentType;
 
     @Lob
