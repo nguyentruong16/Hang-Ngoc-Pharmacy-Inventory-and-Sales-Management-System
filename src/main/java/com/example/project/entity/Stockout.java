@@ -18,8 +18,7 @@ public class Stockout {
     private Integer id;
 
     @NotNull
-    @Lob
-    @Column(name = "outType", nullable = false)
+    @Column(name = "outType", nullable = false, columnDefinition = "enum('DESTROY','INTERNAL_TRANSFER','INTERNAL_USE','SAMPLE','GIFT')")
     private String outType;
 
     @NotNull
@@ -44,8 +43,7 @@ public class Stockout {
     private Instant approvedAt;
 
     @NotNull
-    @Lob
-    @Column(name = "reason", nullable = false)
+    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -61,8 +59,7 @@ public class Stockout {
     @JoinColumn(name = "statusID", nullable = false)
     private Status statusID;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

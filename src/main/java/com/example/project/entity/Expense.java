@@ -31,8 +31,7 @@ public class Expense {
     private Account applicantID;
 
     @NotNull
-    @Lob
-    @Column(name = "expenseType", nullable = false)
+    @Column(name = "expenseType", nullable = false, columnDefinition = "enum('OPERATIONAL','DEBT_PAYMENT','RETURN_REFUND_PAYOUT','OTHER')")
     private String expenseType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,8 +51,7 @@ public class Expense {
     private Instant date;
 
     @NotNull
-    @Lob
-    @Column(name = "reason", nullable = false)
+    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
 
     @NotNull
@@ -87,8 +85,7 @@ public class Expense {
     @Column(name = "approvedAt")
     private Instant approvedAt;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

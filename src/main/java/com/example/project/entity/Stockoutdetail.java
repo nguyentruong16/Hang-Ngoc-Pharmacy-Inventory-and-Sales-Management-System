@@ -53,8 +53,7 @@ public class Stockoutdetail {
     @Column(name = "lineCost", nullable = false, precision = 15, scale = 2)
     private BigDecimal lineCost;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

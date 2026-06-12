@@ -39,8 +39,7 @@ public class Return {
     private Instant returnDate;
 
     @NotNull
-    @Lob
-    @Column(name = "returnType", nullable = false)
+    @Column(name = "returnType", nullable = false, columnDefinition = "enum('CASH','BANKING')")
     private String returnType;
 
     @ColumnDefault("0.00")
@@ -84,8 +83,7 @@ public class Return {
     private Vatinvoice vatAdjustmentID;
 
     @NotNull
-    @Lob
-    @Column(name = "reason", nullable = false)
+    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
 
     @NotNull
@@ -100,8 +98,7 @@ public class Return {
     @Column(name = "approvedAt")
     private Instant approvedAt;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

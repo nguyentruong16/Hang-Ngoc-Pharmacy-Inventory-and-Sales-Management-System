@@ -96,8 +96,7 @@ public class Shiftreport {
     @Column(name = "cashDiscrepancy", precision = 15, scale = 2)
     private BigDecimal cashDiscrepancy;
 
-    @Lob
-    @Column(name = "noteDiscrepancy")
+    @Column(name = "noteDiscrepancy", columnDefinition = "TEXT")
     private String noteDiscrepancy;
 
     @NotNull
@@ -112,8 +111,7 @@ public class Shiftreport {
     @Column(name = "approvedAt")
     private Instant approvedAt;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
     @NotNull

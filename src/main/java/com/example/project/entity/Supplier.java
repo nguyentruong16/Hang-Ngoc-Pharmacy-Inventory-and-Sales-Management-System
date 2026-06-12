@@ -21,8 +21,7 @@ public class Supplier {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Lob
-    @Column(name = "address")
+    @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 
     @Size(max = 20)

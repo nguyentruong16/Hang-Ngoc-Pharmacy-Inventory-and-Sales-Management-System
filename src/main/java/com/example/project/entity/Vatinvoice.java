@@ -48,8 +48,7 @@ public class Vatinvoice {
     @Column(name = "buyerTaxCode", length = 20)
     private String buyerTaxCode;
 
-    @Lob
-    @Column(name = "buyerAddress")
+    @Column(name = "buyerAddress", columnDefinition = "TEXT")
     private String buyerAddress;
 
     @Size(max = 50)
@@ -79,8 +78,7 @@ public class Vatinvoice {
     @Column(name = "cancelledAt")
     private Instant cancelledAt;
 
-    @Lob
-    @Column(name = "cancelReason")
+    @Column(name = "cancelReason", columnDefinition = "TEXT")
     private String cancelReason;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -91,8 +89,7 @@ public class Vatinvoice {
     @Column(name = "adjustmentType", columnDefinition = "enum('NONE','ADJUST_REDUCE','REPLACE')")
     private String adjustmentType;
 
-    @Lob
-    @Column(name = "adjustmentReason")
+    @Column(name = "adjustmentReason", columnDefinition = "TEXT")
     private String adjustmentReason;
 
     @ColumnDefault("0")
@@ -107,8 +104,7 @@ public class Vatinvoice {
     @JoinColumn(name = "statusID")
     private Status statusID;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

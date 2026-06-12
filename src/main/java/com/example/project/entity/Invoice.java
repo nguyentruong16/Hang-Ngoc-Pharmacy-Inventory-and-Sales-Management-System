@@ -99,8 +99,7 @@ public class Invoice {
     @JoinColumn(name = "shiftReportID")
     private Shiftreport shiftReportID;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

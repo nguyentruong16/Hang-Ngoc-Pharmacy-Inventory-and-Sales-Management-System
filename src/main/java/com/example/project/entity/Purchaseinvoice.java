@@ -43,8 +43,7 @@ public class Purchaseinvoice {
     @Column(name = "totalAmount", precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

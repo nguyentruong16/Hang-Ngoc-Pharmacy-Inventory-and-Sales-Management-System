@@ -36,8 +36,7 @@ public class Procurementplan {
     @Column(name = "approveAt")
     private Instant approveAt;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

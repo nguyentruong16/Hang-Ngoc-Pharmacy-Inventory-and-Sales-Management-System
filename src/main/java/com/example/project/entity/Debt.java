@@ -21,8 +21,7 @@ public class Debt {
     private Integer id;
 
     @NotNull
-    @Lob
-    @Column(name = "debtType", nullable = false)
+    @Column(name = "debtType", nullable = false, columnDefinition = "enum('CUSTOMER','SUPPLIER')")
     private String debtType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -79,8 +78,7 @@ public class Debt {
     @Column(name = "createdAt", nullable = false)
     private Instant createdAt;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 
