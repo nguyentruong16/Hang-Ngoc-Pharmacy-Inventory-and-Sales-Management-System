@@ -38,8 +38,7 @@ public class Procurementplandetail {
     @Column(name = "estimatedPrice", precision = 15, scale = 2)
     private BigDecimal estimatedPrice;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

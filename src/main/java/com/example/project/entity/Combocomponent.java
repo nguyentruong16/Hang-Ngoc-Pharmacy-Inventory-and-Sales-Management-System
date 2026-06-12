@@ -37,8 +37,7 @@ public class Combocomponent {
     @Column(name = "baseQtyRequired", nullable = false)
     private Integer baseQtyRequired;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

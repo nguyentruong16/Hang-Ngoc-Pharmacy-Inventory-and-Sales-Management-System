@@ -81,8 +81,7 @@ public class Product {
     @Column(name = "image")
     private String image;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

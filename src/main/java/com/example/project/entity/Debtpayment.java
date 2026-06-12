@@ -53,8 +53,7 @@ public class Debtpayment {
     @JoinColumn(name = "recordedBy", nullable = false)
     private Account recordedBy;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

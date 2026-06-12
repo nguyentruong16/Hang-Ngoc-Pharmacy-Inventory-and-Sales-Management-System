@@ -37,12 +37,10 @@ public class Purchaserequisitiondetail {
     @Column(name = "currentStock")
     private Integer currentStock;
 
-    @Lob
-    @Column(name = "reason")
+    @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

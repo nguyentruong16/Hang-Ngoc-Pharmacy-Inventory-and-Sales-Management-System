@@ -39,8 +39,7 @@ public class Supplierproduct {
     @Column(name = "isActive")
     private Boolean isActive;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 
