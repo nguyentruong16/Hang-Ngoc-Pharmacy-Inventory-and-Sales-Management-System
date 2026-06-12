@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+<!--
+  Reusable topbar (+ mobile overlay). Keeps the original markup and the element IDs
+  (overlay, topbar, toggleBtn, mobileBtn) that the bundled main.js relies on.
+  The user dropdown shows the current user (currentAccountName / currentRoleDisplay from the
+  model) and holds User Profile + Change Password, plus a temporary "act as role" demo helper.
+  Usage in a page:  <div th:replace="~{fragments/topbar :: topbar}"></div>
+-->
+<th:block th:fragment="topbar">
+  <div id="overlay" class="overlay"></div>
+  <!-- TOPBAR -->
+  <nav id="topbar" class="navbar bg-white border-bottom fixed-top topbar px-3">
+    <button id="toggleBtn" class="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm ">
+      <i class="ti ti-layout-sidebar-left-expand"></i>
+    </button>
+
+    <!-- MOBILE -->
+    <button id="mobileBtn" class="btn btn-light btn-icon btn-sm d-lg-none me-2">
+      <i class="ti ti-layout-sidebar-left-expand"></i>
+    </button>
+    <div>
+      <!-- Navbar nav -->
+      <ul class="list-unstyled d-flex align-items-center mb-0 gap-1">
+
+        <!-- Bell icon -->
+        <li>
+          <a class="position-relative btn-icon btn-sm btn-light btn rounded-circle" data-bs-toggle="dropdown"
+            aria-expanded="false" href="#" role="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-bell">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
+              <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+            </svg>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-2 ms-n2">
+              2
+              <span class="visually-hidden">unread messages</span>
+            </span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-0">
+            <ul class="list-unstyled p-0 m-0">
+              <li class="p-3 border-bottom ">
+                <div class="d-flex gap-3">
+                  <img src="./assets/images/avatar-1.jpg" th:src="@{/assets/images/avatar-1.jpg}" alt="" class="avatar avatar-sm rounded-circle" />
+                  <div class="flex-grow-1 small">
+                    <p class="mb-0">New order received</p>
+                    <p class="mb-1">Order #12345 has been placed</p>
+                    <div class="text-secondary">5 minutes ago</div>
+                  </div>
+                </div>
+              </li>
+              <li class="p-3 border-bottom ">
+                <div class="d-flex gap-3">
+                  <img src="./assets/images/avatar-4.jpg" th:src="@{/assets/images/avatar-4.jpg}" alt="" class="avatar avatar-sm rounded-circle" />
+                  <div class="flex-grow-1 small">
+                    <p class="mb-0">New user registered</p>
+                    <p class="mb-1">User @john_doe has signed up</p>
+                    <div class="text-secondary">30 minutes ago</div>
+                  </div>
+              </li>
+
+              <li class="p-3 border-bottom">
+                <div class="d-flex gap-3">
+                  <img src="./assets/images/avatar-2.jpg" th:src="@{/assets/images/avatar-2.jpg}" alt="" class="avatar avatar-sm rounded-circle" />
+                  <div class="flex-grow-1 small">
+                    <p class="mb-0">Payment confirmed</p>
+                    <p class="mb-1">Payment of $299 has been received</p>
+                    <div class="text-secondary">1 hour ago</div>
+                  </div>
+                </div>
+              </li>
+              <li class="px-4 py-3 text-center">
+                <a href="#" class="text-primary ">View all notifications</a>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- User dropdown -->
+        <li class="ms-3 dropdown">
+          <a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="./assets/images/avatar-1.jpg" th:src="@{/assets/images/avatar-1.jpg}" alt="" class="avatar avatar-sm rounded-circle" />
+          </a>
+          <div class="dropdown-menu dropdown-menu-end p-0" style="min-width: 240px;">
+            <div>
+              <div class="d-flex gap-3 align-items-center border-dashed border-bottom px-3 py-3">
+                <img src="./assets/images/avatar-1.jpg" th:src="@{/assets/images/avatar-1.jpg}" alt="" class="avatar avatar-md rounded-circle" />
+                <div>
+                  <h4 class="mb-0 small" th:text="${currentAccountName} ?: 'Guest'">Guest</h4>
+                  <span class="badge bg-primary-subtle text-primary mt-1" th:text="${currentRoleDisplay} ?: '—'">Role</span>
+                </div>
+              </div>
+              <div class="p-3 d-flex flex-column gap-1 small lh-lg">
+                <a th:href="@{/profile}" href="#!"><i class="ti ti-user me-1"></i><span>User Profile</span></a>
+                <a th:href="@{/change-password}" href="#!"><i class="ti ti-key me-1"></i><span>Change Password</span></a>
+              </div>
+
+              <!-- DEV ONLY: preview roles without a real login. Remove once login sets currentRole. -->
+              <div class="border-top px-3 py-2">
+                <small class="text-muted d-block mb-1">Demo: act as role</small>
+                <div class="d-flex flex-column gap-1 small">
+                  <a th:each="r : ${allRoles}" th:href="@{/dev/act-as(role=${r})}"
+                     th:text="${r}" class="text-decoration-none">ROLE</a>
+                  <a th:href="@{/dev/reset-role}" class="text-secondary text-decoration-none mt-1">Reset demo role</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</th:block>
+</body>
+
+</html>
