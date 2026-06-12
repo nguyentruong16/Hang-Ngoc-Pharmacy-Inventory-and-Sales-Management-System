@@ -29,8 +29,7 @@ public class Income {
     private Account applicantID;
 
     @NotNull
-    @Lob
-    @Column(name = "incomeType", nullable = false)
+    @Column(name = "incomeType", nullable = false, columnDefinition = "enum('INVOICE_SALE','DEBT_COLLECTION','OTHER','RETURN_REFUND_RECEIVE')")
     private String incomeType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -54,8 +53,7 @@ public class Income {
     private Instant date;
 
     @NotNull
-    @Lob
-    @Column(name = "reason", nullable = false)
+    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
 
     @NotNull
@@ -74,8 +72,7 @@ public class Income {
     @JoinColumn(name = "statusID")
     private Status statusID;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

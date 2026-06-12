@@ -25,8 +25,7 @@ public class Customer {
     @Column(name = "phoneNumber", length = 20)
     private String phoneNumber;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

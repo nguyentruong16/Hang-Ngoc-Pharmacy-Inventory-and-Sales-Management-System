@@ -70,8 +70,7 @@ public class Batch {
     @Column(name = "status")
     private Boolean status;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
 

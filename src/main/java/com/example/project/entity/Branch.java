@@ -21,8 +21,7 @@ public class Branch {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Lob
-    @Column(name = "address")
+    @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 
     @ManyToOne(fetch = FetchType.LAZY)

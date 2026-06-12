@@ -48,8 +48,7 @@ public class Purchaserequisition {
     @JoinColumn(name = "supplierID", nullable = false)
     private Supplier supplierID;
 
-    @Lob
-    @Column(name = "note")
+    @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
     @NotNull

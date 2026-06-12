@@ -22,8 +22,7 @@ public class Notification {
     private Account accountID;
 
     @NotNull
-    @Lob
-    @Column(name = "message", nullable = false)
+    @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
 
     @NotNull
