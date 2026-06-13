@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <body>
 <!--
   Reusable topbar (+ mobile overlay). Keeps the original markup and the element IDs
   (overlay, topbar, toggleBtn, mobileBtn) that the bundled main.js relies on.
   The user dropdown shows the signed-in user (currentAccountName / currentRoleDisplay from the
-  model, populated by SidebarInterceptor from Spring Security) and holds User Profile,
-  Change Password and Sign out.
+  model, populated by SidebarInterceptor from Spring Security) and holds Hồ sơ cá nhân,
+  Đổi mật khẩu and Đăng xuất.
   Usage in a page:  <div th:replace="~{fragments/topbar :: topbar}"></div>
 -->
 <th:block th:fragment="topbar">
@@ -39,7 +39,7 @@
             </svg>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-2 ms-n2">
               2
-              <span class="visually-hidden">unread messages</span>
+              <span class="visually-hidden">thông báo chưa đọc</span>
             </span>
           </a>
           <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-0">
@@ -48,9 +48,9 @@
                 <div class="d-flex gap-3">
                   <img src="./assets/images/avatar-1.jpg" th:src="@{/assets/images/avatar-1.jpg}" alt="" class="avatar avatar-sm rounded-circle" />
                   <div class="flex-grow-1 small">
-                    <p class="mb-0">New order received</p>
-                    <p class="mb-1">Order #12345 has been placed</p>
-                    <div class="text-secondary">5 minutes ago</div>
+                    <p class="mb-0">Có đơn hàng mới</p>
+                    <p class="mb-1">Đơn hàng #12345 vừa được tạo</p>
+                    <div class="text-secondary">5 phút trước</div>
                   </div>
                 </div>
               </li>
@@ -58,9 +58,9 @@
                 <div class="d-flex gap-3">
                   <img src="./assets/images/avatar-4.jpg" th:src="@{/assets/images/avatar-4.jpg}" alt="" class="avatar avatar-sm rounded-circle" />
                   <div class="flex-grow-1 small">
-                    <p class="mb-0">New user registered</p>
-                    <p class="mb-1">User @john_doe has signed up</p>
-                    <div class="text-secondary">30 minutes ago</div>
+                    <p class="mb-0">Người dùng mới đăng ký</p>
+                    <p class="mb-1">Người dùng @john_doe vừa đăng ký</p>
+                    <div class="text-secondary">30 phút trước</div>
                   </div>
               </li>
 
@@ -68,14 +68,14 @@
                 <div class="d-flex gap-3">
                   <img src="./assets/images/avatar-2.jpg" th:src="@{/assets/images/avatar-2.jpg}" alt="" class="avatar avatar-sm rounded-circle" />
                   <div class="flex-grow-1 small">
-                    <p class="mb-0">Payment confirmed</p>
-                    <p class="mb-1">Payment of $299 has been received</p>
-                    <div class="text-secondary">1 hour ago</div>
+                    <p class="mb-0">Đã xác nhận thanh toán</p>
+                    <p class="mb-1">Đã nhận thanh toán 299$</p>
+                    <div class="text-secondary">1 giờ trước</div>
                   </div>
                 </div>
               </li>
               <li class="px-4 py-3 text-center">
-                <a href="#" class="text-primary ">View all notifications</a>
+                <a href="#" class="text-primary ">Xem tất cả thông báo</a>
               </li>
             </ul>
           </div>
@@ -91,19 +91,19 @@
               <div class="d-flex gap-3 align-items-center border-dashed border-bottom px-3 py-3">
                 <img src="./assets/images/avatar-1.jpg" th:src="@{/assets/images/avatar-1.jpg}" alt="" class="avatar avatar-md rounded-circle" />
                 <div>
-                  <h4 class="mb-0 small" th:text="${currentAccountName}">User</h4>
-                  <span class="badge bg-primary-subtle text-primary mt-1" th:text="${currentRoleDisplay}">Role</span>
+                  <h4 class="mb-0 small" th:text="${currentAccountName}">Người dùng</h4>
+                  <span class="badge bg-primary-subtle text-primary mt-1" th:text="${currentRoleDisplay}">Vai trò</span>
                 </div>
               </div>
               <div class="p-3 d-flex flex-column gap-1 small lh-lg">
-                <a th:href="@{/profile}" href="#!"><i class="ti ti-user me-1"></i><span>User Profile</span></a>
-                <a th:href="@{/change-password}" href="#!"><i class="ti ti-key me-1"></i><span>Change Password</span></a>
+                <a th:href="@{/profile}" href="#!"><i class="ti ti-user me-1"></i><span>Hồ sơ cá nhân</span></a>
+                <a th:href="@{/change-password}" href="#!"><i class="ti ti-key me-1"></i><span>Đổi mật khẩu</span></a>
               </div>
               <div class="border-top px-3 py-3">
                 <form th:action="@{/logout}" method="post" class="m-0">
                   <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                   <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
-                    <i class="ti ti-logout me-1"></i>Sign out
+                    <i class="ti ti-logout me-1"></i>Đăng xuất
                   </button>
                 </form>
               </div>

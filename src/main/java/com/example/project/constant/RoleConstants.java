@@ -1,6 +1,8 @@
 package com.example.project.constant;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Central definition of the valid role values used across the application.
@@ -58,6 +60,30 @@ public final class RoleConstants {
               .append(part.substring(1).toLowerCase());
         }
         return sb.toString();
+    }
+
+    /** Vietnamese display label for a role, e.g. {@code CASHIER -> "Thu ngân"}. */
+    public static String vietnameseName(String role) {
+        if (role == null) {
+            return "";
+        }
+        return switch (role) {
+            case OWNER -> "Chủ sở hữu";
+            case CHIEF_PHARMACIST -> "Dược sĩ trưởng";
+            case PHARMACIST -> "Dược sĩ";
+            case ACCOUNTANT -> "Kế toán";
+            case CASHIER -> "Thu ngân";
+            default -> role;
+        };
+    }
+
+    /** Ordered map of role code -> Vietnamese label, for building role dropdowns. */
+    public static Map<String, String> vietnameseLabels() {
+        Map<String, String> labels = new LinkedHashMap<>();
+        for (String role : ALL) {
+            labels.put(role, vietnameseName(role));
+        }
+        return labels;
     }
 
     /** URL slug for a role, e.g. {@code CHIEF_PHARMACIST -> "chief-pharmacist"}. */

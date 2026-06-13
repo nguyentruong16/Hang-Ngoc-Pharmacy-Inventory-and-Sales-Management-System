@@ -117,22 +117,10 @@ public class PlaceholderController {
         return render(request, model);
     }
 
-    /** User dropdown destinations (kept out of the sidebar, per the topbar requirement). */
-    @GetMapping("/profile")
-    public String profile(Model model) {
-        return account(model, "User Profile");
-    }
-
     private String render(HttpServletRequest request, Model model) {
         SidebarMenuItem item = sidebarMenuService.findByUri(request.getRequestURI());
-        model.addAttribute("pageTitle", item != null ? item.getLabel() : "Page");
+        model.addAttribute("pageTitle", item != null ? item.getLabel() : "Trang");
         model.addAttribute("moduleName", item != null ? item.getModule() : "-");
-        return "placeholder";
-    }
-
-    private String account(Model model, String title) {
-        model.addAttribute("pageTitle", title);
-        model.addAttribute("moduleName", "Account");
         return "placeholder";
     }
 }

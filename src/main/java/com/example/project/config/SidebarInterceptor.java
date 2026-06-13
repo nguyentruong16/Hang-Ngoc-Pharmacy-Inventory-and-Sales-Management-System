@@ -69,7 +69,7 @@ public class SidebarInterceptor implements HandlerInterceptor {
         String uri = request.getRequestURI();
 
         modelAndView.addObject("currentRole", role);
-        modelAndView.addObject("currentRoleDisplay", RoleConstants.displayName(role));
+        modelAndView.addObject("currentRoleDisplay", RoleConstants.vietnameseName(role));
         modelAndView.addObject("currentAccountName", currentUserContext.getCurrentAccountName());
         modelAndView.addObject("currentBranchId", currentUserContext.getCurrentBranchId());
         modelAndView.addObject("sidebarMenu", menu);
