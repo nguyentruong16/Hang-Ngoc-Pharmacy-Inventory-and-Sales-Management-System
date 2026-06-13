@@ -1,0 +1,102 @@
+package com.example.project;
+
+import com.example.project.entity.Account;
+import com.example.project.entity.Accountpermission;
+import com.example.project.entity.Branch;
+import com.example.project.repository.AccountRepository;
+import com.example.project.repository.AccountpermissionRepository;
+import com.example.project.security.AccountPrincipal;
+import com.example.project.service.CustomAccountDetailsService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+
+/**
+ * Unit test (no Spring, no DB) for how {@link CustomAccountDetailsService} turns AccountPermission
+ * rows into the authenticated principal: primary role/branch selection and the fail-closed rule.
+ */
+@ExtendWith(MockitoExtension.class)
+class CustomAccountDetailsServiceTest {
+
+    @Mock
+    AccountRepository accountRepository;
+    @Mock
+    AccountpermissionRepository accountpermissionRepository;
+    @InjectMocks
+    CustomAccountDetailsService service;
+
+    @Test
+    void primaryRoleIsLowestIdRowAndAllRolesBecomeAuthorities() {
+        when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
+                .thenReturn(Optional.of(activeAccount()));
+        when(accountpermissionRepository.findByAccountId(1))
+                .thenReturn(List.of(perm(5, "CASHIER", 2), perm(2, "OWNER", 1)));
+
+        AccountPrincipal principal = (AccountPrincipal) service.loadUserByUsername("u");
+
+        assertEquals("OWNER", principal.getPrimaryRole());      // lowest accountPermissionID wins
+        assertEquals(Integer.valueOf(1), principal.getBranchId());
+        Set<String> authorities = principal.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet());
+        assertEquals(Set.of("ROLE_OWNER", "ROLE_CASHIER"), authorities);
+    }
+
+    @Test
+    void accountWithNoValidRoleCannotSignIn() {
+        when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
+                .thenReturn(Optional.of(activeAccount()));
+        when(accountpermissionRepository.findByAccountId(1))
+                .thenReturn(List.of(perm(1, "SOMETHING_UNKNOWN", 1)));
+
+        // No OWNER default — an account with no recognised role is rejected.
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsername("u"));
+    }
+
+    @Test
+    void inactiveAccountIsRejected() {
+        Account inactive = activeAccount();
+        inactive.setStatus(false);
+        when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
+                .thenReturn(Optional.of(inactive));
+
+        assertThrows(DisabledException.class, () -> service.loadUserByUsername("u"));
+    }
+
+    private Account activeAccount() {
+        Account account = new Account();
+        account.setId(1);
+        account.setName("Test User");
+        account.setUsername("u");
+        account.setEmail("u@example.com");
+        account.setPassword("$2a$10$examplehashexamplehashexampleha");
+        account.setStatus(true);
+        return account;
+    }
+
+    private Accountpermission perm(int id, String role, Integer branchId) {
+        Accountpermission permission = new Accountpermission();
+        permission.setId(id);
+        permission.setRole(role);
+        if (branchId != null) {
+            Branch branch = new Branch();
+            branch.setId(branchId);
+            permission.setBranchID(branch);
+        }
+        return permission;
+    }
+}
