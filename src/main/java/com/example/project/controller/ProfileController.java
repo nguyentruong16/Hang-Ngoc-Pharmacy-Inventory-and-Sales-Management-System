@@ -2,8 +2,11 @@ package com.example.project.controller;
 
 import com.example.project.dto.request.ProfileUpdateRequest;
 import com.example.project.dto.response.ProfileViewResponse;
+import com.example.project.entity.Account;
+import com.example.project.repository.AccountRepository;
 import com.example.project.service.ProfileService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -14,16 +17,19 @@ import org.springframework.web.bind.annotation.*;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final AccountRepository accountRepository;
 
-    public ProfileController(ProfileService profileService) {
+    public ProfileController(ProfileService profileService,
+                             AccountRepository accountRepository) {
         this.profileService = profileService;
+        this.accountRepository = accountRepository;
     }
 
     @GetMapping
-    public String viewProfile(Model model) {
-        Integer currentAccountId = getCurrentAccountIdForDemo();
+    public String viewProfile(Model model, Authentication authentication) {
+        Account currentAccount = getCurrentAccount(authentication);
 
-        ProfileViewResponse profile = profileService.getProfile(currentAccountId);
+        ProfileViewResponse profile = profileService.getProfile(currentAccount.getId());
 
         ProfileUpdateRequest form = new ProfileUpdateRequest();
         form.setName(profile.getName());
@@ -39,23 +45,30 @@ public class ProfileController {
     @PostMapping
     public String updateProfile(@Valid @ModelAttribute("profileForm") ProfileUpdateRequest form,
                                 BindingResult bindingResult,
-                                Model model) {
-        Integer currentAccountId = getCurrentAccountIdForDemo();
+                                Model model,
+                                Authentication authentication) {
+        Account currentAccount = getCurrentAccount(authentication);
 
         if (bindingResult.hasErrors()) {
-            ProfileViewResponse profile = profileService.getProfile(currentAccountId);
+            ProfileViewResponse profile = profileService.getProfile(currentAccount.getId());
             model.addAttribute("profile", profile);
             return "profile";
         }
 
-        profileService.updateProfile(currentAccountId, form);
+        profileService.updateProfile(currentAccount.getId(), form);
 
         return "redirect:/profile?success";
     }
 
-    private Integer getCurrentAccountIdForDemo() {
-        // Tạm thời hard-code để demo khi chưa có Login/Spring Security.
-        // Sau khi có đăng nhập thật, thay bằng accountId lấy từ session/principal.
-        return 1;
+    private Account getCurrentAccount(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            throw new RuntimeException("Người dùng chưa đăng nhập");
+        }
+
+        String loginValue = authentication.getName();
+
+        return accountRepository.findByUsernameOrEmail(loginValue, loginValue)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản đang đăng nhập: " + loginValue));
     }
 }

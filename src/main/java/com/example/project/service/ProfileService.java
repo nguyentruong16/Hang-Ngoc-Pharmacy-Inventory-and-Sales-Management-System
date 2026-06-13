@@ -4,10 +4,14 @@ import com.example.project.dto.request.ProfileUpdateRequest;
 import com.example.project.dto.response.ProfileViewResponse;
 import com.example.project.entity.Account;
 import com.example.project.entity.Accountpermission;
+import com.example.project.entity.Branch;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.AccountpermissionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ProfileService {
@@ -26,14 +30,31 @@ public class ProfileService {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
-        Accountpermission permission = accountpermissionRepository
-                .findProfilePermissionByAccountId(accountId)
-                .orElse(null);
+        List<Accountpermission> permissions =
+                accountpermissionRepository.findProfilePermissionsByAccountId(accountId);
 
-        String role = permission != null ? formatRole(permission.getRole()) : "Chưa phân quyền";
-        String branchName = permission != null && permission.getBranchID() != null
-                ? permission.getBranchID().getName()
-                : "Chưa có chi nhánh";
+        String role = permissions.stream()
+                .map(Accountpermission::getRole)
+                .filter(roleValue -> roleValue != null && !roleValue.isBlank())
+                .map(this::formatRole)
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        if (role.isBlank()) {
+            role = "Chưa phân quyền";
+        }
+
+        String branchName = permissions.stream()
+                .map(Accountpermission::getBranchID)
+                .filter(branch -> branch != null)
+                .map(Branch::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        if (branchName.isBlank()) {
+            branchName = "Chưa có chi nhánh";
+        }
 
         return new ProfileViewResponse(
                 account.getId(),

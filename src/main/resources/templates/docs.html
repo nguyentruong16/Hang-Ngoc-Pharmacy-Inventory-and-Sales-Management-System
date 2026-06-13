@@ -152,6 +152,12 @@
 
 
       <li class="px-4 pt-4 pb-2"><small class="nav-text">Account</small></li>
+        <li>
+            <a class="nav-link active" href="/profile" th:href="@{/profile}">
+                <i class="ti ti-user"></i>
+                <span class="nav-text">Profile</span>
+            </a>
+        </li>
       <li><a class="nav-link" href="/change-password" th:href="@{/change-password}"><i class="ti ti-lock"></i><span class="nav-text">Change Password</span></a></li>
       <li>
         <form method="post" th:action="@{/logout}">
