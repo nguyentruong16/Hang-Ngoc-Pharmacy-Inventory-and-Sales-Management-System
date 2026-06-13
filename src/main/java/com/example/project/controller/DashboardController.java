@@ -35,14 +35,4 @@ public class DashboardController {
     public String docs() {
         return "docs";
     }
-
-    @GetMapping("/signin")
-    public String signin() {
-        return "signin";
-    }
-
-    @GetMapping("/signup")
-    public String signup() {
-        return "signup";
-    }
 }
