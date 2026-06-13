@@ -1,83 +1,54 @@
 package com.example.project.context;
 
-import com.example.project.constant.RoleConstants;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import com.example.project.security.AccountPrincipal;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
- * Single, isolated point that reads "who is the current user" from the HTTP session.
+ * Single, isolated point that reads "who is the current user" from Spring Security.
  *
- * <p><b>Integration contract with the login task (owned by another team member):</b>
- * after a successful login, that module is expected to put the following attributes on
- * the {@link HttpSession}:</p>
- * <ul>
- *   <li>{@code currentAccountId}   (Integer)  — Account.accountID</li>
- *   <li>{@code currentAccountName} (String)   — Account.name</li>
- *   <li>{@code currentRole}        (String)   — one of {@link RoleConstants} (Accountpermission.role)</li>
- *   <li>{@code currentBranchID}    (Integer)  — selected Branch.branchID</li>
- * </ul>
- *
- * <p>This class only <i>reads</i> those values. It does NOT perform authentication and
- * does NOT write the session on login. Until login is wired up, {@link #getCurrentRole}
- * falls back to {@link RoleConstants#DEFAULT_ROLE} so the sidebar and Permission Table
- * are still demonstrable. The temporary {@code /dev/act-as} endpoint can set
- * {@code currentRole} for manual testing.</p>
+ * <p>The source of truth is the {@link AccountPrincipal} placed in the
+ * {@link SecurityContextHolder} at login by {@code CustomAccountDetailsService}. There is no
+ * session-based or default-role fallback: if there is no authenticated {@link AccountPrincipal}
+ * every accessor returns {@code null}, and callers must treat that as "not signed in" rather
+ * than assuming any role.</p>
  */
 @Component
 public class CurrentUserContext {
 
-    public static final String CURRENT_ACCOUNT_ID = "currentAccountId";
-    public static final String CURRENT_ACCOUNT_NAME = "currentAccountName";
-    public static final String CURRENT_ROLE = "currentRole";
-    public static final String CURRENT_BRANCH_ID = "currentBranchID";
-
-    public String getCurrentRole(HttpServletRequest request) {
-        Object value = sessionAttribute(request, CURRENT_ROLE);
-        if (value != null && RoleConstants.isValid(value.toString())) {
-            return value.toString();
+    /** The authenticated principal, or {@code null} for anonymous/unauthenticated requests. */
+    public AccountPrincipal getPrincipal() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
         }
-        return RoleConstants.DEFAULT_ROLE;
+        Object principal = authentication.getPrincipal();
+        return principal instanceof AccountPrincipal accountPrincipal ? accountPrincipal : null;
     }
 
-    /** True only when a valid role has actually been set on the session (i.e. "logged in"). */
-    public boolean hasAuthenticatedRole(HttpServletRequest request) {
-        Object value = sessionAttribute(request, CURRENT_ROLE);
-        return value != null && RoleConstants.isValid(value.toString());
+    public boolean isAuthenticated() {
+        return getPrincipal() != null;
     }
 
-    public String getCurrentAccountName(HttpServletRequest request) {
-        Object value = sessionAttribute(request, CURRENT_ACCOUNT_NAME);
-        return value != null ? value.toString() : "Guest";
+    /** Bare primary role (e.g. {@code "OWNER"}) of the signed-in user, or {@code null}. */
+    public String getCurrentRole() {
+        AccountPrincipal principal = getPrincipal();
+        return principal == null ? null : principal.getPrimaryRole();
     }
 
-    public Integer getCurrentAccountId(HttpServletRequest request) {
-        return asInteger(sessionAttribute(request, CURRENT_ACCOUNT_ID));
+    public String getCurrentAccountName() {
+        AccountPrincipal principal = getPrincipal();
+        return principal == null ? null : principal.getDisplayName();
     }
 
-    public Integer getCurrentBranchId(HttpServletRequest request) {
-        return asInteger(sessionAttribute(request, CURRENT_BRANCH_ID));
+    public Integer getCurrentAccountId() {
+        AccountPrincipal principal = getPrincipal();
+        return principal == null ? null : principal.getAccountId();
     }
 
-    private Object sessionAttribute(HttpServletRequest request, String name) {
-        HttpSession session = request.getSession(false);
-        return session == null ? null : session.getAttribute(name);
-    }
-
-    private Integer asInteger(Object value) {
-        if (value instanceof Integer i) {
-            return i;
-        }
-        if (value instanceof Number n) {
-            return n.intValue();
-        }
-        if (value instanceof String s && !s.isBlank()) {
-            try {
-                return Integer.valueOf(s.trim());
-            } catch (NumberFormatException ignored) {
-                return null;
-            }
-        }
-        return null;
+    public Integer getCurrentBranchId() {
+        AccountPrincipal principal = getPrincipal();
+        return principal == null ? null : principal.getBranchId();
     }
 }

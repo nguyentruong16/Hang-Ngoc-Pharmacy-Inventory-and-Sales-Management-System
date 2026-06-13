@@ -25,9 +25,11 @@ public final class RoleConstants {
             OWNER, CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT, CASHIER);
 
     /**
-     * Role assumed when no authenticated role is available yet (login is owned by
-     * another team member and may not be wired up). Kept as OWNER so the navigation
-     * and Permission Table are immediately demonstrable.
+     * Safe fallback used only when an <em>invalid</em> role string is supplied to a lookup
+     * (e.g. an unknown {@code ?role=} value on the Permission Table, or a menu/matrix lookup
+     * for an unrecognised role). It is NOT used to resolve the signed-in user's role — that
+     * always comes from the authenticated {@code AccountPrincipal}; an unauthenticated request
+     * gets no role and no sidebar.
      */
     public static final String DEFAULT_ROLE = OWNER;
 

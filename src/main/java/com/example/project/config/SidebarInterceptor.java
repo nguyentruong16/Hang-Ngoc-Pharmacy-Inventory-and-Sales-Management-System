@@ -13,29 +13,27 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Exposes the common navigation data (current user + sidebar menu) to every Thymeleaf
- * view, so individual controllers don't each have to assemble it.
+ * Exposes the common navigation data (current user + sidebar menu) to every Thymeleaf view,
+ * so individual controllers don't each have to assemble it.
  *
- * <p>Why an interceptor instead of {@code @ControllerAdvice}: this project keeps its
- * generated JSON {@code @RestController}s in the same package as the MVC controllers, so a
- * package-scoped advice can't cleanly separate them. {@code postHandle} runs only after a
- * handler completes and receives a {@link ModelAndView}; for {@code @ResponseBody}/REST
- * responses that value is {@code null}, so this code naturally adds nothing to API calls
- * and only enriches real HTML view renders.</p>
+ * <p>Why an interceptor instead of {@code @ControllerAdvice}: this project keeps its generated
+ * JSON {@code @RestController}s in the same package as the MVC controllers, so a package-scoped
+ * advice can't cleanly separate them. {@code postHandle} runs only after a handler completes and
+ * receives a {@link ModelAndView}; for {@code @ResponseBody}/REST responses that value is
+ * {@code null}, so this code naturally adds nothing to API calls and only enriches HTML views.</p>
  *
- * <p>Model attributes added (consumed by {@code fragments/topbar} and {@code fragments/sidebar}):</p>
- * <ul>
- *   <li>{@code currentRole}, {@code currentRoleDisplay}, {@code currentAccountName}, {@code currentBranchId}</li>
- *   <li>{@code allRoles} — for the demo role switcher in the topbar</li>
- *   <li>{@code sidebarMenu} — {@code List<SidebarMenuGroup>} for the current role</li>
- *   <li>{@code activeUrl} — URL of the menu item to highlight for this request</li>
- *   <li>{@code currentRequestUri} — raw request URI (Thymeleaf 3.1 can't read it directly)</li>
- * </ul>
+ * <p>The current user comes from Spring Security via {@link CurrentUserContext}. If there is no
+ * authenticated user, no sidebar data is added — an anonymous request never gets a role's menu.</p>
+ *
+ * <p>Model attributes added (consumed by {@code fragments/topbar} and {@code fragments/sidebar}):
+ * {@code currentRole}, {@code currentRoleDisplay}, {@code currentAccountName},
+ * {@code currentBranchId}, {@code sidebarMenu}, {@code activeUrl}, {@code currentRequestUri}.</p>
  */
 public class SidebarInterceptor implements HandlerInterceptor {
 
-    /** Auth-style views that must NOT show the sidebar/topbar. */
-    private static final Set<String> NO_CHROME_VIEWS = Set.of("signin", "signup", "404-error");
+    /** Standalone (no sidebar/topbar) views: auth screens and full-page error/notice pages. */
+    private static final Set<String> NO_CHROME_VIEWS = Set.of(
+            "signin", "signup", "forgot-password", "reset-password", "change-password", "404-error", "403");
 
     private final SidebarMenuService sidebarMenuService;
     private final CurrentUserContext currentUserContext;
@@ -61,15 +59,19 @@ public class SidebarInterceptor implements HandlerInterceptor {
             return;
         }
 
-        String role = currentUserContext.getCurrentRole(request);
+        // Only an authenticated user gets a sidebar; never synthesize one for anonymous requests.
+        String role = currentUserContext.getCurrentRole();
+        if (role == null) {
+            return;
+        }
+
         List<SidebarMenuGroup> menu = sidebarMenuService.getMenu(role);
         String uri = request.getRequestURI();
 
         modelAndView.addObject("currentRole", role);
         modelAndView.addObject("currentRoleDisplay", RoleConstants.displayName(role));
-        modelAndView.addObject("currentAccountName", currentUserContext.getCurrentAccountName(request));
-        modelAndView.addObject("currentBranchId", currentUserContext.getCurrentBranchId(request));
-        modelAndView.addObject("allRoles", RoleConstants.ALL);
+        modelAndView.addObject("currentAccountName", currentUserContext.getCurrentAccountName());
+        modelAndView.addObject("currentBranchId", currentUserContext.getCurrentBranchId());
         modelAndView.addObject("sidebarMenu", menu);
         modelAndView.addObject("activeUrl", sidebarMenuService.resolveActiveUrl(menu, uri));
         modelAndView.addObject("currentRequestUri", uri);

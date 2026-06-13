@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
  * Serves a single generic placeholder page for every role-specific route in the sidebar
  * that does not yet have a full implementation.
  *
- * <p>This exists purely so the role-based navigation is fully clickable for the demo. The
- * page title / module shown are looked up from {@link SidebarMenuService} by request URI,
+ * <p>This exists so the role-based navigation is fully clickable while the real module screens
+ * are still being built. The page title / module shown are looked up from {@link SidebarMenuService} by request URI,
  * so labels live in exactly one place (the menu config). Real module pages can later
  * replace these by adding more specific mappings — Spring will prefer the exact path over
  * these placeholder mappings. {@code /owner/permissions} is intentionally excluded (it has
@@ -121,11 +121,6 @@ public class PlaceholderController {
     @GetMapping("/profile")
     public String profile(Model model) {
         return account(model, "User Profile");
-    }
-
-    @GetMapping("/change-password")
-    public String changePassword(Model model) {
-        return account(model, "Change Password");
     }
 
     private String render(HttpServletRequest request, Model model) {

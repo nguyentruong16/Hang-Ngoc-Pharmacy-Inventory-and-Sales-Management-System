@@ -5,8 +5,9 @@
 <!--
   Reusable topbar (+ mobile overlay). Keeps the original markup and the element IDs
   (overlay, topbar, toggleBtn, mobileBtn) that the bundled main.js relies on.
-  The user dropdown shows the current user (currentAccountName / currentRoleDisplay from the
-  model) and holds User Profile + Change Password, plus a temporary "act as role" demo helper.
+  The user dropdown shows the signed-in user (currentAccountName / currentRoleDisplay from the
+  model, populated by SidebarInterceptor from Spring Security) and holds User Profile,
+  Change Password and Sign out.
   Usage in a page:  <div th:replace="~{fragments/topbar :: topbar}"></div>
 -->
 <th:block th:fragment="topbar">
@@ -90,23 +91,21 @@
               <div class="d-flex gap-3 align-items-center border-dashed border-bottom px-3 py-3">
                 <img src="./assets/images/avatar-1.jpg" th:src="@{/assets/images/avatar-1.jpg}" alt="" class="avatar avatar-md rounded-circle" />
                 <div>
-                  <h4 class="mb-0 small" th:text="${currentAccountName} ?: 'Guest'">Guest</h4>
-                  <span class="badge bg-primary-subtle text-primary mt-1" th:text="${currentRoleDisplay} ?: '—'">Role</span>
+                  <h4 class="mb-0 small" th:text="${currentAccountName}">User</h4>
+                  <span class="badge bg-primary-subtle text-primary mt-1" th:text="${currentRoleDisplay}">Role</span>
                 </div>
               </div>
               <div class="p-3 d-flex flex-column gap-1 small lh-lg">
                 <a th:href="@{/profile}" href="#!"><i class="ti ti-user me-1"></i><span>User Profile</span></a>
                 <a th:href="@{/change-password}" href="#!"><i class="ti ti-key me-1"></i><span>Change Password</span></a>
               </div>
-
-              <!-- DEV ONLY: preview roles without a real login. Remove once login sets currentRole. -->
-              <div class="border-top px-3 py-2">
-                <small class="text-muted d-block mb-1">Demo: act as role</small>
-                <div class="d-flex flex-column gap-1 small">
-                  <a th:each="r : ${allRoles}" th:href="@{/dev/act-as(role=${r})}"
-                     th:text="${r}" class="text-decoration-none">ROLE</a>
-                  <a th:href="@{/dev/reset-role}" class="text-secondary text-decoration-none mt-1">Reset demo role</a>
-                </div>
+              <div class="border-top px-3 py-3">
+                <form th:action="@{/logout}" method="post" class="m-0">
+                  <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                  <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                    <i class="ti ti-logout me-1"></i>Sign out
+                  </button>
+                </form>
               </div>
             </div>
           </div>
