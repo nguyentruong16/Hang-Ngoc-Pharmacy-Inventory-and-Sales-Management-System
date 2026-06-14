@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+<!--
+  Reusable, role-based sidebar. Single source of truth for navigation chrome.
+  Renders whatever the SidebarInterceptor put on the model:
+    - sidebarMenu : List<SidebarMenuGroup> for the current role
+    - activeUrl   : URL of the item to highlight for the current request
+  Behaviour:
+    * A group with one item renders as a plain link (no header, no collapse).
+    * A group with several items is a collapsible section: hover or click the title to open;
+      it stays open when it contains the active page. In the icon-rail (collapsed) sidebar all
+      items are shown flat.
+  Keeps id="sidebar" so the existing bundled main.js toggle keeps working.
+  Usage in a page:  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+-->
+<th:block th:fragment="sidebar">
+  <aside id="sidebar" class="sidebar">
+    <div class="logo-area">
+      <a href="/" th:href="@{/}" class="d-inline-flex"><img src="data:image/svg+xml,%3csvg%20width='62'%20height='67'%20viewBox='0%200%2062%2067'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M30.604%2066.378L0.00805664%2048.1582V35.7825L30.604%2054.0023V66.378Z'%20fill='%23302C4D'/%3e%3cpath%20d='M61.1996%2048.1582L30.604%2066.378V54.0023L61.1996%2035.7825V48.1582Z'%20fill='%23E66239'/%3e%3cpath%20d='M30.5955%200L0%2018.2198V30.5955L30.5955%2012.3757V0Z'%20fill='%23657E92'/%3e%3cpath%20d='M61.191%2018.2198L30.5955%200V12.3757L61.191%2030.5955V18.2198Z'%20fill='%23A3B2BE'/%3e%3cpath%20d='M30.604%2048.8457L0.00805664%2030.6259V18.2498L30.604%2036.47V48.8457Z'%20fill='%23302C4D'/%3e%3cpath%20d='M61.1996%2030.6259L30.604%2048.8457V36.47L61.1996%2018.2498V30.6259Z'%20fill='%23E66239'/%3e%3c/svg%3e" alt="" width="24">
+        <span class="logo-text ms-2"> <img src="./assets/images/logo.svg" th:src="@{/assets/images/logo.svg}" alt=""></span>
+      </a>
+    </div>
+    <ul class="nav flex-column" id="sidebarNav">
+      <th:block th:each="group : ${sidebarMenu}">
+
+        <!-- Single-item group: plain link -->
+        <li th:if="${!group.collapsible}" th:with="item=${group.items[0]}">
+          <a class="nav-link" th:href="@{${item.url}}"
+             th:classappend="${activeUrl != null and activeUrl == item.url} ? ' active' : ''">
+            <i th:class="${item.icon}" class="ti ti-point"></i><span class="nav-text" th:text="${item.label}">Menu item</span>
+          </a>
+        </li>
+
+        <!-- Multi-item group: collapsible section (open by default if it holds the active page) -->
+        <li th:if="${group.collapsible}" class="nav-group"
+            th:classappend="${activeUrl != null and #lists.contains(group.items.![url], activeUrl)} ? ' open' : ''">
+          <button type="button" class="nav-group-toggle" aria-expanded="false">
+            <span class="nav-text" th:text="${group.label}">Nhóm</span>
+            <span class="nav-group-caret" aria-hidden="true">›</span>
+          </button>
+          <ul class="nav-group-items">
+            <li th:each="item : ${group.items}">
+              <a class="nav-link" th:href="@{${item.url}}"
+                 th:classappend="${activeUrl != null and activeUrl == item.url} ? ' active' : ''">
+                <i th:class="${item.icon}" class="ti ti-point"></i><span class="nav-text" th:text="${item.label}">Menu item</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+      </th:block>
+    </ul>
+  </aside>
+
+  <style>
+    /* Sidebar scroll */
+    #sidebar {
+      height: 100vh;
+      max-height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0,0,0,.2) transparent;
+      padding-bottom: 24px;
+    }
+
+    #sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,.18);
+      border-radius: 3px;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb:hover {
+      background: rgba(0,0,0,.32);
+    }
+
+    /* Collapsible group header */
+    .sidebar .nav-group-toggle {
+      width: calc(100% - 24px);
+      margin: 2px 12px;
+      padding: 8px 10px;
+      border: 0;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-radius: 8px;
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+      cursor: pointer;
+
+      /* Important: prevent long category text from breaking layout */
+      white-space: normal;
+      min-width: 0;
+    }
+
+    .sidebar .nav-group-toggle:hover {
+      color: #262626;
+      background-color: #f4f4f5;
+    }
+
+    /* Group title text */
+    .sidebar .nav-group-toggle .nav-text {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    /* Chevron arrow */
+    .sidebar .nav-group-caret {
+      font-size: 16px;
+      flex: 0 0 auto;
+      transition: transform .2s ease;
+    }
+
+    /* Collapsible body */
+    .sidebar .nav-group-items {
+      list-style: none;
+      margin: 2px 0 8px 0;
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .25s ease;
+    }
+
+    .sidebar .nav-group:hover > .nav-group-items,
+    .sidebar .nav-group.open > .nav-group-items {
+      max-height: 700px;
+    }
+
+    .sidebar .nav-group:hover > .nav-group-toggle .nav-group-caret,
+    .sidebar .nav-group.open > .nav-group-toggle .nav-group-caret {
+      transform: rotate(90deg);
+    }
+
+    /* Sub menu item: make it visually nested */
+    .sidebar .nav-group-items .nav-link {
+      margin: 1px 12px 1px 28px;
+      padding: 8px 10px 8px 14px;
+      font-size: 13.5px;
+      border-radius: 8px;
+      position: relative;
+      gap: 10px;
+      /* Prevent long submenu text overflow */
+      min-width: 0;
+      white-space: normal;
+      align-items: flex-start;
+    }
+
+    .sidebar .nav-group-items .nav-link::before {
+      content: "";
+      position: absolute;
+      left: -10px;
+      top: 50%;
+      width: 7px;
+      height: 1px;
+      background: #cbd5e1;
+    }
+
+    .sidebar .nav-group-items .nav-link .ti {
+      font-size: 16px;
+      flex: 0 0 auto;
+    }
+
+    .sidebar .nav-group-items .nav-link .nav-text {
+      min-width: 0;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      line-height: 1.35;
+    }
+
+    /* Normal single links */
+    .sidebar > .nav .nav-link {
+      min-width: 0;
+    }
+
+    .sidebar > .nav .nav-link .nav-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Icon-rail collapsed sidebar */
+    .sidebar.collapsed .nav-group-toggle {
+      display: none;
+    }
+
+    .sidebar.collapsed .nav-group-items {
+      max-height: none !important;
+      overflow: visible;
+      margin: 0;
+    }
+
+    .sidebar.collapsed .nav-group-items .nav-link {
+      margin: 0;
+      padding: 8px 18px;
+    }
+
+    .sidebar.collapsed .nav-group-items .nav-link::before {
+      display: none;
+    }
+  </style>
+
+  <script>
+    (function () {
+      var nav = document.getElementById('sidebarNav');
+      if (!nav) return;
+      nav.querySelectorAll('.nav-group-toggle').forEach(function (toggle) {
+        toggle.addEventListener('click', function () {
+          var group = toggle.closest('.nav-group');
+          var open = group.classList.toggle('open');
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      });
+    })();
+  </script>
+</th:block>
+</body>
+
+</html>

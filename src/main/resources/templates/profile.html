@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Hồ sơ cá nhân | PISMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" sizes="180x180"
+          href="./assets/images/apple-touch-icon.png"
+          th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32"
+          href="./assets/images/favicon-32x32.png"
+          th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16"
+          href="./assets/images/favicon-16x16.png"
+          th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+    <!-- Page-only CSS: giữ trong file này để không phải sửa main.css -->
+    <style>
+        :root {
+            --profile-green: #059669;
+            --profile-green-dark: #047857;
+            --profile-green-light: #dff3ec;
+            --profile-border: #e5e7eb;
+            --profile-muted: #6b7280;
+            --profile-bg: #f6f7f9;
+        }
+
+        body {
+            background: var(--profile-bg);
+        }
+
+        .profile-page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .profile-card {
+            background: #ffffff;
+            border: 1px solid var(--profile-border);
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        }
+
+        .profile-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 999px;
+            background: var(--profile-green-light);
+            color: var(--profile-green);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .profile-status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #dcfce7;
+            color: #059669;
+        }
+
+        .profile-status-badge.inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .profile-muted {
+            color: var(--profile-muted);
+        }
+
+        .profile-form-card {
+            max-width: 760px;
+        }
+
+        .profile-form-card .form-label {
+            font-size: 13px;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .profile-form-card .form-control {
+            min-height: 40px;
+            border-radius: 10px;
+            border-color: var(--profile-border);
+            font-size: 13px;
+        }
+
+        .profile-form-card .form-control:disabled,
+        .profile-form-card .form-control[readonly] {
+            background: #f9fafb;
+            color: #9ca3af;
+            opacity: 1;
+        }
+
+        .btn-profile-save {
+            background: var(--profile-green);
+            border-color: var(--profile-green);
+            color: #ffffff;
+            border-radius: 10px;
+            min-height: 40px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .btn-profile-save:hover,
+        .btn-profile-save:focus {
+            background: var(--profile-green-dark);
+            border-color: var(--profile-green-dark);
+            color: #ffffff;
+        }
+
+        .btn-profile-cancel,
+        .btn-profile-outline {
+            border: 1px solid var(--profile-border);
+            background: #ffffff;
+            color: #111827;
+            border-radius: 10px;
+            min-height: 40px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .btn-profile-cancel:hover,
+        .btn-profile-outline:hover {
+            background: #f9fafb;
+            color: #111827;
+            border-color: #d1d5db;
+        }
+
+        .profile-top-identity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-top-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            background: var(--profile-green-light);
+            color: var(--profile-green);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .profile-branch-select {
+            min-width: 250px;
+            border-radius: 9px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 991.98px) {
+            .profile-branch-select {
+                display: none;
+            }
+
+            .profile-form-card {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div id="overlay" class="overlay"></div>
+
+<!-- TOPBAR -->
+<nav id="topbar" class="navbar bg-white border-bottom fixed-top topbar px-3">
+    <button id="toggleBtn" class="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm">
+        <i class="ti ti-layout-sidebar-left-expand"></i>
+    </button>
+
+    <button id="mobileBtn" class="btn btn-light btn-icon btn-sm d-lg-none me-2">
+        <i class="ti ti-layout-sidebar-left-expand"></i>
+    </button>
+
+    <div class="ms-auto d-flex align-items-center gap-3">
+        <select class="form-select form-select-sm profile-branch-select" disabled>
+            <option th:text="${profile.branchName != null ? profile.branchName : 'Hang Ngoc Pharmacy'}">
+                Hang Ngoc Pharmacy - Nhánh 1
+            </option>
+        </select>
+
+        <a class="position-relative btn-icon btn-sm btn-light btn rounded-circle"
+           data-bs-toggle="dropdown" aria-expanded="false" href="#" role="button">
+            <i class="ti ti-bell fs-5"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-2 ms-n2">
+        2
+        <span class="visually-hidden">unread notifications</span>
+      </span>
+        </a>
+
+        <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-0">
+            <ul class="list-unstyled p-0 m-0">
+                <li class="p-3 border-bottom">
+                    <div class="small">
+                        <p class="mb-1 fw-semibold">Cảnh báo tồn kho</p>
+                        <p class="mb-0 text-secondary">Một số sản phẩm đã dưới mức tồn kho tối thiểu.</p>
+                    </div>
+                </li>
+                <li class="p-3 border-bottom">
+                    <div class="small">
+                        <p class="mb-1 fw-semibold">Cảnh báo hạn sử dụng</p>
+                        <p class="mb-0 text-secondary">Có lô hàng sắp hết hạn cần kiểm tra.</p>
+                    </div>
+                </li>
+                <li class="px-4 py-3 text-center">
+                    <a href="#" class="text-primary">Xem tất cả thông báo</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="vr d-none d-md-block"></div>
+
+        <div class="profile-top-identity">
+            <div class="profile-top-avatar"
+                 th:text="${profile.name != null and !#strings.isEmpty(profile.name) ? #strings.substring(profile.name, 0, 1) : 'U'}">
+                U
+            </div>
+            <div class="d-none d-md-block">
+                <div class="small fw-semibold mb-0" th:text="${profile.name}">Nguyễn Thị Lan</div>
+                <div class="small text-secondary" th:text="${profile.role}">Kế toán</div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<!-- MAIN CONTENT -->
+<main id="content" class="content py-6">
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-4">
+                    <h1 class="profile-page-title mb-0">Hồ sơ cá nhân</h1>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            Cập nhật hồ sơ thành công.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="row g-4">
+            <!-- LEFT PROFILE CARD -->
+            <div class="col-12 col-lg-4 col-xl-3">
+                <div class="profile-card h-100">
+                    <div class="p-5 text-center">
+                        <div class="profile-avatar mb-4"
+                             th:text="${profile.name != null and !#strings.isEmpty(profile.name) ? #strings.substring(profile.name, 0, 1) : 'U'}">
+                            U
+                        </div>
+
+                        <h2 class="fs-5 mb-1" th:text="${profile.name}">Nguyễn Thị Lan</h2>
+                        <p class="profile-muted mb-1" th:text="${profile.role}">Kế toán</p>
+                        <p class="profile-muted small mb-3" th:text="${profile.branchName}">Hang Ngoc Pharmacy</p>
+
+                        <span class="profile-status-badge"
+                              th:classappend="${profile.status} ? '' : ' inactive'"
+                              th:text="${profile.status} ? 'Đang hoạt động' : 'Đã khóa'">
+              Đang hoạt động
+            </span>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between align-items-center small mb-3">
+                            <span class="profile-muted">Đăng nhập gần nhất:</span>
+                            <span>--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PROFILE FORM -->
+            <div class="col-12 col-lg-8 col-xl-7">
+                <div class="profile-card profile-form-card">
+                    <div class="p-5">
+                        <h2 class="fs-5 mb-4">Thông tin cá nhân</h2>
+
+                        <form th:action="@{/profile}" th:object="${profileForm}" method="post" novalidate>
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Họ và tên</label>
+                                <input id="name"
+                                       type="text"
+                                       class="form-control"
+                                       th:field="*{name}"
+                                       placeholder="Nhập họ và tên">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('name')}"
+                                     th:errors="*{name}">
+                                    Họ và tên không được để trống
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Tên đăng nhập</label>
+                                <input id="username"
+                                       type="text"
+                                       class="form-control"
+                                       th:value="${profile.username}"
+                                       disabled>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input id="email"
+                                       type="email"
+                                       class="form-control"
+                                       th:field="*{email}"
+                                       placeholder="Nhập email">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('email')}"
+                                     th:errors="*{email}">
+                                    Email không hợp lệ
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label">Số điện thoại</label>
+                                <input id="phoneNumber"
+                                       type="text"
+                                       class="form-control"
+                                       th:field="*{phoneNumber}"
+                                       placeholder="Nhập số điện thoại">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('phoneNumber')}"
+                                     th:errors="*{phoneNumber}">
+                                    Số điện thoại không hợp lệ
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Vai trò</label>
+                                <input id="role"
+                                       type="text"
+                                       class="form-control"
+                                       th:value="${profile.role}"
+                                       disabled>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="status" class="form-label">Trạng thái</label>
+                                <input id="status"
+                                       type="text"
+                                       class="form-control"
+                                       th:value="${profile.status} ? 'Đang hoạt động' : 'Đã khóa'"
+                                       disabled>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <button type="submit" class="btn btn-profile-save w-100">
+                                        Lưu thay đổi
+                                    </button>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <a href="/profile" th:href="@{/profile}" class="btn btn-profile-cancel w-100">
+                                        Hủy
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+</body>
+</html>
