@@ -92,6 +92,7 @@ public class PlaceholderController {
             "/accountant/expenses",
             "/accountant/expenses/create",
             "/accountant/invoices",
+            "/accountant/income",
             "/accountant/shift-reports",
             "/accountant/financial-setting",
             "/accountant/notifications"
