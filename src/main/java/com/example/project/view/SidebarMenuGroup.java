@@ -16,6 +16,8 @@ public class SidebarMenuGroup {
 
     private final String label;
 
+    private final String icon;
+
     private final List<SidebarMenuItem> items;
 
     private final boolean collapsible;
