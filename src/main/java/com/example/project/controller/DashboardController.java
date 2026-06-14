@@ -59,8 +59,4 @@ public class DashboardController {
         return "404-error";
     }
 
-    @GetMapping("/docs")
-    public String docs() {
-        return "docs";
-    }
 }

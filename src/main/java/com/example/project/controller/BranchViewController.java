@@ -16,7 +16,7 @@ public class BranchViewController {
         this.branchService = branchService;
     }
 
-    @GetMapping({"/branch-list"})
+    @GetMapping({"/owner/branch-list"})
     public String branchList(Model model) {
         List<BranchResponse> branches = branchService.getAll();
         long activeBranches = branches.stream().filter(BranchResponse::isActive).count();
