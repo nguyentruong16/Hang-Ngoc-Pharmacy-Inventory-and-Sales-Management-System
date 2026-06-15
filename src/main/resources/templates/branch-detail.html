@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title th:text="'Chi tiết chi nhánh - ' + ${branch.name}">Chi tiết chi nhánh</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+  <style>
+    :root {
+      --branch-green: #009a6a;
+      --branch-green-soft: #e4f6f0;
+      --branch-orange: #f59f2a;
+      --branch-orange-soft: #fff2db;
+      --branch-ink: #202124;
+      --branch-muted: #6f7787;
+      --branch-line: #e3e8ef;
+      --branch-panel: #ffffff;
+      --branch-bg: #f5f7f9;
+      --branch-sidebar: 255px;
+      --branch-topbar: 72px;
+      --branch-font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    body.branch-shell {
+      background: var(--branch-bg);
+      color: var(--branch-ink);
+      font-family: var(--branch-font);
+      font-size: 0.9375rem;
+      font-weight: 400;
+      line-height: 1.65;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    .branch-shell button,
+    .branch-shell input,
+    .branch-shell select,
+    .branch-shell textarea {
+      font-family: inherit;
+    }
+
+    .branch-shell .sidebar {
+      width: var(--branch-sidebar);
+      border-right: 1px solid var(--branch-line);
+      background: var(--branch-panel);
+    }
+
+    .branch-shell .sidebar.collapsed {
+      width: 80px;
+    }
+
+    .branch-shell .sidebar.collapsed .branch-logo {
+      width: 32px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .branch-shell .sidebar.collapsed .nav-text,
+    .branch-shell .sidebar.collapsed .branch-subnav {
+      display: none;
+    }
+
+    .branch-shell .logo-area {
+      height: var(--branch-topbar);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--branch-line);
+    }
+
+    .branch-logo {
+      color: var(--branch-ink);
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      text-decoration: none;
+    }
+
+    .branch-logo span {
+      color: var(--branch-green);
+    }
+
+    .branch-shell .nav {
+      padding: 24px 0;
+      gap: 2px;
+    }
+
+    .branch-shell .nav-link {
+      color: #3c4658;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 42px;
+      padding: 10px 24px;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      border-radius: 0;
+    }
+
+    .branch-shell .nav-link i {
+      width: 20px;
+      color: currentColor;
+      font-size: 1.2rem;
+    }
+
+    .branch-shell .nav-link.active,
+    .branch-shell .nav-link:hover {
+      color: var(--branch-green);
+      background: transparent;
+    }
+
+    .branch-subnav {
+      padding: 2px 0 12px 68px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .branch-subnav a {
+      color: #747d8d;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      line-height: 1.75;
+      letter-spacing: 0;
+      text-decoration: none;
+    }
+
+    .branch-subnav a.active,
+    .branch-subnav a:hover {
+      color: var(--branch-green);
+    }
+
+    .branch-content {
+      margin-left: var(--branch-sidebar);
+      padding: 32px 32px 48px;
+      min-height: 100vh;
+    }
+
+    .branch-content.full {
+      margin-left: 80px;
+    }
+
+    .branch-container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .branch-back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--branch-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      margin-bottom: 20px;
+    }
+
+    .branch-back-link:hover {
+      color: var(--branch-green);
+    }
+
+    .branch-page-head {
+      margin-bottom: 28px;
+    }
+
+    .branch-page-title {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .branch-page-subtitle {
+      margin: 0;
+      color: var(--branch-muted);
+      font-size: 0.9375rem;
+    }
+
+    .branch-panel {
+      background: var(--branch-panel);
+      border: 1px solid var(--branch-line);
+      border-radius: 15px;
+      padding: 28px;
+    }
+
+    .branch-panel-title {
+      margin: 0 0 24px;
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .branch-detail-grid {
+      display: grid;
+      gap: 0;
+    }
+
+    .branch-detail-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--branch-line);
+    }
+
+    .branch-detail-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .branch-detail-row:first-child {
+      padding-top: 0;
+    }
+
+    .branch-detail-label {
+      color: #737d8d;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .branch-detail-value {
+      color: #202124;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .branch-detail-value--code {
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .branch-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 3px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .branch-status--active {
+      color: var(--branch-green);
+      background: var(--branch-green-soft);
+    }
+
+    .branch-status--review {
+      color: #e88900;
+      background: var(--branch-orange-soft);
+    }
+
+    @media (max-width: 991.98px) {
+      .branch-content {
+        margin-left: 0;
+        padding: 18px 18px 36px;
+      }
+    }
+
+    @media (max-width: 575.98px) {
+      .branch-panel {
+        padding: 18px;
+      }
+
+      .branch-detail-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+
+<body class="branch-shell">
+  <div id="overlay" class="overlay"></div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="logo-area">
+      <a href="/" th:href="@{/}" class="branch-logo"><span>Pharma</span>Manager</a>
+    </div>
+
+    <ul class="nav flex-column">
+      <li>
+        <a class="nav-link" href="/" th:href="@{/}">
+          <i class="ti ti-chart-line"></i>
+          <span class="nav-text">Tổng quan</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-link" href="#" aria-current="false">
+          <i class="ti ti-users"></i>
+          <span class="nav-text">Nhân sự &amp; phân quyền</span>
+        </a>
+      </li>
+      <li class="branch-subnav">
+        <a href="#">Danh sách người dùng</a>
+        <a href="#">Bảng phân quyền</a>
+      </li>
+      <li>
+        <a class="nav-link active" href="/owner/branch-list" th:href="@{/owner/branch-list}" data-nav="branch-list" aria-current="page">
+          <i class="ti ti-building-store"></i>
+          <span class="nav-text">Chi nhánh</span>
+        </a>
+      </li>
+      <li class="branch-subnav">
+        <a class="active" href="/owner/branch-list" th:href="@{/owner/branch-list}">Danh sách chi nhánh</a>
+      </li>
+      <li>
+        <a class="nav-link" href="#">
+          <i class="ti ti-clipboard-check"></i>
+          <span class="nav-text">Phê duyệt</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-link" href="/inventory" th:href="@{/inventory}">
+          <i class="ti ti-package"></i>
+          <span class="nav-text">Kho nội bộ</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-link" href="#">
+          <i class="ti ti-bell"></i>
+          <span class="nav-text">Thông báo</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-link" href="/change-password" th:href="@{/change-password}">
+          <i class="ti ti-user-circle"></i>
+          <span class="nav-text">Hồ sơ cá nhân</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <main id="content" class="branch-content">
+    <div class="branch-container">
+      <a class="branch-back-link" href="/owner/branch-list" th:href="@{/owner/branch-list}">
+        <i class="ti ti-arrow-left"></i>
+        <span>Quay lại danh sách chi nhánh</span>
+      </a>
+
+      <header class="branch-page-head">
+        <h1 class="branch-page-title" th:text="${branch.name}">Tên chi nhánh</h1>
+        <p class="branch-page-subtitle">Thông tin chi tiết chi nhánh</p>
+      </header>
+
+      <section class="branch-panel" aria-labelledby="branch-detail-title">
+        <h2 id="branch-detail-title" class="branch-panel-title">Thông tin chi nhánh</h2>
+
+        <dl class="branch-detail-grid">
+          <div class="branch-detail-row">
+            <dt class="branch-detail-label">Mã chi nhánh</dt>
+            <dd class="branch-detail-value branch-detail-value--code" th:text="${branch.id}"></dd>
+          </div>
+          <div class="branch-detail-row">
+            <dt class="branch-detail-label">Tên chi nhánh</dt>
+            <dd class="branch-detail-value" th:text="${branch.name}"></dd>
+          </div>
+          <div class="branch-detail-row">
+            <dt class="branch-detail-label">Địa chỉ</dt>
+            <dd class="branch-detail-value" th:text="${branch.address != null ? branch.address : '—'}"></dd>
+          </div>
+          <div class="branch-detail-row">
+            <dt class="branch-detail-label">Trạng thái</dt>
+            <dd class="branch-detail-value">
+              <span class="branch-status"
+                    th:classappend="${branch.statusName == 'Đang hoạt động' ? 'branch-status--active' : 'branch-status--review'}"
+                    th:text="${branch.statusName != null ? branch.statusName : '—'}"></span>
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    document.querySelectorAll(".sidebar .nav-link").forEach((link) => link.classList.remove("active"));
+    document.querySelector('[data-nav="branch-list"]')?.classList.add("active");
+  </script>
+</body>
+
+</html>

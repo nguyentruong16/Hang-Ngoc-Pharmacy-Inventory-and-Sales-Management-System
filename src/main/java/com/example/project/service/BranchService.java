@@ -30,4 +30,9 @@ public class BranchService {
                 .filter(branch -> ACTIVE_STATUS_NAME.equals(branch.getStatusName()))
                 .count();
     }
+
+    @Transactional(readOnly = true)
+    public BranchResponse getById(Integer id) {
+        return BranchResponse.from(branchRepository.findByIdWithStatus(id).orElseThrow());
+    }
 }

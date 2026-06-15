@@ -597,7 +597,9 @@
                         th:classappend="${branch.statusName == 'Đang hoạt động' ? 'branch-status--active' : 'branch-status--review'}"
                         th:text="${branch.statusName}"></span>
                 </td>
-                <td class="branch-col-action"><a class="branch-view-link" href="#">Xem</a></td>
+                <td class="branch-col-action">
+                  <a class="branch-view-link" th:href="@{/owner/branch-detail/{id}(id=${branch.id})}">Xem</a>
+                </td>
               </tr>
               <tr th:if="${#lists.isEmpty(branches)}">
                 <td class="branch-empty" colspan="5">Chưa có chi nhánh nào.</td>
