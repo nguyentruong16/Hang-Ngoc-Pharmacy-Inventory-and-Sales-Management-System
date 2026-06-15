@@ -15,12 +15,14 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Controller
 public class AuthController {
-    private static final String RESET_RESPONSE_MESSAGE = "If the email exists, a password reset link has been sent.";
+    private static final String RESET_RESPONSE_MESSAGE = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi.";
 
     private final AccountPasswordService accountPasswordService;
     private final PasswordResetService passwordResetService;
 
-    public AuthController(AccountPasswordService accountPasswordService, PasswordResetService passwordResetService) {
+    public AuthController(
+            AccountPasswordService accountPasswordService,
+            PasswordResetService passwordResetService) {
         this.accountPasswordService = accountPasswordService;
         this.passwordResetService = passwordResetService;
     }
@@ -48,7 +50,7 @@ public class AuthController {
     @GetMapping("/reset-password")
     public String resetPasswordForm(@RequestParam(name = "token", required = false) String token, Model model) {
         if (!passwordResetService.isTokenValid(token)) {
-            model.addAttribute("error", "Password reset link is invalid or expired.");
+            model.addAttribute("error", "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
             return "reset-password";
         }
         model.addAttribute("token", token);
@@ -68,7 +70,7 @@ public class AuthController {
             return "redirect:/signin";
         } catch (IllegalArgumentException exception) {
             model.addAttribute("token", token);
-            model.addAttribute("error", exception.getMessage());
+            model.addAttribute("error", toVietnamesePasswordMessage(exception.getMessage()));
             return "reset-password";
         }
     }
@@ -89,9 +91,24 @@ public class AuthController {
             accountPasswordService.changePassword(principal.getAccountId(), currentPassword, newPassword, confirmPassword);
             return "redirect:/dashboard?passwordChanged";
         } catch (IllegalArgumentException exception) {
-            model.addAttribute("error", exception.getMessage());
+            model.addAttribute("error", toVietnamesePasswordMessage(exception.getMessage()));
             return "change-password";
         }
+    }
+
+    private String toVietnamesePasswordMessage(String message) {
+        return switch (message) {
+            case "Current password is required." -> "Vui lòng nhập mật khẩu hiện tại.";
+            case "Current password is incorrect." -> "Mật khẩu hiện tại không chính xác.";
+            case "New password is required." -> "Vui lòng nhập mật khẩu mới.";
+            case "New password must be at least 8 characters.",
+                 "New password must contain uppercase, lowercase, and number." ->
+                    "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.";
+            case "Password confirmation is required." -> "Vui lòng xác nhận mật khẩu mới.";
+            case "Password confirmation does not match." -> "Mật khẩu xác nhận không trùng khớp.";
+            case "Password reset link is invalid or expired." -> "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";
+            default -> "Không thể cập nhật mật khẩu. Vui lòng kiểm tra lại thông tin.";
+        };
     }
 
     private String resetBaseUrl(HttpServletRequest request) {

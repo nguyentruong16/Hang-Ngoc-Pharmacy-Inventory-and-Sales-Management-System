@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
   <meta charset="UTF-8" />
-  <title>Staff Sign In - Pharmacy Management System</title>
+  <title>Đăng nhập | PharmaManager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
@@ -11,56 +11,94 @@
   <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
   <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
   <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+  <style>
+    body { background: #f8fafc; }
+    .auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr); }
+    .auth-brand { background: linear-gradient(135deg, #e8fff3 0%, #d8f7ed 48%, #f3fbf7 100%); padding: 56px; display: flex; flex-direction: column; justify-content: space-between; color: #064e3b; }
+    .auth-logo { width: 48px; height: 48px; border-radius: 14px; background: #0f9f6e; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; }
+    .auth-brand-name { font-size: 22px; font-weight: 800; color: #064e3b; }
+    .auth-title { font-size: 36px; line-height: 1.15; font-weight: 800; max-width: 560px; color: #073b2c; }
+    .auth-copy { max-width: 560px; color: #26705b; font-size: 15px; line-height: 1.7; }
+    .auth-feature { display: flex; align-items: center; gap: 12px; color: #0f5132; font-weight: 600; margin-top: 14px; }
+    .auth-feature i { width: 28px; height: 28px; border-radius: 999px; background: #fff; color: #0f9f6e; display: inline-flex; align-items: center; justify-content: center; }
+    .auth-panel { display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: #ffffff; }
+    .auth-card { width: 100%; max-width: 440px; border: 1px solid #e5e7eb; border-radius: 18px; padding: 36px; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); }
+    .auth-card h1 { font-size: 28px; font-weight: 800; color: #111827; }
+    .auth-card .form-label { font-size: 13px; font-weight: 600; color: #374151; }
+    .auth-card .form-control { min-height: 46px; border-radius: 12px; border-color: #d1d5db; }
+    .auth-submit { min-height: 46px; border-radius: 12px; background: #0f9f6e; border-color: #0f9f6e; font-weight: 700; }
+    .auth-submit:hover, .auth-submit:focus { background: #0b7f58; border-color: #0b7f58; }
+    .auth-footer { color: #6b7280; font-size: 12px; display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; }
+    @media (max-width: 991.98px) { .auth-shell { grid-template-columns: 1fr; } .auth-brand { display: none; } .auth-panel { min-height: 100vh; } }
+  </style>
 </head>
 
 <body>
-<div class="container d-flex align-items-center justify-content-center min-vh-100">
-  <div class="card" style="max-width:420px; width:100%;">
-    <div class="card-body p-5">
-      <div class="text-center mb-3">
-        <a href="/signin" th:href="@{/signin}" class="mb-4 d-inline-block">
-          <img src="data:image/svg+xml,%3csvg%20width='62'%20height='67'%20viewBox='0%200%2062%2067'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M30.604%2066.378L0.00805664%2048.1582V35.7825L30.604%2054.0023V66.378Z'%20fill='%23302C4D'/%3e%3cpath%20d='M61.1996%2048.1582L30.604%2066.378V54.0023L61.1996%2035.7825V48.1582Z'%20fill='%23E66239'/%3e%3cpath%20d='M30.5955%200L0%2018.2198V30.5955L30.5955%2012.3757V0Z'%20fill='%23657E92'/%3e%3cpath%20d='M61.191%2018.2198L30.5955%200V12.3757L61.191%2030.5955V18.2198Z'%20fill='%23A3B2BE'/%3e%3cpath%20d='M30.604%2048.8457L0.00805664%2030.6259V18.2498L30.604%2036.47V48.8457Z'%20fill='%23302C4D'/%3e%3cpath%20d='M61.1996%2030.6259L30.604%2048.8457V36.47L61.1996%2018.2498V30.6259Z'%20fill='%23E66239'/%3e%3c/svg%3e" alt="" width="36">
-          <span class="ms-2"><img src="./assets/images/logo.svg" th:src="@{/assets/images/logo.svg}" alt="Pharmacy Management System"></span>
-        </a>
-        <h1 class="card-title mb-2 h5">Staff sign in</h1>
-        <p class="text-secondary small mb-4">Internal Pharmacy Management System</p>
-      </div>
+<div class="auth-shell">
+  <section class="auth-brand">
+    <div class="d-flex align-items-center gap-3">
+      <div class="auth-logo">PM</div>
+      <div class="auth-brand-name">PharmaManager</div>
+    </div>
+
+    <div>
+      <h2 class="auth-title mb-4">Hệ thống quản lý nhà thuốc</h2>
+      <p class="auth-copy mb-4">
+        Quản lý bán hàng, tồn kho, hóa đơn và cảnh báo hạn dùng trong một hệ thống nội bộ dành cho nhân viên nhà thuốc.
+      </p>
+      <div class="auth-feature"><i class="ti ti-package"></i><span>Quản lý tồn kho theo lô</span></div>
+      <div class="auth-feature"><i class="ti ti-cash-register"></i><span>Bán hàng nhanh tại quầy</span></div>
+      <div class="auth-feature"><i class="ti ti-receipt"></i><span>Theo dõi hóa đơn và sổ quỹ</span></div>
+    </div>
+
+    <div class="auth-footer">
+      <span>© 2026 PharmaManager</span>
+      <span>Phiên bản nội bộ</span>
+    </div>
+  </section>
+
+  <main class="auth-panel">
+    <div class="auth-card">
+      <h1 class="mb-2">Đăng nhập</h1>
+      <p class="text-secondary mb-4">Vui lòng đăng nhập để tiếp tục sử dụng hệ thống</p>
 
       <div class="alert alert-danger py-2" role="alert" th:if="${param.error}">
-        Invalid username, email, or password.
+        Email, tên đăng nhập hoặc mật khẩu không chính xác.
       </div>
       <div class="alert alert-success py-2" role="alert" th:if="${param.logout}">
-        You have been signed out.
+        Bạn đã đăng xuất khỏi hệ thống.
       </div>
       <div class="alert alert-success py-2" role="alert" th:if="${param.resetSuccess}">
-        Your password has been reset. Sign in with the new password.
+        Mật khẩu đã được đặt lại. Vui lòng đăng nhập bằng mật khẩu mới.
       </div>
       <div class="alert alert-warning py-2" role="alert" th:if="${param.sessionLimit}">
-        This account is already signed in on another browser or device.
+        Tài khoản này đang được đăng nhập trên thiết bị hoặc trình duyệt khác.
       </div>
 
-      <form class="needs-validation mt-3" method="post" th:action="@{/signin}" novalidate>
+      <form method="post" th:action="@{/signin}" novalidate>
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
         <div class="mb-3">
-          <label for="loginId" class="form-label">Username or Email</label>
-          <input id="loginId" name="loginId" type="text" class="form-control" placeholder="username or name@example.com" required autofocus>
-          <div class="invalid-feedback">Please enter your username or email.</div>
+          <label for="loginId" class="form-label">Email hoặc tên đăng nhập</label>
+          <input id="loginId" name="loginId" type="text" class="form-control" placeholder="Nhập email hoặc tên đăng nhập" required autofocus>
         </div>
 
         <div class="mb-3">
           <label for="password" class="form-label d-flex justify-content-between">
-            <span>Password</span>
-            <a href="/forgot-password" th:href="@{/forgot-password}" class="small link-primary">Forgot password?</a>
+            <span>Mật khẩu</span>
+            <a href="/forgot-password" th:href="@{/forgot-password}" class="small link-primary">Quên mật khẩu?</a>
           </label>
-          <input id="password" name="password" type="password" class="form-control" placeholder="Password" required minlength="8">
-          <div class="invalid-feedback">Please provide your password.</div>
+          <input id="password" name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" required>
         </div>
 
-        <button class="btn btn-primary w-100" type="submit">Sign in</button>
+        <div class="form-check mb-4">
+          <input id="rememberVisual" class="form-check-input" type="checkbox">
+          <label class="form-check-label small text-secondary" for="rememberVisual">Ghi nhớ phiên đăng nhập</label>
+        </div>
+
+        <button class="btn btn-primary auth-submit w-100" type="submit">Đăng nhập</button>
       </form>
     </div>
-  </div>
+  </main>
 </div>
 </body>
-
 </html>
