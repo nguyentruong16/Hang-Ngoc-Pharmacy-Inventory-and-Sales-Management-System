@@ -6,13 +6,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.regex.Pattern;
-
 @Service
 public class AccountPasswordService {
-    private static final Pattern PASSWORD_COMPLEXITY_PATTERN =
-            Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$");
-
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -43,12 +38,6 @@ public class AccountPasswordService {
     public void validateNewPassword(String newPassword, String confirmPassword) {
         if (newPassword == null || newPassword.isBlank()) {
             throw new IllegalArgumentException("New password is required.");
-        }
-        if (newPassword.length() < 8) {
-            throw new IllegalArgumentException("New password must be at least 8 characters.");
-        }
-        if (!PASSWORD_COMPLEXITY_PATTERN.matcher(newPassword).matches()) {
-            throw new IllegalArgumentException("New password must contain uppercase, lowercase, and number.");
         }
         if (confirmPassword == null || confirmPassword.isBlank()) {
             throw new IllegalArgumentException("Password confirmation is required.");

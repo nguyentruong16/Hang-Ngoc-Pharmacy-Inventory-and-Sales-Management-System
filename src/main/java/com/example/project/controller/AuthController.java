@@ -15,7 +15,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Controller
 public class AuthController {
-    private static final String RESET_RESPONSE_MESSAGE = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi.";
+    private static final String RESET_RESPONSE_MESSAGE = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu sẽ được gửi vào email đó.";
 
     private final AccountPasswordService accountPasswordService;
     private final PasswordResetService passwordResetService;
@@ -101,9 +101,6 @@ public class AuthController {
             case "Current password is required." -> "Vui lòng nhập mật khẩu hiện tại.";
             case "Current password is incorrect." -> "Mật khẩu hiện tại không chính xác.";
             case "New password is required." -> "Vui lòng nhập mật khẩu mới.";
-            case "New password must be at least 8 characters.",
-                 "New password must contain uppercase, lowercase, and number." ->
-                    "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.";
             case "Password confirmation is required." -> "Vui lòng xác nhận mật khẩu mới.";
             case "Password confirmation does not match." -> "Mật khẩu xác nhận không trùng khớp.";
             case "Password reset link is invalid or expired." -> "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";

@@ -33,8 +33,8 @@ import java.util.HexFormat;
 public class PasswordResetService {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
-    private static final String RESET_EMAIL_SUBJECT = "[PharmaManager] Đặt lại mật khẩu tài khoản";
-    private static final String RESET_EMAIL_SENDER_NAME = "PharmaManager - Hệ thống quản lý nhà thuốc";
+    private static final String RESET_EMAIL_SUBJECT = "[Hang Ngoc PISMS] Đặt lại mật khẩu tài khoản";
+    private static final String RESET_EMAIL_SENDER_NAME = "Hang Ngoc PISMS - Nhà thuốc Hằng Ngọc";
 
     private final AccountRepository accountRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
@@ -185,7 +185,7 @@ public class PasswordResetService {
         return """
                 Xin chào,
 
-                Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản nhân viên của bạn.
+                Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
 
                 Vui lòng sử dụng liên kết bên dưới để đặt lại mật khẩu:
                 %s
@@ -196,7 +196,7 @@ public class PasswordResetService {
 
                 Đây là email tự động, vui lòng không trả lời email này.
 
-                © 2026 PharmaManager - Hệ thống quản lý nhà thuốc
+                © 2026 Hang Ngoc PISMS - Nhà thuốc Hằng Ngọc
                 """.formatted(resetUrl);
     }
 
@@ -214,12 +214,12 @@ public class PasswordResetService {
                   <div style="width:100%%;background:#ecfdf5;padding:32px 12px;">
                     <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #d1fae5;border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(15,23,42,0.10);">
                       <div style="background:linear-gradient(135deg,#059669 0%%,#047857 100%%);padding:28px 32px;color:#ffffff;">
-                        <div style="font-size:24px;font-weight:800;line-height:1.2;">PharmaManager</div>
-                        <div style="font-size:14px;margin-top:6px;opacity:0.92;">Hệ thống quản lý nhà thuốc</div>
+                        <div style="font-size:24px;font-weight:800;line-height:1.2;">Hang Ngoc PISMS</div>
+                        <div style="font-size:14px;margin-top:6px;opacity:0.92;">Nhà thuốc Hằng Ngọc</div>
                       </div>
                       <div style="padding:32px;">
                         <p style="margin:0 0 18px;font-size:16px;line-height:1.6;">Xin chào,</p>
-                        <p style="margin:0 0 14px;font-size:15px;line-height:1.7;color:#374151;">Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản nhân viên của bạn.</p>
+                        <p style="margin:0 0 14px;font-size:15px;line-height:1.7;color:#374151;">Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
                         <p style="margin:0 0 26px;font-size:15px;line-height:1.7;color:#374151;">Vui lòng nhấn vào nút bên dưới để đặt lại mật khẩu.</p>
                         <div style="text-align:center;margin:30px 0;">
                           <a href="%s" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 26px;border-radius:12px;">Đặt lại mật khẩu</a>
@@ -231,7 +231,7 @@ public class PasswordResetService {
                         <p style="margin:0;font-size:12px;line-height:1.6;color:#6b7280;">Đây là email tự động, vui lòng không trả lời email này.</p>
                       </div>
                       <div style="padding:18px 32px;background:#f8fafc;border-top:1px solid #e5e7eb;text-align:center;color:#64748b;font-size:12px;">
-                        © 2026 PharmaManager - Hệ thống quản lý nhà thuốc
+                        © 2026 Hang Ngoc PISMS - Nhà thuốc Hằng Ngọc
                       </div>
                     </div>
                   </div>
