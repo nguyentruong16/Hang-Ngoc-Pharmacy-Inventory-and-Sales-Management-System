@@ -2,14 +2,15 @@ package com.example.project.controller;
 
 import com.example.project.dto.response.BranchResponse;
 import com.example.project.service.BranchService;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/branches")
+@Controller
+@RequestMapping("/owner")
 public class BranchController {
     private final BranchService branchService;
 
@@ -17,8 +18,15 @@ public class BranchController {
         this.branchService = branchService;
     }
 
-    @GetMapping
-    public List<BranchResponse> getAll() {
-        return branchService.getAll();
+    @GetMapping("/branch-list")
+    public String branchList(Model model) {
+        List<BranchResponse> branches = branchService.getAll();
+        long activeBranches = branchService.countActiveBranches(branches);
+
+        model.addAttribute("branches", branches);
+        model.addAttribute("totalBranches", branches.size());
+        model.addAttribute("activeBranches", activeBranches);
+        model.addAttribute("inactiveBranches", branches.size() - activeBranches);
+        return "branch-list";
     }
 }

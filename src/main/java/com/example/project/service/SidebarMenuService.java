@@ -101,7 +101,7 @@ public class SidebarMenuService {
                         i("Bảng phân quyền", "/owner/permissions", "ti ti-shield-lock")),
 
                 menuGroup("Chi nhánh", "ti ti-building-store",
-                        i("Danh sách chi nhánh", "/owner/branches", "ti ti-building-store"),
+                        i("Danh sách chi nhánh", "/owner/branch-list", "ti ti-building-store"),
                         i("Chọn chi nhánh", "/owner/branches/select", "ti ti-switch-horizontal")),
 
                 linkGroup("Phê duyệt", "ti ti-clipboard-check",

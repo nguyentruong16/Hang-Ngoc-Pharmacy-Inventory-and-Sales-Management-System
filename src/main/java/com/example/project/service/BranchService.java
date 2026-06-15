@@ -9,6 +9,8 @@ import java.util.List;
 
 @Service
 public class BranchService {
+    private static final String ACTIVE_STATUS_NAME = "Đang hoạt động";
+
     private final BranchRepository branchRepository;
 
     public BranchService(BranchRepository branchRepository) {
@@ -23,13 +25,9 @@ public class BranchService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public long countActiveBranches() {
-        return getAll().stream().filter(BranchResponse::isActive).count();
-    }
-
-    @Transactional(readOnly = true)
-    public long countInactiveBranches() {
-        return getAll().stream().filter(branch -> !branch.isActive()).count();
+    public long countActiveBranches(List<BranchResponse> branches) {
+        return branches.stream()
+                .filter(branch -> ACTIVE_STATUS_NAME.equals(branch.getStatusName()))
+                .count();
     }
 }

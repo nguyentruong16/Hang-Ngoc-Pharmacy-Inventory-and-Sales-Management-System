@@ -481,13 +481,13 @@
         <a href="#">Bảng phân quyền</a>
       </li>
       <li>
-        <a class="nav-link active" href="/branch-list" th:href="@{/branch-list}" data-nav="branch-list" aria-current="page">
+        <a class="nav-link active" href="/owner/branch-list" th:href="@{/owner/branch-list}" data-nav="branch-list" aria-current="page">
           <i class="ti ti-building-store"></i>
           <span class="nav-text">Chi nhánh</span>
         </a>
       </li>
       <li class="branch-subnav">
-        <a class="active" href="/branch-list" th:href="@{/branch-list}">Danh sách chi nhánh</a>
+        <a class="active" href="/owner/branch-list" th:href="@{/owner/branch-list}">Danh sách chi nhánh</a>
       </li>
       <li>
         <a class="nav-link" href="#">
@@ -588,13 +588,13 @@
             </thead>
             <tbody id="branchTableBody">
               <tr th:each="branch : ${branches}"
-                  th:attr="data-name=${branch.name},data-address=${branch.address},data-status=${branch.active ? 'active' : 'inactive'}">
+                  th:attr="data-name=${branch.name},data-address=${branch.address},data-status=${branch.statusName == 'Đang hoạt động' ? 'active' : 'inactive'}">
                 <td class="branch-code" th:text="${branch.id}"></td>
                 <td th:text="${branch.name}"></td>
-                <td class="branch-address" th:text="${branch.address != null && !#strings.isEmpty(branch.address) ? branch.address : 'Chưa cập nhật'}"></td>
+                <td class="branch-address" th:text="${branch.address}"></td>
                 <td class="branch-col-status">
                   <span class="branch-status"
-                        th:classappend="${branch.active ? 'branch-status--active' : 'branch-status--review'}"
+                        th:classappend="${branch.statusName == 'Đang hoạt động' ? 'branch-status--active' : 'branch-status--review'}"
                         th:text="${branch.statusName}"></span>
                 </td>
                 <td class="branch-col-action"><a class="branch-view-link" href="#">Xem</a></td>
