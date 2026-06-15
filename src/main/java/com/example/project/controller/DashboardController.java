@@ -39,19 +39,9 @@ public class DashboardController {
 
     // --- Legacy scaffold sample pages (kept reachable; not part of the role navigation) ---
 
-    @GetMapping("/inventory")
-    public String inventory() {
-        return "inventory";
-    }
-
     @GetMapping("/create-product")
     public String createProduct() {
         return "create-product";
-    }
-
-    @GetMapping("/reports")
-    public String reports() {
-        return "reports";
     }
 
     @GetMapping("/404-error")
