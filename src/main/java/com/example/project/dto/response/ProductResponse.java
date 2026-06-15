@@ -15,7 +15,7 @@ public class ProductResponse {
     private String productID;
     private String name;
     private String code;
-    private String internalBarcode;
+    private String barcode;
     private Integer typeId;
     private Integer positionId;
     private Integer maxStock;
@@ -25,7 +25,6 @@ public class ProductResponse {
     private String registrationNumber;
     private Integer baseUnitId;
     private Boolean isPrescription;
-    private BigDecimal defaultVatRate;
     private Boolean status;
     private String image;
     private String note;
@@ -35,7 +34,7 @@ public class ProductResponse {
                 product.getProductID(),
                 product.getName(),
                 product.getCode(),
-                product.getInternalBarcode(),
+                product.getBarcode(),
                 product.getTypeID() != null ? product.getTypeID().getId() : null,
                 product.getPositionID() != null ? product.getPositionID().getId() : null,
                 product.getMaxStock(),
@@ -45,7 +44,6 @@ public class ProductResponse {
                 product.getRegistrationNumber(),
                 product.getBaseUnitID() != null ? product.getBaseUnitID().getId() : null,
                 product.getIsPrescription(),
-                product.getDefaultVatRate(),
                 product.getStatus(),
                 product.getImage(),
                 product.getNote()

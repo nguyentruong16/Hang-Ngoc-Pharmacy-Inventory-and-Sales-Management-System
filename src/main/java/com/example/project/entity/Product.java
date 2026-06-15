@@ -30,8 +30,8 @@ public class Product {
     private String code;
 
     @Size(max = 50)
-    @Column(name = "internalBarcode", length = 50)
-    private String internalBarcode;
+    @Column(name = "barcode", length = 50)
+    private String barcode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "typeID")
@@ -68,10 +68,6 @@ public class Product {
     @ColumnDefault("0")
     @Column(name = "isPrescription")
     private Boolean isPrescription;
-
-    @ColumnDefault("0.00")
-    @Column(name = "defaultVatRate", precision = 5, scale = 2)
-    private BigDecimal defaultVatRate;
 
     @ColumnDefault("1")
     @Column(name = "status")

@@ -17,9 +17,19 @@ public class BranchService {
 
     @Transactional(readOnly = true)
     public List<BranchResponse> getAll() {
-        return branchRepository.findAll()
+        return branchRepository.findAllWithStatus()
                 .stream()
                 .map(BranchResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long countActiveBranches() {
+        return getAll().stream().filter(BranchResponse::isActive).count();
+    }
+
+    @Transactional(readOnly = true)
+    public long countInactiveBranches() {
+        return getAll().stream().filter(branch -> !branch.isActive()).count();
     }
 }
