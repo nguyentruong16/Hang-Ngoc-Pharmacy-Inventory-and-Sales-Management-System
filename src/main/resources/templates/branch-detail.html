@@ -25,12 +25,10 @@
       --branch-line: #e3e8ef;
       --branch-panel: #ffffff;
       --branch-bg: #f5f7f9;
-      --branch-sidebar: 255px;
-      --branch-topbar: 72px;
       --branch-font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
     }
 
-    body.branch-shell {
+    body {
       background: var(--branch-bg);
       color: var(--branch-ink);
       font-family: var(--branch-font);
@@ -43,112 +41,11 @@
       text-rendering: optimizeLegibility;
     }
 
-    .branch-shell button,
-    .branch-shell input,
-    .branch-shell select,
-    .branch-shell textarea {
+    body button,
+    body input,
+    body select,
+    body textarea {
       font-family: inherit;
-    }
-
-    .branch-shell .sidebar {
-      width: var(--branch-sidebar);
-      border-right: 1px solid var(--branch-line);
-      background: var(--branch-panel);
-    }
-
-    .branch-shell .sidebar.collapsed {
-      width: 80px;
-    }
-
-    .branch-shell .sidebar.collapsed .branch-logo {
-      width: 32px;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-
-    .branch-shell .sidebar.collapsed .nav-text,
-    .branch-shell .sidebar.collapsed .branch-subnav {
-      display: none;
-    }
-
-    .branch-shell .logo-area {
-      height: var(--branch-topbar);
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
-      border-bottom: 1px solid var(--branch-line);
-    }
-
-    .branch-logo {
-      color: var(--branch-ink);
-      font-size: 1.125rem;
-      font-weight: 700;
-      letter-spacing: -0.015em;
-      text-decoration: none;
-    }
-
-    .branch-logo span {
-      color: var(--branch-green);
-    }
-
-    .branch-shell .nav {
-      padding: 24px 0;
-      gap: 2px;
-    }
-
-    .branch-shell .nav-link {
-      color: #3c4658;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 42px;
-      padding: 10px 24px;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      letter-spacing: 0;
-      border-radius: 0;
-    }
-
-    .branch-shell .nav-link i {
-      width: 20px;
-      color: currentColor;
-      font-size: 1.2rem;
-    }
-
-    .branch-shell .nav-link.active,
-    .branch-shell .nav-link:hover {
-      color: var(--branch-green);
-      background: transparent;
-    }
-
-    .branch-subnav {
-      padding: 2px 0 12px 68px;
-      display: grid;
-      gap: 6px;
-    }
-
-    .branch-subnav a {
-      color: #747d8d;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      line-height: 1.75;
-      letter-spacing: 0;
-      text-decoration: none;
-    }
-
-    .branch-subnav a.active,
-    .branch-subnav a:hover {
-      color: var(--branch-green);
-    }
-
-    .branch-content {
-      margin-left: var(--branch-sidebar);
-      padding: 32px 32px 48px;
-      min-height: 100vh;
-    }
-
-    .branch-content.full {
-      margin-left: 80px;
     }
 
     .branch-container {
@@ -267,13 +164,6 @@
       background: var(--branch-orange-soft);
     }
 
-    @media (max-width: 991.98px) {
-      .branch-content {
-        margin-left: 0;
-        padding: 18px 18px 36px;
-      }
-    }
-
     @media (max-width: 575.98px) {
       .branch-panel {
         padding: 18px;
@@ -287,69 +177,13 @@
   </style>
 </head>
 
-<body class="branch-shell">
-  <div id="overlay" class="overlay"></div>
+<body>
+  <div th:replace="~{fragments/topbar :: topbar}"></div>
+  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="logo-area">
-      <a href="/" th:href="@{/}" class="branch-logo"><span>Pharma</span>Manager</a>
-    </div>
-
-    <ul class="nav flex-column">
-      <li>
-        <a class="nav-link" href="/" th:href="@{/}">
-          <i class="ti ti-chart-line"></i>
-          <span class="nav-text">Tổng quan</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" href="#" aria-current="false">
-          <i class="ti ti-users"></i>
-          <span class="nav-text">Nhân sự &amp; phân quyền</span>
-        </a>
-      </li>
-      <li class="branch-subnav">
-        <a href="#">Danh sách người dùng</a>
-        <a href="#">Bảng phân quyền</a>
-      </li>
-      <li>
-        <a class="nav-link active" href="/owner/branch-list" th:href="@{/owner/branch-list}" data-nav="branch-list" aria-current="page">
-          <i class="ti ti-building-store"></i>
-          <span class="nav-text">Chi nhánh</span>
-        </a>
-      </li>
-      <li class="branch-subnav">
-        <a class="active" href="/owner/branch-list" th:href="@{/owner/branch-list}">Danh sách chi nhánh</a>
-      </li>
-      <li>
-        <a class="nav-link" href="#">
-          <i class="ti ti-clipboard-check"></i>
-          <span class="nav-text">Phê duyệt</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" href="/inventory" th:href="@{/inventory}">
-          <i class="ti ti-package"></i>
-          <span class="nav-text">Kho nội bộ</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" href="#">
-          <i class="ti ti-bell"></i>
-          <span class="nav-text">Thông báo</span>
-        </a>
-      </li>
-      <li>
-        <a class="nav-link" href="/change-password" th:href="@{/change-password}">
-          <i class="ti ti-user-circle"></i>
-          <span class="nav-text">Hồ sơ cá nhân</span>
-        </a>
-      </li>
-    </ul>
-  </aside>
-
-  <main id="content" class="branch-content">
-    <div class="branch-container">
+  <main id="content" class="content py-10">
+    <div class="container-fluid">
+      <div class="branch-container">
       <a class="branch-back-link" href="/owner/branch-list" th:href="@{/owner/branch-list}">
         <i class="ti ti-arrow-left"></i>
         <span>Quay lại danh sách chi nhánh</span>
@@ -386,13 +220,9 @@
           </div>
         </dl>
       </section>
+      </div>
     </div>
   </main>
-
-  <script type="module">
-    document.querySelectorAll(".sidebar .nav-link").forEach((link) => link.classList.remove("active"));
-    document.querySelector('[data-nav="branch-list"]')?.classList.add("active");
-  </script>
 </body>
 
 </html>
