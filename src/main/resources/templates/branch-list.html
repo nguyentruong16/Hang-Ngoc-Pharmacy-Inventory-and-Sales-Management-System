@@ -55,21 +55,20 @@
 
     .branch-summary-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(220px, 1fr));
-      gap: 24px;
-      margin-bottom: 40px;
-      max-width: 1195px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
     }
 
     .branch-stat {
-      min-height: 158px;
-      padding: 26px 24px;
+      padding: 18px 20px;
       border: 1px solid var(--branch-line);
       border-radius: 15px;
       background: var(--branch-panel);
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      gap: 18px;
+      gap: 12px;
     }
 
     .branch-stat-label {
@@ -77,12 +76,12 @@
       font-size: 0.8125rem;
       font-weight: 500;
       letter-spacing: 0.015em;
-      margin-bottom: 28px;
+      margin: 0 0 6px;
     }
 
     .branch-stat-value {
       color: #202124;
-      font-size: 2rem;
+      font-size: 1.75rem;
       line-height: 1;
       font-weight: 700;
       letter-spacing: -0.02em;
@@ -91,13 +90,13 @@
     }
 
     .branch-stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.45rem;
+      font-size: 1.3rem;
       flex: 0 0 auto;
     }
 
@@ -322,7 +321,7 @@
     @media (max-width: 991.98px) {
       .branch-summary-grid {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 12px;
       }
 
       .branch-filter-grid {
@@ -341,7 +340,7 @@
       }
 
       .branch-stat {
-        min-height: 126px;
+        padding: 16px 18px;
       }
     }
   </style>
