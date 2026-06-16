@@ -75,7 +75,7 @@ public class ProfileService {
 
         account.setName(request.getName());
         account.setEmail(request.getEmail());
-        account.setPhoneNumber(request.getPhoneNumber());
+        account.setPhoneNumber(request.getPhoneNumber().trim());
 
         accountRepository.save(account);
     }
