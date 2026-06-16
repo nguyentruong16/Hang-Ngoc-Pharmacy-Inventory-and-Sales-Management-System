@@ -26,6 +26,10 @@ public final class RoleConstants {
     public static final List<String> ALL = List.of(
             OWNER, CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT, CASHIER);
 
+    public static final List<String> NON_OWNER_ROLES = List.of(
+            CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT, CASHIER
+    );
+
     /**
      * Safe fallback used only when an <em>invalid</em> role string is supplied to a lookup
      * (e.g. an unknown {@code ?role=} value on the Permission Table, or a menu/matrix lookup
@@ -81,6 +85,14 @@ public final class RoleConstants {
     public static Map<String, String> vietnameseLabels() {
         Map<String, String> labels = new LinkedHashMap<>();
         for (String role : ALL) {
+            labels.put(role, vietnameseName(role));
+        }
+        return labels;
+    }
+
+    public static Map<String, String> nonOwnerVietnameseLabels() {
+        Map<String, String> labels = new LinkedHashMap<>();
+        for (String role : NON_OWNER_ROLES) {
             labels.put(role, vietnameseName(role));
         }
         return labels;

@@ -33,8 +33,6 @@ public class PlaceholderController {
             "/owner/dashboard",
             "/owner/branches/select",
             "/owner/branches/create",
-            "/owner/users",
-            "/owner/users/create",
             "/owner/approvals",
             "/owner/internal-export",
             "/owner/notifications"
