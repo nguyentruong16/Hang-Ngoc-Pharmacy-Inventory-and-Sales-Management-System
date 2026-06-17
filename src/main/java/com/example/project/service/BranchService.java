@@ -48,12 +48,15 @@ public class BranchService {
     //tao chi nhanh
     @Transactional // tat ca thanh cong thi them ko thi rollback
     public BranchResponse create(BranchCreateRequest request) {
+
+        //tao doi tuong status
         Status status = statusRepository.findByName(request.getStatusName())
                 .orElseThrow(() -> new IllegalArgumentException("Trạng thái không hợp lệ"));
 
+        //them chi nhanh vao db
         Branch branch = new Branch();
         branch.setName(request.getName().trim());
-        branch.setAddress(request.getAddress() != null ? request.getAddress().trim() : null);
+        branch.setAddress(request.getAddress().trim());
         branch.setStatusID(status);
 
         return BranchResponse.from(branchRepository.save(branch));

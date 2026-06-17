@@ -58,10 +58,12 @@ public class BranchController {
         return "create-branch";
     }
 
+    //them chi nhanh
     @PostMapping("/branch-list/create-branch")
     public String createBranch(@Valid @ModelAttribute("branchForm") BranchCreateRequest form,
                                BindingResult bindingResult,
                                RedirectAttributes redirectAttributes) {
+        //check validate ben dto
         if (bindingResult.hasErrors()) {
             return "create-branch";
         }
