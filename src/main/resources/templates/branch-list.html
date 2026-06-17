@@ -383,7 +383,7 @@
         <div class="branch-panel-head">
           <h2 id="branch-table-title" class="branch-panel-title">Danh sách chi nhánh</h2>
           <div class="branch-actions">
-            <a class="branch-btn branch-btn-primary" href="#">
+            <a class="branch-btn branch-btn-primary" th:href="@{/owner/branch-list/create-branch}" href="#">
               <i class="ti ti-plus"></i>
               <span>Tạo chi nhánh</span>
             </a>
@@ -433,7 +433,7 @@
                         th:text="${branch.statusName}"></span>
                 </td>
                 <td class="branch-col-action">
-                  <a class="branch-view-link" th:href="@{/owner/branch-detail/{id}(id=${branch.id})}">Xem</a>
+                  <a class="branch-view-link" th:href="@{/owner/branch-list/branch-detail/{id}(id=${branch.id})}">Xem</a>
                 </td>
               </tr>
               <tr th:if="${#lists.isEmpty(branches)}">

@@ -74,7 +74,7 @@ public class SidebarMenuService {
         if (menu == null || uri == null) {
             return null;
         }
-        if (uri.startsWith("/owner/branch-detail")) {
+        if (uri.startsWith("/owner/branch-list/branch-detail")) {
             uri = "/owner/branch-list";
         }
         String best = null;
