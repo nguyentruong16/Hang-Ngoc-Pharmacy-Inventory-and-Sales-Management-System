@@ -97,7 +97,7 @@
               </div>
               <div class="p-3 d-flex flex-column gap-1 small lh-lg">
                 <a th:href="@{/profile}" href="#!"><i class="ti ti-user me-1"></i><span>Hồ sơ cá nhân</span></a>
-                <a th:href="@{/change-password}" href="#!"><i class="ti ti-key me-1"></i><span>Đổi mật khẩu</span></a>
+                <a th:href="@{/profile(section='password')}" href="#!"><i class="ti ti-key me-1"></i><span>Đổi mật khẩu</span></a>
               </div>
               <div class="border-top px-3 py-3">
                 <form th:action="@{/logout}" method="post" class="m-0">

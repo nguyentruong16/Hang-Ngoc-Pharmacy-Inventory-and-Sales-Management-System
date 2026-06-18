@@ -77,7 +77,7 @@ public class AuthController {
 
     @GetMapping("/change-password")
     public String changePassword() {
-        return "change-password";
+        return "redirect:/profile?section=password";
     }
 
     @PostMapping("/change-password")
@@ -86,13 +86,13 @@ public class AuthController {
             @RequestParam(name = "currentPassword", required = false) String currentPassword,
             @RequestParam(name = "newPassword", required = false) String newPassword,
             @RequestParam(name = "confirmPassword", required = false) String confirmPassword,
-            Model model) {
+            RedirectAttributes redirectAttributes) {
         try {
             accountPasswordService.changePassword(principal.getAccountId(), currentPassword, newPassword, confirmPassword);
-            return "redirect:/dashboard?passwordChanged";
+            return "redirect:/profile?passwordChanged";
         } catch (IllegalArgumentException exception) {
-            model.addAttribute("error", toVietnamesePasswordMessage(exception.getMessage()));
-            return "change-password";
+            redirectAttributes.addFlashAttribute("passwordError", toVietnamesePasswordMessage(exception.getMessage()));
+            return "redirect:/profile?section=password";
         }
     }
 
