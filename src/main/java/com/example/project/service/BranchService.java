@@ -61,4 +61,24 @@ public class BranchService {
 
         return BranchResponse.from(branchRepository.save(branch));
     }
+
+    //cap nhat chi nhanh
+    @Transactional
+    public BranchResponse update(Integer id, BranchCreateRequest request) {
+
+        //lay chi nhanh can cap nhat
+        Branch branch = branchRepository.findByIdWithStatus(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh"));
+
+        //lay trang thai moi
+        Status status = statusRepository.findByName(request.getStatusName())
+                .orElseThrow(() -> new IllegalArgumentException("Trạng thái không hợp lệ"));
+
+        //cap nhat thong tin chi nhanh
+        branch.setName(request.getName().trim());
+        branch.setAddress(request.getAddress().trim());
+        branch.setStatusID(status);
+
+        return BranchResponse.from(branchRepository.save(branch));
+    }
 }

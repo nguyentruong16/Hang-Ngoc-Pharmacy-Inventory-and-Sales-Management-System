@@ -46,9 +46,39 @@ public class BranchController {
     //xem chi tiet chi nhanh
     @GetMapping("/branch-list/branch-detail/{id}")
     public String branchDetail(@PathVariable Integer id, Model model) {
-        model.addAttribute("branch", branchService.getById(id));
+        BranchResponse branch = branchService.getById(id);
+        model.addAttribute("branch", branch);
+
+        //do du lieu chi nhanh vao form de chinh sua
+        if (!model.containsAttribute("branchForm")) {
+            BranchCreateRequest form = new BranchCreateRequest();
+            form.setName(branch.getName());
+            form.setAddress(branch.getAddress());
+            form.setStatusName(branch.getStatusName());
+            model.addAttribute("branchForm", form);
+        }
+
         model.addAttribute("pageTitle", "Chi tiết chi nhánh");
         return "branch-detail";
+    }
+
+    //cap nhat chi nhanh
+    @PostMapping("/branch-list/branch-detail/{id}")
+    public String updateBranch(@PathVariable Integer id,
+                               @Valid @ModelAttribute("branchForm") BranchCreateRequest form,
+                               BindingResult bindingResult,
+                               Model model,
+                               RedirectAttributes redirectAttributes) {
+        //check validate ben dto request
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("branch", branchService.getById(id));
+            model.addAttribute("pageTitle", "Chi tiết chi nhánh");
+            return "branch-detail";
+        }
+
+        branchService.update(id, form);
+        redirectAttributes.addFlashAttribute("success", "Cập nhật chi nhánh thành công");
+        return "redirect:/owner/branch-list/branch-detail/" + id;
     }
 
     //hien thi trang tao chi nhanh moi
@@ -67,7 +97,7 @@ public class BranchController {
                                BindingResult bindingResult,
                                Model model,
                                RedirectAttributes redirectAttributes) {
-        //check validate ben dto
+        //check validate ben dto request
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", "Tạo chi nhánh");
             return "create-branch";
