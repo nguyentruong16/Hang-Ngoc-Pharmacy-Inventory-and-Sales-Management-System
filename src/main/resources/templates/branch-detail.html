@@ -83,11 +83,18 @@
       margin-bottom: 8px;
     }
 
-    .profile-form-card .form-control {
+    .profile-form-card .form-control,
+    .profile-form-card .form-select {
       min-height: 40px;
       border-radius: 10px;
       border-color: var(--profile-border);
       font-size: 13px;
+    }
+
+    .profile-form-card .form-control:focus,
+    .profile-form-card .form-select:focus {
+      border-color: #8bd7bf;
+      box-shadow: 0 0 0 3px rgba(0, 154, 106, .12);
     }
 
     .profile-form-card .form-control:disabled,
@@ -95,6 +102,26 @@
       background: #f9fafb;
       color: #9ca3af;
       opacity: 1;
+    }
+
+    .btn-profile-primary {
+      background: var(--profile-green);
+      border: 1px solid var(--profile-green);
+      color: #ffffff;
+      border-radius: 10px;
+      min-height: 40px;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-profile-primary:hover {
+      background: var(--profile-green-dark);
+      border-color: var(--profile-green-dark);
+      color: #ffffff;
     }
 
     .btn-profile-outline {
@@ -197,52 +224,72 @@
             <div class="p-5">
               <h2 class="fs-5 mb-4">Thông tin chi nhánh</h2>
 
-              <div class="mb-3">
-                <label for="branchId" class="form-label">Mã chi nhánh</label>
-                <input id="branchId"
-                       type="text"
-                       class="form-control"
-                       th:value="${branch.id}"
-                       readonly>
-              </div>
+              <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
 
-              <div class="mb-3">
-                <label for="branchName" class="form-label">Tên chi nhánh</label>
-                <input id="branchName"
-                       type="text"
-                       class="form-control"
-                       th:value="${branch.name}"
-                       readonly>
-              </div>
+              <form th:action="@{/owner/branch-list/branch-detail/{id}(id=${branch.id})}"
+                    th:object="${branchForm}" method="post" novalidate>
 
-              <div class="mb-3">
-                <label for="branchAddress" class="form-label">Địa chỉ</label>
-                <input id="branchAddress"
-                       type="text"
-                       class="form-control"
-                       th:value="${branch.address != null ? branch.address : '—'}"
-                       readonly>
-              </div>
-
-              <div class="mb-4">
-                <label for="branchStatus" class="form-label">Trạng thái</label>
-                <input id="branchStatus"
-                       type="text"
-                       class="form-control"
-                       th:value="${branch.statusName != null ? branch.statusName : '—'}"
-                       readonly>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <a href="/owner/branch-list"
-                     th:href="@{/owner/branch-list}"
-                     class="btn btn-profile-outline w-100">
-                    <i class="ti ti-arrow-left"></i>
-                    Quay lại danh sách
-                  </a>
+                <div class="mb-3">
+                  <label for="branchId" class="form-label">Mã chi nhánh</label>
+                  <input id="branchId"
+                         type="text"
+                         class="form-control"
+                         th:value="${branch.id}"
+                         readonly>
                 </div>
-              </div>
+
+                <div class="mb-3">
+                  <label for="branchName" class="form-label">Tên chi nhánh <span class="text-danger">*</span></label>
+                  <input id="branchName"
+                         type="text"
+                         class="form-control"
+                         th:field="*{name}"
+                         th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
+                         placeholder="Nhập tên chi nhánh">
+                  <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="branchAddress" class="form-label">Địa chỉ</label>
+                  <input id="branchAddress"
+                         type="text"
+                         class="form-control"
+                         th:field="*{address}"
+                         th:classappend="${#fields.hasErrors('address')} ? ' is-invalid'"
+                         placeholder="Nhập địa chỉ chi nhánh">
+                  <div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+                </div>
+
+                <div class="mb-4">
+                  <label for="branchStatus" class="form-label">Trạng thái <span class="text-danger">*</span></label>
+                  <select id="branchStatus"
+                          class="form-select"
+                          th:field="*{statusName}"
+                          th:classappend="${#fields.hasErrors('statusName')} ? ' is-invalid'">
+                    <option value="">-- Chọn trạng thái --</option>
+                    <option value="Đang hoạt động">Đang hoạt động</option>
+                    <option value="Ngừng hoạt động">Ngừng hoạt động</option>
+                  </select>
+                  <div class="invalid-feedback" th:if="${#fields.hasErrors('statusName')}" th:errors="*{statusName}"></div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <button type="submit" class="btn btn-profile-primary w-100">
+                      <i class="ti ti-device-floppy"></i>
+                      Cập nhật chi nhánh
+                    </button>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <a href="/owner/branch-list"
+                       th:href="@{/owner/branch-list}"
+                       class="btn btn-profile-outline w-100">
+                      <i class="ti ti-arrow-left"></i>
+                      Quay lại danh sách
+                    </a>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>
