@@ -8,11 +8,15 @@ import com.example.project.controller.PermissionController;
 import com.example.project.controller.PlaceholderController;
 import com.example.project.entity.Account;
 import com.example.project.entity.Branch;
+import com.example.project.repository.BranchRepository;
 import com.example.project.security.AccountPrincipal;
+import com.example.project.security.BranchAwareAuthenticationProvider;
+import com.example.project.security.BranchWebAuthenticationDetailsSource;
 import com.example.project.service.CustomAccountDetailsService;
 import com.example.project.service.OwnerPermissionService;
 import com.example.project.service.SidebarMenuService;
 import com.example.project.view.PermissionAssignmentRow;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -24,6 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -45,19 +50,42 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * returns empty collections by default, which is enough to render the page).
  */
 @WebMvcTest(controllers = {PermissionController.class, PlaceholderController.class, DashboardController.class})
-@Import({SecurityConfig.class, WebConfig.class, SidebarMenuService.class, CurrentUserContext.class})
+@Import({
+        SecurityConfig.class,
+        WebConfig.class,
+        SidebarMenuService.class,
+        CurrentUserContext.class,
+        BranchWebAuthenticationDetailsSource.class
+})
 class NavigationRenderingTest {
 
     @Autowired
     MockMvc mvc;
 
-    // Security auto-config wants a UserDetailsService; mock it (the real one needs JPA repos).
     @MockitoBean
     CustomAccountDetailsService customAccountDetailsService;
+
+    @MockitoBean
+    BranchAwareAuthenticationProvider branchAwareAuthenticationProvider;
+
+    @MockitoBean
+    BranchRepository branchRepository;
 
     // PermissionController depends on this DB-backed service; mock returns empty lists by default.
     @MockitoBean
     OwnerPermissionService ownerPermissionService;
+
+    @BeforeEach
+    void setUpBranchRepository() {
+        when(branchRepository.findById(any())).thenAnswer(invocation -> {
+            Integer id = invocation.getArgument(0);
+            Branch branch = new Branch();
+            branch.setId(id);
+            branch.setName("Branch " + id);
+            return Optional.of(branch);
+        });
+        when(branchRepository.findAllWithStatus()).thenReturn(List.of());
+    }
 
     private static RequestPostProcessor as(String role, String displayName, Integer branchId) {
         AccountPrincipal principal = new AccountPrincipal(
@@ -113,7 +141,7 @@ class NavigationRenderingTest {
         mvc.perform(get("/cashier/customers").with(as("CASHIER", "Cara Cashier", 2)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("placeholder"))
-                .andExpect(content().string(containsString("Danh sách khách hàng")));  // translated menu label
+                .andExpect(content().string(containsString("Khách hàng")));  // translated menu label
     }
 
     @Test

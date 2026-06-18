@@ -1,6 +1,8 @@
 package com.example.project.config;
 
 import com.example.project.constant.RoleConstants;
+import com.example.project.security.BranchAwareAuthenticationProvider;
+import com.example.project.security.BranchWebAuthenticationDetailsSource;
 import com.example.project.security.RoleBasedAuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,8 +27,11 @@ public class SecurityConfig {
             HttpSecurity http,
             SessionRegistry sessionRegistry,
             AuthenticationSuccessHandler authenticationSuccessHandler,
-            AuthenticationFailureHandler authenticationFailureHandler) throws Exception {
+            AuthenticationFailureHandler authenticationFailureHandler,
+            BranchAwareAuthenticationProvider branchAwareAuthenticationProvider,
+            BranchWebAuthenticationDetailsSource branchWebAuthenticationDetailsSource) throws Exception {
         http
+                .authenticationProvider(branchAwareAuthenticationProvider)
                 .authorizeHttpRequests(authorize -> authorize
                         // Public (no login required)
                         .requestMatchers(
@@ -56,6 +61,7 @@ public class SecurityConfig {
                         .loginProcessingUrl("/signin")
                         .usernameParameter("loginId")
                         .passwordParameter("password")
+                        .authenticationDetailsSource(branchWebAuthenticationDetailsSource)
                         // Land on the user's own role dashboard, not a single shared page.
                         .successHandler(authenticationSuccessHandler)
                         .failureHandler(authenticationFailureHandler)
