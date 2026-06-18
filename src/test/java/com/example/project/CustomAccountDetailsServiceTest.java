@@ -5,6 +5,7 @@ import com.example.project.entity.Accountpermission;
 import com.example.project.entity.Branch;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.AccountpermissionRepository;
+import com.example.project.repository.BranchRepository;
 import com.example.project.security.AccountPrincipal;
 import com.example.project.service.CustomAccountDetailsService;
 import org.junit.jupiter.api.Test;
@@ -36,45 +37,49 @@ class CustomAccountDetailsServiceTest {
     AccountRepository accountRepository;
     @Mock
     AccountpermissionRepository accountpermissionRepository;
+    @Mock
+    BranchRepository branchRepository;
     @InjectMocks
     CustomAccountDetailsService service;
 
     @Test
-    void primaryRoleIsLowestIdRowAndAllRolesBecomeAuthorities() {
+    void selectedBranchRoleIsTheOnlyGrantedAuthority() {
+        when(branchRepository.findById(2)).thenReturn(Optional.of(branch(2)));
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(activeAccount()));
-        when(accountpermissionRepository.findByAccountId(1))
-                .thenReturn(List.of(perm(5, "CASHIER", 2), perm(2, "OWNER", 1)));
+        when(accountpermissionRepository.findByAccountIdAndBranchId(1, 2))
+                .thenReturn(List.of(perm(5, "CASHIER", 2)));
 
-        AccountPrincipal principal = (AccountPrincipal) service.loadUserByUsername("u");
+        AccountPrincipal principal = service.loadUserByUsernameAndBranch("u", 2);
 
-        assertEquals("OWNER", principal.getPrimaryRole());      // lowest accountPermissionID wins
-        assertEquals(Integer.valueOf(1), principal.getBranchId());
+        assertEquals("CASHIER", principal.getPrimaryRole());
+        assertEquals(Integer.valueOf(2), principal.getBranchId());
         Set<String> authorities = principal.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
-        assertEquals(Set.of("ROLE_OWNER", "ROLE_CASHIER"), authorities);
+        assertEquals(Set.of("ROLE_CASHIER"), authorities);
     }
 
     @Test
     void accountWithNoValidRoleCannotSignIn() {
+        when(branchRepository.findById(1)).thenReturn(Optional.of(branch(1)));
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(activeAccount()));
-        when(accountpermissionRepository.findByAccountId(1))
+        when(accountpermissionRepository.findByAccountIdAndBranchId(1, 1))
                 .thenReturn(List.of(perm(1, "SOMETHING_UNKNOWN", 1)));
 
-        // No OWNER default — an account with no recognised role is rejected.
-        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsername("u"));
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsernameAndBranch("u", 1));
     }
 
     @Test
     void inactiveAccountIsRejected() {
         Account inactive = activeAccount();
         inactive.setStatus(false);
+        when(branchRepository.findById(1)).thenReturn(Optional.of(branch(1)));
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(inactive));
 
-        assertThrows(DisabledException.class, () -> service.loadUserByUsername("u"));
+        assertThrows(DisabledException.class, () -> service.loadUserByUsernameAndBranch("u", 1));
     }
 
     private Account activeAccount() {
@@ -86,6 +91,13 @@ class CustomAccountDetailsServiceTest {
         account.setPassword("$2a$10$examplehashexamplehashexampleha");
         account.setStatus(true);
         return account;
+    }
+
+    private Branch branch(Integer id) {
+        Branch branch = new Branch();
+        branch.setId(id);
+        branch.setName("Branch " + id);
+        return branch;
     }
 
     private Accountpermission perm(int id, String role, Integer branchId) {
