@@ -36,7 +36,9 @@ import java.util.Set;
  */
 public class SidebarInterceptor implements HandlerInterceptor {
 
-    /** Standalone (no sidebar/topbar) views: auth screens and full-page error/notice pages. */
+    /**
+     * Standalone (no sidebar/topbar) views: auth screens and full-page error/notice pages.
+     */
     private static final Set<String> NO_CHROME_VIEWS = Set.of(
             "signin", "signup", "forgot-password", "reset-password", "change-password", "404-error", "403");
 
