@@ -39,6 +39,7 @@ public class BranchController {
         model.addAttribute("totalBranches", branches.size()); //so luong chi nhanh
         model.addAttribute("activeBranches", activeBranches); //so luong chi nhanh dang hoat dong
         model.addAttribute("inactiveBranches", branches.size() - activeBranches); //so luong chi nhanh ngung hoat dong
+        model.addAttribute("pageTitle", "Danh sách chi nhánh");
         return "branch-list";
     }
 
@@ -46,6 +47,7 @@ public class BranchController {
     @GetMapping("/branch-list/branch-detail/{id}")
     public String branchDetail(@PathVariable Integer id, Model model) {
         model.addAttribute("branch", branchService.getById(id));
+        model.addAttribute("pageTitle", "Chi tiết chi nhánh");
         return "branch-detail";
     }
 
@@ -55,6 +57,7 @@ public class BranchController {
         if (!model.containsAttribute("branchForm")) {
             model.addAttribute("branchForm", new BranchCreateRequest());
         }
+        model.addAttribute("pageTitle", "Tạo chi nhánh");
         return "create-branch";
     }
 
@@ -62,9 +65,11 @@ public class BranchController {
     @PostMapping("/branch-list/create-branch")
     public String createBranch(@Valid @ModelAttribute("branchForm") BranchCreateRequest form,
                                BindingResult bindingResult,
+                               Model model,
                                RedirectAttributes redirectAttributes) {
         //check validate ben dto
         if (bindingResult.hasErrors()) {
+            model.addAttribute("pageTitle", "Tạo chi nhánh");
             return "create-branch";
         }
 

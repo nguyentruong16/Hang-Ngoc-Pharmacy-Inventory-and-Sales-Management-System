@@ -38,6 +38,7 @@ public class ProfileController {
 
         model.addAttribute("profile", profile);
         model.addAttribute("profileForm", form);
+        model.addAttribute("pageTitle", "Hồ sơ cá nhân");
 
         return "profile";
     }
@@ -52,6 +53,7 @@ public class ProfileController {
         if (bindingResult.hasErrors()) {
             ProfileViewResponse profile = profileService.getProfile(currentAccount.getId());
             model.addAttribute("profile", profile);
+            model.addAttribute("pageTitle", "Hồ sơ cá nhân");
             return "profile";
         }
 
