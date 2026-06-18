@@ -2,14 +2,19 @@ package com.example.project.config;
 
 import com.example.project.constant.RoleConstants;
 import com.example.project.context.CurrentUserContext;
+import com.example.project.entity.Branch;
+import com.example.project.repository.BranchRepository;
 import com.example.project.service.SidebarMenuService;
 import com.example.project.view.SidebarMenuGroup;
+import com.example.project.view.SidebarMenuItem;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -37,14 +42,16 @@ public class SidebarInterceptor implements HandlerInterceptor {
 
     private final SidebarMenuService sidebarMenuService;
     private final CurrentUserContext currentUserContext;
+    private final BranchRepository branchRepository;
 
     public SidebarInterceptor(SidebarMenuService sidebarMenuService,
-                              CurrentUserContext currentUserContext) {
+                              CurrentUserContext currentUserContext,
+                              BranchRepository branchRepository) {
         this.sidebarMenuService = sidebarMenuService;
         this.currentUserContext = currentUserContext;
+        this.branchRepository = branchRepository;
     }
 
-    @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response,
                            Object handler, ModelAndView modelAndView) {
         // No ModelAndView => REST/@ResponseBody or already-committed response: nothing to render.
@@ -67,13 +74,79 @@ public class SidebarInterceptor implements HandlerInterceptor {
 
         List<SidebarMenuGroup> menu = sidebarMenuService.getMenu(role);
         String uri = request.getRequestURI();
+        String activeUrl = sidebarMenuService.resolveActiveUrl(menu, uri);
+        Integer currentBranchId = currentUserContext.getCurrentBranchId();
+        String currentAccountName = currentUserContext.getCurrentAccountName();
 
         modelAndView.addObject("currentRole", role);
         modelAndView.addObject("currentRoleDisplay", RoleConstants.vietnameseName(role));
-        modelAndView.addObject("currentAccountName", currentUserContext.getCurrentAccountName());
-        modelAndView.addObject("currentBranchId", currentUserContext.getCurrentBranchId());
+        modelAndView.addObject("currentAccountName", currentAccountName);
+        modelAndView.addObject("currentUserInitials", buildInitials(currentAccountName));
+        modelAndView.addObject("currentBranchId", currentBranchId);
+        modelAndView.addObject("currentBranchName", resolveBranchName(currentBranchId));
+        modelAndView.addObject("topbarBranches", branchRepository.findAllWithStatus());
+        modelAndView.addObject("currentNotificationsUrl", notificationsUrl(role));
         modelAndView.addObject("sidebarMenu", menu);
-        modelAndView.addObject("activeUrl", sidebarMenuService.resolveActiveUrl(menu, uri));
+        modelAndView.addObject("activeUrl", activeUrl);
+        modelAndView.addObject("currentPageTitle", resolvePageTitle(menu, activeUrl));
         modelAndView.addObject("currentRequestUri", uri);
+    }
+
+    private String resolveBranchName(Integer branchId) {
+        if (branchId == null) {
+            return null;
+        }
+        return branchRepository.findById(branchId)
+                .map(Branch::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .orElse(null);
+    }
+
+    private String resolvePageTitle(List<SidebarMenuGroup> menu, String activeUrl) {
+        if (menu == null || activeUrl == null) {
+            return null;
+        }
+        for (SidebarMenuGroup group : menu) {
+            for (SidebarMenuItem item : group.getItems()) {
+                if (activeUrl.equals(item.getUrl())) {
+                    return item.getLabel();
+                }
+            }
+        }
+        return null;
+    }
+
+    private String notificationsUrl(String role) {
+        if (RoleConstants.OWNER.equals(role)) {
+            return "/owner/notifications";
+        }
+        if (RoleConstants.CHIEF_PHARMACIST.equals(role)) {
+            return "/chief-pharmacist/notifications";
+        }
+        if (RoleConstants.PHARMACIST.equals(role)) {
+            return "/pharmacist/notifications";
+        }
+        if (RoleConstants.ACCOUNTANT.equals(role)) {
+            return "/accountant/notifications";
+        }
+        if (RoleConstants.CASHIER.equals(role)) {
+            return "/cashier/notifications";
+        }
+        return "#";
+    }
+
+    private String buildInitials(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return "U";
+        }
+        String[] words = Arrays.stream(fullName.trim().split("\\s+"))
+                .filter(word -> !word.isBlank())
+                .toArray(String[]::new);
+        if (words.length == 0) {
+            return "U";
+        }
+        String first = words[0].substring(0, 1);
+        String second = words.length > 1 ? words[words.length - 1].substring(0, 1) : "";
+        return (first + second).toUpperCase(Locale.ROOT);
     }
 }

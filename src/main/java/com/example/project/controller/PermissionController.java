@@ -41,6 +41,7 @@ public class PermissionController {
         model.addAttribute("search", search);
         model.addAttribute("filterBranchId", branchId);
         model.addAttribute("filterRole", role);
+        model.addAttribute("pageTitle", "Bảng phân quyền");
         return "owner/permissions";
     }
 

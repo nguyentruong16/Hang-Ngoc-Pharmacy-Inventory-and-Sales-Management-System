@@ -181,68 +181,8 @@
 </head>
 
 <body>
-<div id="overlay" class="overlay"></div>
-
 <!-- TOPBAR -->
-<nav id="topbar" class="navbar bg-white border-bottom fixed-top topbar px-3">
-    <button id="toggleBtn" class="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm">
-        <i class="ti ti-layout-sidebar-left-expand"></i>
-    </button>
-
-    <button id="mobileBtn" class="btn btn-light btn-icon btn-sm d-lg-none me-2">
-        <i class="ti ti-layout-sidebar-left-expand"></i>
-    </button>
-
-    <div class="ms-auto d-flex align-items-center gap-3">
-        <select class="form-select form-select-sm profile-branch-select" disabled>
-            <option th:text="${profile.branchName != null ? profile.branchName : 'Hang Ngoc Pharmacy'}">
-                Hang Ngoc Pharmacy - Nhánh 1
-            </option>
-        </select>
-
-        <a class="position-relative btn-icon btn-sm btn-light btn rounded-circle"
-           data-bs-toggle="dropdown" aria-expanded="false" href="#" role="button">
-            <i class="ti ti-bell fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-2 ms-n2">
-        2
-        <span class="visually-hidden">unread notifications</span>
-      </span>
-        </a>
-
-        <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-0">
-            <ul class="list-unstyled p-0 m-0">
-                <li class="p-3 border-bottom">
-                    <div class="small">
-                        <p class="mb-1 fw-semibold">Cảnh báo tồn kho</p>
-                        <p class="mb-0 text-secondary">Một số sản phẩm đã dưới mức tồn kho tối thiểu.</p>
-                    </div>
-                </li>
-                <li class="p-3 border-bottom">
-                    <div class="small">
-                        <p class="mb-1 fw-semibold">Cảnh báo hạn sử dụng</p>
-                        <p class="mb-0 text-secondary">Có lô hàng sắp hết hạn cần kiểm tra.</p>
-                    </div>
-                </li>
-                <li class="px-4 py-3 text-center">
-                    <a href="#" class="text-primary">Xem tất cả thông báo</a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="vr d-none d-md-block"></div>
-
-        <div class="profile-top-identity">
-            <div class="profile-top-avatar"
-                 th:text="${profile.name != null and !#strings.isEmpty(profile.name) ? #strings.substring(profile.name, 0, 1) : 'U'}">
-                U
-            </div>
-            <div class="d-none d-md-block">
-                <div class="small fw-semibold mb-0" th:text="${profile.name}">Nguyễn Thị Lan</div>
-                <div class="small text-secondary" th:text="${profile.role}">Kế toán</div>
-            </div>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 <!-- SIDEBAR -->
 <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>

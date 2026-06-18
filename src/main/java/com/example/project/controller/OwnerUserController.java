@@ -59,6 +59,7 @@ public class OwnerUserController {
         model.addAttribute("totalPages", userPage.getTotalPages());
         model.addAttribute("pageSize", size);
         model.addAttribute("totalItems", userPage.getTotalElements());
+        model.addAttribute("pageTitle", "Danh sách người dùng");
 
         return "owner/users";
     }
@@ -70,6 +71,7 @@ public class OwnerUserController {
         }
 
         addCreatePageData(model);
+        model.addAttribute("pageTitle", "Tạo người dùng");
         return "owner/user-create";
     }
 
@@ -80,6 +82,7 @@ public class OwnerUserController {
                              RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             addCreatePageData(model);
+            model.addAttribute("pageTitle", "Tạo người dùng");
             return "owner/user-create";
         }
 
@@ -90,6 +93,7 @@ public class OwnerUserController {
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
             addCreatePageData(model);
+            model.addAttribute("pageTitle", "Tạo người dùng");
             return "owner/user-create";
         }
     }
