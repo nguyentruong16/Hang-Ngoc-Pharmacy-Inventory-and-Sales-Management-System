@@ -61,12 +61,11 @@ public class PermissionController {
 
     @PostMapping("/{id}/update")
     public String update(@PathVariable("id") Integer id,
-                         @RequestParam(name = "accountId", required = false) Integer accountId,
                          @RequestParam(name = "branchId", required = false) Integer branchId,
                          @RequestParam(name = "role", required = false) String role,
                          RedirectAttributes redirectAttributes) {
         try {
-            ownerPermissionService.update(id, accountId, branchId, role);
+            ownerPermissionService.update(id, branchId, role);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật phân quyền thành công");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
