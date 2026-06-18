@@ -104,6 +104,19 @@
       box-shadow: 0 0 0 3px rgba(5, 150, 105, .12);
     }
 
+    .permission-readonly-field {
+      min-height: 40px;
+      border: 1px solid var(--pm-border);
+      border-radius: 10px;
+      background: #f9fafb;
+      color: var(--pm-text);
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
     .btn-pm-primary {
       background: var(--pm-green);
       border-color: var(--pm-green);
@@ -342,7 +355,12 @@
                       <td class="text-end text-nowrap">
                         <button type="button" class="btn btn-sm btn-pm-light"
                                 data-bs-toggle="modal" data-bs-target="#editModal"
-                                th:attr="data-id=${row.id},data-account=${row.accountId},data-branch=${row.branchId},data-role=${row.role}">
+                                th:attr="data-id=${row.id},
+                                data-account-name=${row.accountName},
+                                data-username=${row.username},
+                                data-email=${row.email},
+                                data-branch=${row.branchId},
+                                data-role=${row.role}">
                           <i class="ti ti-edit"></i> Sửa
                         </button>
                         <form method="post" th:action="@{'/owner/permissions/' + ${row.id} + '/delete'}"
@@ -382,13 +400,8 @@
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label for="editAccountId" class="form-label">Tài khoản</label>
-              <select id="editAccountId" name="accountId" class="form-select" required>
-                <option th:each="account : ${accounts}" th:value="${account.id}"
-                        th:text="${account.name + ' (' + (account.username != null ? account.username : account.email) + ')'}">
-                  Tài khoản
-                </option>
-              </select>
+              <label for="editAccountDisplay" class="form-label">Tài khoản</label>
+              <div id="editAccountDisplay" class="permission-readonly-field">Tài khoản</div>
             </div>
             <div class="mb-3">
               <label for="editBranchId" class="form-label">Chi nhánh</label>
@@ -416,14 +429,35 @@
     (function () {
       var editModal = document.getElementById('editModal');
       if (!editModal) return;
+
       editModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
         if (!button) return;
+
         document.getElementById('editForm').setAttribute(
-          'action', '/owner/permissions/' + button.getAttribute('data-id') + '/update');
-        document.getElementById('editAccountId').value = button.getAttribute('data-account');
-        document.getElementById('editBranchId').value = button.getAttribute('data-branch');
-        document.getElementById('editRole').value = button.getAttribute('data-role');
+                'action', '/owner/permissions/' + button.getAttribute('data-id') + '/update'
+        );
+
+        var accountName = button.getAttribute('data-account-name') || '';
+        var username = button.getAttribute('data-username') || '';
+        var email = button.getAttribute('data-email') || '';
+
+        var accountDisplay = accountName;
+
+        if (username) {
+          accountDisplay += ' (' + username + ')';
+        } else if (email) {
+          accountDisplay += ' (' + email + ')';
+        }
+
+        document.getElementById('editAccountDisplay').textContent =
+                accountDisplay || 'Tài khoản';
+
+        document.getElementById('editBranchId').value =
+                button.getAttribute('data-branch');
+
+        document.getElementById('editRole').value =
+                button.getAttribute('data-role');
       });
     })();
   </script>

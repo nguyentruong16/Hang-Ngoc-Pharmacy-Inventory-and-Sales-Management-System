@@ -93,14 +93,23 @@ public class OwnerPermissionService {
     }
 
     @Transactional
-    public void update(Integer id, Integer accountId, Integer branchId, String role) {
-        validateInput(accountId, branchId, role);
+    public void update(Integer id, Integer branchId, String role) {
+        validateUpdateInput(branchId, role);
+
         Accountpermission permission = accountpermissionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(MSG_NOT_FOUND));
+
+        Account account = permission.getAccountID();
+        if (account == null || account.getId() == null) {
+            throw new IllegalArgumentException(MSG_ACCOUNT_NOT_FOUND);
+        }
+
+        Integer accountId = account.getId();
+
         if (accountpermissionRepository.existsAssignmentExcludingId(accountId, branchId, id)) {
             throw new IllegalArgumentException(MSG_DUPLICATE);
         }
-        permission.setAccountID(requireAccount(accountId));
+
         permission.setBranchID(requireBranch(branchId));
         permission.setRole(role);
         accountpermissionRepository.save(permission);
@@ -115,6 +124,12 @@ public class OwnerPermissionService {
     }
 
     // ------------------------------------------------------------------
+
+    private void validateUpdateInput(Integer branchId, String role) {
+        if (branchId == null || role == null || role.isBlank() || !RoleConstants.isValid(role)) {
+            throw new IllegalArgumentException(MSG_MISSING_FIELDS);
+        }
+    }
 
     private void validateInput(Integer accountId, Integer branchId, String role) {
         if (accountId == null || branchId == null || role == null || role.isBlank()
