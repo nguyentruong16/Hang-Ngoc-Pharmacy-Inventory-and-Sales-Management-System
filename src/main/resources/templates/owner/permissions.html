@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Phân quyền theo chi nhánh - Pharmacy Management System</title>
+    <title>Bảng phân quyền - Pharmacy Management System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png"
           th:href="@{/assets/images/apple-touch-icon.png}">
@@ -26,8 +26,6 @@
             --pm-border: #e5e7eb;
             --pm-muted: #6b7280;
             --pm-text: #111827;
-            --pm-danger: #dc2626;
-            --pm-danger-soft: #fee2e2;
         }
 
         body {
@@ -70,19 +68,6 @@
             background: #ffffff !important;
         }
 
-        .permission-section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--pm-text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .permission-section-title i {
-            color: var(--pm-green);
-        }
-
         .permission-card .form-label {
             font-size: 13px;
             font-weight: 500;
@@ -90,34 +75,16 @@
         }
 
         .permission-card .form-control,
-        .permission-card .form-select,
-        .modal-content .form-control,
-        .modal-content .form-select {
+        .permission-card .form-select {
             border-radius: 10px;
             border-color: var(--pm-border);
-            min-height: 40px;
             font-size: 13px;
         }
 
         .permission-card .form-control:focus,
-        .permission-card .form-select:focus,
-        .modal-content .form-control:focus,
-        .modal-content .form-select:focus {
+        .permission-card .form-select:focus {
             border-color: var(--pm-green);
             box-shadow: 0 0 0 3px rgba(5, 150, 105, .12);
-        }
-
-        .permission-readonly-field {
-            min-height: 40px;
-            border: 1px solid var(--pm-border);
-            border-radius: 10px;
-            background: #f9fafb;
-            color: var(--pm-text);
-            display: flex;
-            align-items: center;
-            padding: 8px 12px;
-            font-size: 13px;
-            font-weight: 500;
         }
 
         .btn-pm-primary {
@@ -151,41 +118,6 @@
             color: var(--pm-text);
         }
 
-        .btn-pm-danger {
-            background: #ffffff;
-            border: 1px solid var(--pm-danger-soft);
-            color: var(--pm-danger);
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .btn-pm-danger:hover {
-            background: var(--pm-danger-soft);
-            border-color: var(--pm-danger-soft);
-            color: var(--pm-danger);
-        }
-
-        .permission-table thead th {
-            background: #f9fafb;
-            color: var(--pm-muted);
-            font-size: 12px;
-            font-weight: 600;
-            border-bottom: 1px solid var(--pm-border);
-            padding: 12px 14px;
-        }
-
-        .permission-table tbody td {
-            font-size: 13px;
-            padding: 12px 14px;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--pm-border);
-        }
-
-        .permission-table tbody tr:hover {
-            background: #f9fafb;
-        }
-
         .role-badge {
             display: inline-flex;
             align-items: center;
@@ -203,15 +135,77 @@
             color: var(--pm-green-dark);
         }
 
-        .modal-content {
-            border: 1px solid var(--pm-border);
-            border-radius: 14px;
-            box-shadow: 0 20px 40px rgba(15, 23, 42, .12);
+        /* ---- Permission matrix ---- */
+        .permission-matrix-scroll {
+            max-height: calc(100vh - 280px);
+            overflow: auto;
         }
 
-        .modal-header,
-        .modal-footer {
-            border-color: var(--pm-border);
+        .permission-matrix {
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 0;
+            width: 100%;
+        }
+
+        .permission-matrix thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #f9fafb;
+            color: var(--pm-muted);
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--pm-border);
+            padding: 12px 14px;
+            white-space: nowrap;
+            min-width: 180px;
+        }
+
+        .permission-matrix tbody td {
+            font-size: 13px;
+            padding: 10px 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--pm-border);
+            min-width: 180px;
+        }
+
+        /* Sticky first column so the account stays visible while scrolling branches. */
+        .permission-matrix th.permission-col-account,
+        .permission-matrix td.permission-col-account {
+            position: sticky;
+            left: 0;
+            background: #ffffff;
+            min-width: 220px;
+            border-right: 1px solid var(--pm-border);
+        }
+
+        .permission-matrix td.permission-col-account {
+            z-index: 1;
+        }
+
+        .permission-matrix thead th.permission-col-account {
+            z-index: 3;
+            background: #f9fafb;
+        }
+
+        .permission-matrix tbody tr:hover td,
+        .permission-matrix tbody tr:hover td.permission-col-account {
+            background: #f9fafb;
+        }
+
+        .permission-cell-select {
+            width: 100%;
+        }
+
+        .permission-owner-row td,
+        .permission-owner-row td.permission-col-account {
+            background: #f7fffb;
+        }
+
+        .permission-owner-row:hover td,
+        .permission-owner-row:hover td.permission-col-account {
+            background: #eefbf5;
         }
 
         footer {
@@ -230,8 +224,9 @@
         <div class="row">
             <div class="col-12">
                 <div class="mb-4">
-                    <h1 class="permission-page-title mb-1">Phân quyền theo chi nhánh</h1>
-                    <p class="permission-page-subtitle mb-0">Quản lý vai trò của từng tài khoản tại từng chi nhánh.</p>
+                    <h1 class="permission-page-title mb-1">Bảng phân quyền</h1>
+                    <p class="permission-page-subtitle mb-0">Chọn vai trò của từng tài khoản tại từng chi nhánh. Thay đổi
+                        được lưu ngay khi bạn chọn.</p>
                 </div>
             </div>
         </div>
@@ -252,152 +247,95 @@
             </div>
         </div>
 
-        <!-- Add assignment -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card permission-card mb-3">
-                    <div class="card-header bg-transparent px-4 py-3">
-                        <h2 class="permission-section-title mb-0">
-                            <i class="ti ti-user-plus"></i>
-                            <span>Thêm phân quyền</span>
-                        </h2>
-                    </div>
-                    <div class="card-body p-4">
-                        <form method="post" th:action="@{/owner/permissions}" class="row g-3 align-items-end">
-                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}"
-                                   th:value="${_csrf.token}">
-                            <div class="col-12 col-md-4">
-                                <label for="addAccount" class="form-label">Tài khoản</label>
-                                <select id="addAccount" name="accountId" class="form-select" required>
-                                    <option value="" selected disabled>-- Chọn tài khoản --</option>
-                                    <option th:each="account : ${accounts}" th:value="${account.id}"
-                                            th:text="${account.name + ' (' + (account.username != null ? account.username : account.email) + ')'}">
-                                        Tài khoản
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-3">
-                                <label for="addBranch" class="form-label">Chi nhánh</label>
-                                <select id="addBranch" name="branchId" class="form-select" required>
-                                    <option value="" selected disabled>-- Chọn chi nhánh --</option>
-                                    <option th:each="branch : ${branches}" th:value="${branch.id}"
-                                            th:text="${branch.name}">Chi nhánh
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-3">
-                                <label for="addRole" class="form-label">Vai trò</label>
-                                <select id="addRole" name="role" class="form-select" required>
-                                    <option value="" selected disabled>-- Chọn vai trò --</option>
-                                    <option th:each="entry : ${assignableRoleLabels}" th:value="${entry.key}"
-                                            th:text="${entry.value}">Vai trò
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-2 d-grid">
-                                <button type="submit" class="btn btn-pm-primary"><i
-                                        class="ti ti-device-floppy me-1"></i>Lưu
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filters + table -->
+        <!-- Search + matrix -->
         <div class="row">
             <div class="col-12">
                 <div class="card permission-card">
                     <div class="card-header bg-transparent px-4 py-3">
                         <form method="get" th:action="@{/owner/permissions}" class="row g-2 align-items-end">
                             <div class="col-12 col-md-5">
-                                <label for="search" class="form-label small mb-1">Tìm kiếm</label>
+                                <label for="search" class="form-label small mb-1">Tìm kiếm tài khoản</label>
                                 <input id="search" name="search" type="text" class="form-control form-control-sm"
                                        th:value="${search}" placeholder="Tên, tên đăng nhập hoặc email">
                             </div>
-                            <div class="col-6 col-md-3">
-                                <label for="filterBranch" class="form-label small mb-1">Chi nhánh</label>
-                                <select id="filterBranch" name="branchId" class="form-select form-select-sm">
-                                    <option value="">Tất cả chi nhánh</option>
-                                    <option th:each="branch : ${branches}" th:value="${branch.id}"
-                                            th:text="${branch.name}"
-                                            th:selected="${filterBranchId != null and filterBranchId == branch.id}">Chi
-                                        nhánh
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <label for="filterRole" class="form-label small mb-1">Vai trò</label>
-                                <select id="filterRole" name="role" class="form-select form-select-sm">
+
+                            <div class="col-12 col-md-3">
+                                <label for="roleFilter" class="form-label small mb-1">Lọc theo vai trò</label>
+                                <select id="roleFilter" name="roleFilter" class="form-select form-select-sm">
                                     <option value="">Tất cả vai trò</option>
-                                    <option th:each="entry : ${roleLabels}" th:value="${entry.key}"
+                                    <option th:each="entry : ${roleLabels}"
+                                            th:value="${entry.key}"
                                             th:text="${entry.value}"
-                                            th:selected="${filterRole != null and filterRole == entry.key}">Vai trò
+                                            th:selected="${roleFilter != null and roleFilter == entry.key}">
+                                        Vai trò
                                     </option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-2 d-flex gap-2">
-                                <button type="submit" class="btn btn-sm btn-pm-primary flex-grow-1"><i
-                                        class="ti ti-search me-1"></i>Tìm kiếm
+
+                            <div class="col-12 col-md-3 d-flex gap-2">
+                                <button type="submit" class="btn btn-sm btn-pm-primary flex-grow-1">
+                                    <i class="ti ti-search me-1"></i>Lọc
                                 </button>
-                                <a th:href="@{/owner/permissions}" class="btn btn-sm btn-pm-light" title="Xóa bộ lọc"><i
-                                        class="ti ti-x"></i></a>
+                                <a th:href="@{/owner/permissions}" class="btn btn-sm btn-pm-light" title="Xóa bộ lọc">
+                                    <i class="ti ti-x"></i>
+                                </a>
                             </div>
                         </form>
                     </div>
 
                     <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 permission-table">
-                                <thead class="table-light">
+                        <div class="permission-matrix-scroll">
+                            <table class="table align-middle permission-matrix">
+                                <thead>
                                 <tr>
-                                    <th scope="col">Tài khoản</th>
-                                    <th scope="col">Tên đăng nhập</th>
-                                    <th scope="col">Email</th>
-                                    <th scope="col">Chi nhánh</th>
-                                    <th scope="col">Vai trò</th>
-                                    <th scope="col" class="text-end">Thao tác</th>
+                                    <th scope="col" class="permission-col-account">Tài khoản / Chi nhánh</th>
+                                    <th scope="col" th:each="branch : ${branches}" th:text="${branch.name}">Chi nhánh
+                                    </th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr th:if="${#lists.isEmpty(assignments)}">
-                                    <td colspan="6" class="text-center text-secondary py-4">Chưa có phân quyền nào.</td>
+                                <tr th:if="${#lists.isEmpty(matrixRows)}">
+                                    <td class="text-center text-secondary py-4"
+                                        th:attr="colspan=${branches != null ? branches.size() + 1 : 1}">
+                                        Không tìm thấy tài khoản nào.
+                                    </td>
                                 </tr>
-                                <tr th:each="row : ${assignments}">
-                                    <td class="fw-semibold" th:text="${row.accountName}">Nguyễn Văn A</td>
-                                    <td th:text="${row.username}">pharmacist01</td>
-                                    <td th:text="${row.email}">a@example.com</td>
-                                    <td th:text="${row.branchName}">Hằng Ngọc 1</td>
-                                    <td><span class="role-badge" th:text="${row.roleDisplay}">Vai trò</span></td>
-                                    <td class="text-end text-nowrap">
-                                        <button th:if="${row.role != 'OWNER'}"
-                                                type="button" class="btn btn-sm btn-light"
-                                                data-bs-toggle="modal" data-bs-target="#editModal"
-                                                th:attr="data-id=${row.id},
-                                                data-account=${row.accountId},
-                                                data-account-name=${row.accountName},
-                                                data-username=${row.username},
-                                                data-email=${row.email},
-                                                data-branch=${row.branchId},
-                                                data-role=${row.role}">
-                                            <i class="ti ti-edit"></i> Sửa
-                                        </button>
+                                <tr th:each="row : ${matrixRows}"
+                                    th:classappend="${row.ownerAccount} ? ' permission-owner-row' : ''">
+                                    <td class="permission-col-account">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="fw-semibold" th:text="${row.accountName}">ngoctn1</span>
+                                        </div>
+                                        <div class="small text-secondary" th:text="${row.usernameOrEmail}">
+                                            username/email
+                                        </div>
+                                    </td>
 
-                                        <form th:if="${row.role != 'OWNER'}"
-                                              method="post" th:action="@{'/owner/permissions/' + ${row.id} + '/delete'}"
-                                              class="d-inline"
-                                              onsubmit="return confirm('Bạn có chắc muốn xóa phân quyền này?');">
+                                    <td th:each="branch : ${branches}" th:with="cell=${row.getCell(branch.id)}">
+                                        <!-- Owner is read-only: show a badge, no dropdown. -->
+                                        <span th:if="${cell.ownerLocked}" class="role-badge">Chủ sở hữu</span>
+
+                                        <!-- Otherwise an inline role dropdown that auto-submits on change. -->
+                                        <form th:unless="${cell.ownerLocked}" method="post"
+                                              th:action="@{/owner/permissions/cell}" class="mb-0">
                                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}"
                                                    th:value="${_csrf.token}">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="ti ti-trash"></i> Xóa
-                                            </button>
+                                            <input type="hidden" name="accountId" th:value="${row.accountId}">
+                                            <input type="hidden" name="branchId" th:value="${branch.id}">
+                                            <input type="hidden" name="search" th:value="${search}">
+                                            <input type="hidden" name="roleFilter" th:value="${roleFilter}">
+                                            <select name="role"
+                                                    class="form-select form-select-sm permission-cell-select"
+                                                    onchange="this.form.submit()">
+                                                <option value="" th:selected="${cell.role == null}">-- Chưa phân quyền --</option>
+                                                <option th:each="entry : ${assignableRoleLabels}"
+                                                        th:value="${entry.key}"
+                                                        th:text="${entry.value}"
+                                                        th:selected="${cell.role != null and cell.role == entry.key}">
+                                                    Vai trò
+                                                </option>
+                                            </select>
                                         </form>
-
-                                        <span th:if="${row.role == 'OWNER'}" class="text-secondary small">
-                                        Chủ sở hữu
-                                        </span>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -417,84 +355,6 @@
         </div>
     </div>
 </main>
-
-<!-- Edit modal (shared; populated from the clicked row) -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="editForm" method="post" th:action="@{/owner/permissions}">
-                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Cập nhật phân quyền</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="editAccountDisplay" class="form-label">Tài khoản</label>
-                        <div id="editAccountDisplay" class="permission-readonly-field">Tài khoản</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editBranchId" class="form-label">Chi nhánh</label>
-                        <select id="editBranchId" name="branchId" class="form-select" required>
-                            <option th:each="branch : ${branches}" th:value="${branch.id}" th:text="${branch.name}">Chi
-                                nhánh
-                            </option>
-                        </select>
-                    </div>
-                    <div class="mb-1">
-                        <label for="editRole" class="form-label">Vai trò</label>
-                        <select id="editRole" name="role" class="form-select" required>
-                            <option th:each="entry : ${assignableRoleLabels}" th:value="${entry.key}"
-                                    th:text="${entry.value}">Vai trò
-                            </option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-pm-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-pm-primary">Cập nhật</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-    (function () {
-        var editModal = document.getElementById('editModal');
-        if (!editModal) return;
-
-        editModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            if (!button) return;
-
-            document.getElementById('editForm').setAttribute(
-                'action', '/owner/permissions/' + button.getAttribute('data-id') + '/update'
-            );
-
-            var accountName = button.getAttribute('data-account-name') || '';
-            var username = button.getAttribute('data-username') || '';
-            var email = button.getAttribute('data-email') || '';
-
-            var accountDisplay = accountName;
-
-            if (username) {
-                accountDisplay += ' (' + username + ')';
-            } else if (email) {
-                accountDisplay += ' (' + email + ')';
-            }
-
-            document.getElementById('editAccountDisplay').textContent =
-                accountDisplay || 'Tài khoản';
-
-            document.getElementById('editBranchId').value =
-                button.getAttribute('data-branch');
-
-            document.getElementById('editRole').value =
-                button.getAttribute('data-role');
-        });
-    })();
-</script>
 </body>
 
 </html>
