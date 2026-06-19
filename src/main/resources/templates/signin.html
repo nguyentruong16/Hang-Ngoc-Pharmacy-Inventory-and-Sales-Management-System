@@ -25,7 +25,8 @@
     .auth-card { width: 100%; max-width: 440px; border: 1px solid #e5e7eb; border-radius: 18px; padding: 36px; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); }
     .auth-card h1 { font-size: 28px; font-weight: 800; color: #111827; }
     .auth-card .form-label { font-size: 13px; font-weight: 600; color: #374151; }
-    .auth-card .form-control { min-height: 46px; border-radius: 12px; border-color: #d1d5db; }
+    .auth-card .form-control,
+    .auth-card .form-select { min-height: 46px; border-radius: 12px; border-color: #d1d5db; }
     .auth-submit { min-height: 46px; border-radius: 12px; background: #0f9f6e; border-color: #0f9f6e; font-weight: 700; }
     .auth-submit:hover, .auth-submit:focus { background: #0b7f58; border-color: #0b7f58; }
     .auth-footer { color: #6b7280; font-size: 12px; display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; }
@@ -63,7 +64,7 @@
       <p class="text-secondary mb-4">Vui lòng đăng nhập để tiếp tục sử dụng hệ thống</p>
 
       <div class="alert alert-danger py-2" role="alert" th:if="${param.error}">
-        Email, tên đăng nhập hoặc mật khẩu không chính xác.
+        Thông tin đăng nhập không hợp lệ. Vui lòng kiểm tra kỹ lại tài khoản, mật khẩu và chi nhánh trước khi đăng nhập.
       </div>
       <div class="alert alert-success py-2" role="alert" th:if="${param.logout}">
         Bạn đã đăng xuất khỏi hệ thống.
@@ -88,6 +89,18 @@
             <a href="/forgot-password" th:href="@{/forgot-password}" class="small link-primary">Quên mật khẩu?</a>
           </label>
           <input id="password" name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="branchId" class="form-label">Chi nhánh</label>
+          <select id="branchId" name="branchId" class="form-select" required>
+            <option value="">Chọn chi nhánh</option>
+            <option th:each="branch : ${branches}"
+                    th:value="${branch.id}"
+                    th:text="${branch.name}">
+              Chi nhánh
+            </option>
+          </select>
         </div>
 
         <div class="form-check mb-4">

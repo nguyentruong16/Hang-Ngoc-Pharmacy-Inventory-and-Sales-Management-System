@@ -17,6 +17,16 @@ public interface AccountpermissionRepository extends JpaRepository<Accountpermis
            select ap
            from Accountpermission ap
            left join fetch ap.branchID
+           where ap.accountID.id = :accountId and ap.branchID.id = :branchId
+           order by ap.id
+           """)
+    List<Accountpermission> findByAccountIdAndBranchId(@Param("accountId") Integer accountId,
+                                                       @Param("branchId") Integer branchId);
+
+    @Query("""
+           select ap
+           from Accountpermission ap
+           left join fetch ap.branchID
            where ap.accountID.id = :accountId
            """)
     List<Accountpermission> findProfilePermissionsByAccountId(@Param("accountId") Integer accountId);
