@@ -33,6 +33,7 @@ public class OwnerPermissionService {
     private static final String MSG_NOT_FOUND = "Không tìm thấy phân quyền cần thao tác";
     private static final String MSG_ACCOUNT_NOT_FOUND = "Không tìm thấy tài khoản đã chọn";
     private static final String MSG_BRANCH_NOT_FOUND = "Không tìm thấy chi nhánh đã chọn";
+    private static final String MSG_OWNER_LOCKED = "Không thể chỉnh sửa quyền Chủ sở hữu";
 
     private final AccountpermissionRepository accountpermissionRepository;
     private final AccountRepository accountRepository;
@@ -80,9 +81,15 @@ public class OwnerPermissionService {
     @Transactional
     public void create(Integer accountId, Integer branchId, String role) {
         validateInput(accountId, branchId, role);
+
+        if (isOwnerRole(role)) {
+            throw new IllegalArgumentException(MSG_OWNER_LOCKED);
+        }
+
         if (accountpermissionRepository.existsAssignment(accountId, branchId)) {
             throw new IllegalArgumentException(MSG_DUPLICATE);
         }
+
         Accountpermission permission = new Accountpermission();
         // Manual id: the PK column is not AUTO_INCREMENT in the schema.
         permission.setId(accountpermissionRepository.findMaxId() + 1);
@@ -98,6 +105,10 @@ public class OwnerPermissionService {
 
         Accountpermission permission = accountpermissionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(MSG_NOT_FOUND));
+
+        if (isOwnerRole(permission.getRole()) || isOwnerRole(role)) {
+            throw new IllegalArgumentException(MSG_OWNER_LOCKED);
+        }
 
         Account account = permission.getAccountID();
         if (account == null || account.getId() == null) {
@@ -117,16 +128,21 @@ public class OwnerPermissionService {
 
     @Transactional
     public void delete(Integer id) {
-        if (id == null || !accountpermissionRepository.existsById(id)) {
-            throw new IllegalArgumentException(MSG_NOT_FOUND);
+        Accountpermission permission = accountpermissionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(MSG_NOT_FOUND));
+
+        if (isOwnerRole(permission.getRole())) {
+            throw new IllegalArgumentException(MSG_OWNER_LOCKED);
         }
-        accountpermissionRepository.deleteById(id);
+
+        accountpermissionRepository.delete(permission);
     }
 
     // ------------------------------------------------------------------
 
     private void validateUpdateInput(Integer branchId, String role) {
-        if (branchId == null || role == null || role.isBlank() || !RoleConstants.isValid(role)) {
+        if (branchId == null || role == null || role.isBlank()
+                || !RoleConstants.isValid(role)) {
             throw new IllegalArgumentException(MSG_MISSING_FIELDS);
         }
     }
@@ -146,6 +162,10 @@ public class OwnerPermissionService {
     private Branch requireBranch(Integer branchId) {
         return branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException(MSG_BRANCH_NOT_FOUND));
+    }
+
+    private boolean isOwnerRole(String role) {
+        return role != null && RoleConstants.OWNER.equals(role.trim().toUpperCase(Locale.ROOT));
     }
 
     private boolean matchesSearch(Accountpermission ap, String needle) {

@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * Owner-only "Phân quyền theo chi nhánh" (role-by-branch) screen.
  *
@@ -36,7 +39,11 @@ public class PermissionController {
         model.addAttribute("assignments", ownerPermissionService.listAssignments(search, branchId, role));
         model.addAttribute("accounts", ownerPermissionService.listAccounts());
         model.addAttribute("branches", ownerPermissionService.listBranches());
+        Map<String, String> assignableRoleLabels = new LinkedHashMap<>(RoleConstants.vietnameseLabels());
+        assignableRoleLabels.remove(RoleConstants.OWNER);
+
         model.addAttribute("roleLabels", RoleConstants.vietnameseLabels());
+        model.addAttribute("assignableRoleLabels", assignableRoleLabels);
         // echo current filter values back into the form
         model.addAttribute("search", search);
         model.addAttribute("filterBranchId", branchId);

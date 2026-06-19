@@ -289,7 +289,7 @@
                                 <label for="addRole" class="form-label">Vai trò</label>
                                 <select id="addRole" name="role" class="form-select" required>
                                     <option value="" selected disabled>-- Chọn vai trò --</option>
-                                    <option th:each="entry : ${roleLabels}" th:value="${entry.key}"
+                                    <option th:each="entry : ${assignableRoleLabels}" th:value="${entry.key}"
                                             th:text="${entry.value}">Vai trò
                                     </option>
                                 </select>
@@ -371,25 +371,33 @@
                                     <td th:text="${row.branchName}">Hằng Ngọc 1</td>
                                     <td><span class="role-badge" th:text="${row.roleDisplay}">Vai trò</span></td>
                                     <td class="text-end text-nowrap">
-                                        <button type="button" class="btn btn-sm btn-pm-light"
+                                        <button th:if="${row.role != 'OWNER'}"
+                                                type="button" class="btn btn-sm btn-light"
                                                 data-bs-toggle="modal" data-bs-target="#editModal"
                                                 th:attr="data-id=${row.id},
-                                data-account-name=${row.accountName},
-                                data-username=${row.username},
-                                data-email=${row.email},
-                                data-branch=${row.branchId},
-                                data-role=${row.role}">
+                                                data-account=${row.accountId},
+                                                data-account-name=${row.accountName},
+                                                data-username=${row.username},
+                                                data-email=${row.email},
+                                                data-branch=${row.branchId},
+                                                data-role=${row.role}">
                                             <i class="ti ti-edit"></i> Sửa
                                         </button>
-                                        <form method="post" th:action="@{'/owner/permissions/' + ${row.id} + '/delete'}"
+
+                                        <form th:if="${row.role != 'OWNER'}"
+                                              method="post" th:action="@{'/owner/permissions/' + ${row.id} + '/delete'}"
                                               class="d-inline"
                                               onsubmit="return confirm('Bạn có chắc muốn xóa phân quyền này?');">
                                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}"
                                                    th:value="${_csrf.token}">
-                                            <button type="submit" class="btn btn-sm btn-pm-danger"><i
-                                                    class="ti ti-trash"></i> Xóa
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="ti ti-trash"></i> Xóa
                                             </button>
                                         </form>
+
+                                        <span th:if="${row.role == 'OWNER'}" class="text-secondary small">
+                                        Chủ sở hữu
+                                        </span>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -436,8 +444,8 @@
                     <div class="mb-1">
                         <label for="editRole" class="form-label">Vai trò</label>
                         <select id="editRole" name="role" class="form-select" required>
-                            <option th:each="entry : ${roleLabels}" th:value="${entry.key}" th:text="${entry.value}">Vai
-                                trò
+                            <option th:each="entry : ${assignableRoleLabels}" th:value="${entry.key}"
+                                    th:text="${entry.value}">Vai trò
                             </option>
                         </select>
                     </div>

@@ -4,9 +4,12 @@ import com.example.project.dto.request.ProfileUpdateRequest;
 import com.example.project.dto.response.ProfileViewResponse;
 import com.example.project.entity.Account;
 import com.example.project.repository.AccountRepository;
+import com.example.project.security.AccountPrincipal;
 import com.example.project.service.ProfileService;
 import jakarta.validation.Valid;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -58,6 +61,7 @@ public class ProfileController {
         }
 
         profileService.updateProfile(currentAccount.getId(), form);
+        refreshCurrentPrincipal(authentication);
 
         return "redirect:/profile?success";
     }
@@ -68,9 +72,47 @@ public class ProfileController {
             throw new RuntimeException("Người dùng chưa đăng nhập");
         }
 
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof AccountPrincipal accountPrincipal) {
+            return accountRepository.findById(accountPrincipal.getAccountId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản đang đăng nhập"));
+        }
+
         String loginValue = authentication.getName();
 
         return accountRepository.findByUsernameOrEmail(loginValue, loginValue)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản đang đăng nhập: " + loginValue));
+    }
+
+    private void refreshCurrentPrincipal(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AccountPrincipal oldPrincipal)) {
+            return;
+        }
+
+        Account updatedAccount = accountRepository.findById(oldPrincipal.getAccountId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản đang đăng nhập"));
+
+        AccountPrincipal updatedPrincipal = new AccountPrincipal(
+                updatedAccount.getId(),
+                updatedAccount.getName(),
+                updatedAccount.getUsername(),
+                updatedAccount.getEmail(),
+                updatedAccount.getPassword(),
+                Boolean.TRUE.equals(updatedAccount.getStatus()),
+                authentication.getAuthorities(),
+                oldPrincipal.getPrimaryRole(),
+                oldPrincipal.getBranchId()
+        );
+
+        UsernamePasswordAuthenticationToken newAuthentication =
+                new UsernamePasswordAuthenticationToken(
+                        updatedPrincipal,
+                        authentication.getCredentials(),
+                        authentication.getAuthorities()
+                );
+
+        newAuthentication.setDetails(authentication.getDetails());
+        SecurityContextHolder.getContext().setAuthentication(newAuthentication);
     }
 }

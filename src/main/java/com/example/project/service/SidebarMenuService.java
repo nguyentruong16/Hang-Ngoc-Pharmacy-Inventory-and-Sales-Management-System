@@ -104,20 +104,13 @@ public class SidebarMenuService {
                         i("Bảng phân quyền", "/owner/permissions", "ti ti-shield-lock")),
 
                 menuGroup("Chi nhánh", "ti ti-building-store",
-                        i("Danh sách chi nhánh", "/owner/branch-list", "ti ti-building-store"),
-                        i("Chọn chi nhánh", "/owner/branches/select", "ti ti-switch-horizontal")),
+                        i("Danh sách chi nhánh", "/owner/branch-list", "ti ti-building-store")),
 
                 linkGroup("Phê duyệt", "ti ti-clipboard-check",
                         i("Phê duyệt", "/owner/approvals", "ti ti-clipboard-check")),
 
                 linkGroup("Kho nội bộ", "ti ti-package",
-                        i("Kho nội bộ", "/owner/internal-export", "ti ti-package")),
-
-                linkGroup("Thông báo", "ti ti-bell",
-                        i("Thông báo", "/owner/notifications", "ti ti-bell")),
-
-                linkGroup("Hồ sơ cá nhân", "ti ti-user",
-                        i("Hồ sơ cá nhân", "/profile", "ti ti-user"))
+                        i("Kho nội bộ", "/owner/internal-export", "ti ti-package"))
         );
     }
 
@@ -149,13 +142,7 @@ public class SidebarMenuService {
                         i("Danh sách khoản chi", "/chief-pharmacist/expenses", "ti ti-cash")),
 
                 linkGroup("Xuất kho", "ti ti-file-export",
-                        i("Xuất kho", "/chief-pharmacist/export-cancellation", "ti ti-file-export")),
-
-                linkGroup("Thông báo", "ti ti-bell",
-                        i("Thông báo", "/chief-pharmacist/notifications", "ti ti-bell")),
-
-                linkGroup("Hồ sơ cá nhân", "ti ti-user",
-                        i("Hồ sơ cá nhân", "/profile", "ti ti-user"))
+                        i("Xuất kho", "/chief-pharmacist/export-cancellation", "ti ti-file-export"))
         );
     }
 
@@ -168,13 +155,7 @@ public class SidebarMenuService {
                         i("Hàng hóa", "/pharmacist/products", "ti ti-package")),
 
                 linkGroup("Hóa đơn", "ti ti-file-invoice",
-                        i("Hóa đơn", "/pharmacist/invoices", "ti ti-file-invoice")),
-
-                linkGroup("Thông báo", "ti ti-bell",
-                        i("Thông báo", "/pharmacist/notifications", "ti ti-bell")),
-
-                linkGroup("Hồ sơ cá nhân", "ti ti-user",
-                        i("Hồ sơ cá nhân", "/profile", "ti ti-user"))
+                        i("Hóa đơn", "/pharmacist/invoices", "ti ti-file-invoice"))
         );
     }
 
@@ -198,13 +179,7 @@ public class SidebarMenuService {
                         i("Báo cáo", "/accountant/daily-reports", "ti ti-report")),
 
                 linkGroup("Nhập hàng", "ti ti-package-import",
-                        i("Nhập hàng", "/accountant/purchase-invoices", "ti ti-package-import")),
-
-                linkGroup("Thông báo", "ti ti-bell",
-                        i("Thông báo", "/accountant/notifications", "ti ti-bell")),
-
-                linkGroup("Hồ sơ cá nhân", "ti ti-user",
-                        i("Hồ sơ cá nhân", "/profile", "ti ti-user"))
+                        i("Nhập hàng", "/accountant/purchase-invoices", "ti ti-package-import"))
         );
     }
 
@@ -223,13 +198,7 @@ public class SidebarMenuService {
                         i("Khách hàng", "/cashier/customers", "ti ti-users")),
 
                 linkGroup("Báo cáo", "ti ti-report",
-                        i("Báo cáo", "/cashier/shift-reports", "ti ti-report")),
-
-                linkGroup("Thông báo", "ti ti-bell",
-                        i("Thông báo", "/cashier/notifications", "ti ti-bell")),
-
-                linkGroup("Hồ sơ cá nhân", "ti ti-user",
-                        i("Hồ sơ cá nhân", "/profile", "ti ti-user"))
+                        i("Báo cáo", "/cashier/shift-reports", "ti ti-report"))
         );
     }
 

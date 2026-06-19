@@ -30,21 +30,6 @@
             </div>
 
             <div class="pm-topbar-actions">
-                <select class="form-select form-select-sm pm-topbar-branch-select"
-                        aria-label="Chi nhánh hiện tại">
-                    <option value=""
-                            th:if="${currentRole == 'OWNER'}"
-                            th:selected="${currentRole == 'OWNER'}">
-                        Tất cả chi nhánh
-                    </option>
-
-                    <option th:each="branch : ${topbarBranches}"
-                            th:value="${branch.id}"
-                            th:text="${branch.name}"
-                            th:selected="${currentRole != 'OWNER' and currentBranchId != null and branch.id == currentBranchId}">
-                        Hằng Ngọc 1
-                    </option>
-                </select>
 
                 <div class="dropdown">
                     <a class="position-relative pm-topbar-icon-btn"
@@ -202,27 +187,6 @@
             flex: 0 0 auto;
             justify-content: flex-end;
             gap: 16px;
-        }
-
-        .pm-topbar-branch-select {
-            width: 260px;
-            min-height: 34px;
-            border-radius: 9px;
-            border-color: #e5e7eb;
-            color: #374151;
-            font-size: 12px;
-            background-color: #ffffff;
-            box-shadow: none;
-        }
-
-        .pm-topbar-branch-select:hover {
-            border-color: #10b981;
-        }
-
-        .pm-topbar-branch-select:focus {
-            border-color: #059669;
-            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.16);
-            outline: none;
         }
 
         .pm-topbar-icon-btn {
@@ -391,10 +355,6 @@
         @media (max-width: 767.98px) {
             .pm-topbar-actions {
                 gap: 10px;
-            }
-
-            .pm-topbar-branch-select {
-                display: none;
             }
         }
     </style>
