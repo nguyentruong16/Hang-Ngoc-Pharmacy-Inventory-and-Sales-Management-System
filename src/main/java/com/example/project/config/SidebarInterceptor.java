@@ -2,8 +2,6 @@ package com.example.project.config;
 
 import com.example.project.constant.RoleConstants;
 import com.example.project.context.CurrentUserContext;
-import com.example.project.entity.Branch;
-import com.example.project.repository.BranchRepository;
 import com.example.project.service.SidebarMenuService;
 import com.example.project.view.SidebarMenuGroup;
 import com.example.project.view.SidebarMenuItem;
@@ -36,20 +34,19 @@ import java.util.Set;
  */
 public class SidebarInterceptor implements HandlerInterceptor {
 
-    /** Standalone (no sidebar/topbar) views: auth screens and full-page error/notice pages. */
+    /**
+     * Standalone (no sidebar/topbar) views: auth screens and full-page error/notice pages.
+     */
     private static final Set<String> NO_CHROME_VIEWS = Set.of(
             "signin", "signup", "forgot-password", "reset-password", "change-password", "404-error", "403");
 
     private final SidebarMenuService sidebarMenuService;
     private final CurrentUserContext currentUserContext;
-    private final BranchRepository branchRepository;
 
     public SidebarInterceptor(SidebarMenuService sidebarMenuService,
-                              CurrentUserContext currentUserContext,
-                              BranchRepository branchRepository) {
+                              CurrentUserContext currentUserContext) {
         this.sidebarMenuService = sidebarMenuService;
         this.currentUserContext = currentUserContext;
-        this.branchRepository = branchRepository;
     }
 
     public void postHandle(HttpServletRequest request, HttpServletResponse response,
@@ -75,31 +72,17 @@ public class SidebarInterceptor implements HandlerInterceptor {
         List<SidebarMenuGroup> menu = sidebarMenuService.getMenu(role);
         String uri = request.getRequestURI();
         String activeUrl = sidebarMenuService.resolveActiveUrl(menu, uri);
-        Integer currentBranchId = currentUserContext.getCurrentBranchId();
         String currentAccountName = currentUserContext.getCurrentAccountName();
 
         modelAndView.addObject("currentRole", role);
         modelAndView.addObject("currentRoleDisplay", RoleConstants.vietnameseName(role));
         modelAndView.addObject("currentAccountName", currentAccountName);
         modelAndView.addObject("currentUserInitials", buildInitials(currentAccountName));
-        modelAndView.addObject("currentBranchId", currentBranchId);
-        modelAndView.addObject("currentBranchName", resolveBranchName(currentBranchId));
-        modelAndView.addObject("topbarBranches", branchRepository.findAllWithStatus());
         modelAndView.addObject("currentNotificationsUrl", notificationsUrl(role));
         modelAndView.addObject("sidebarMenu", menu);
         modelAndView.addObject("activeUrl", activeUrl);
         modelAndView.addObject("currentPageTitle", resolvePageTitle(menu, activeUrl));
         modelAndView.addObject("currentRequestUri", uri);
-    }
-
-    private String resolveBranchName(Integer branchId) {
-        if (branchId == null) {
-            return null;
-        }
-        return branchRepository.findById(branchId)
-                .map(Branch::getName)
-                .filter(name -> name != null && !name.isBlank())
-                .orElse(null);
     }
 
     private String resolvePageTitle(List<SidebarMenuGroup> menu, String activeUrl) {
