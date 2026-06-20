@@ -11,7 +11,6 @@ import lombok.Setter;
 @Table(name = "accountpermission")
 public class Accountpermission {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "accountPermissionID", nullable = false)
     private Integer id;
 

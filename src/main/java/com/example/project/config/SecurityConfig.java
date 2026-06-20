@@ -1,5 +1,9 @@
 package com.example.project.config;
 
+import com.example.project.constant.RoleConstants;
+import com.example.project.security.BranchAwareAuthenticationProvider;
+import com.example.project.security.BranchWebAuthenticationDetailsSource;
+import com.example.project.security.RoleBasedAuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -11,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
@@ -21,9 +26,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             SessionRegistry sessionRegistry,
-            AuthenticationFailureHandler authenticationFailureHandler) throws Exception {
+            AuthenticationSuccessHandler authenticationSuccessHandler,
+            AuthenticationFailureHandler authenticationFailureHandler,
+            BranchAwareAuthenticationProvider branchAwareAuthenticationProvider,
+            BranchWebAuthenticationDetailsSource branchWebAuthenticationDetailsSource) throws Exception {
         http
+                .authenticationProvider(branchAwareAuthenticationProvider)
                 .authorizeHttpRequests(authorize -> authorize
+                        // Public (no login required)
                         .requestMatchers(
                                 "/signin",
                                 "/forgot-password",
@@ -35,6 +45,15 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/favicon.ico"
                         ).permitAll()
+                        // Role areas: each role tree is reachable only by that role. Hiding the
+                        // sidebar item is not enough — this blocks direct URL access too.
+                        .requestMatchers("/owner/**").hasRole(RoleConstants.OWNER)
+                        .requestMatchers("/chief-pharmacist/**").hasRole(RoleConstants.CHIEF_PHARMACIST)
+                        .requestMatchers("/pharmacist/**").hasRole(RoleConstants.PHARMACIST)
+                        .requestMatchers("/accountant/**").hasRole(RoleConstants.ACCOUNTANT)
+                        .requestMatchers("/cashier/**").hasRole(RoleConstants.CASHIER)
+                        // Everything else (/, /dashboard, /profile, /change-password, /403, REST APIs)
+                        // requires only that the user is signed in.
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -42,7 +61,9 @@ public class SecurityConfig {
                         .loginProcessingUrl("/signin")
                         .usernameParameter("loginId")
                         .passwordParameter("password")
-                        .defaultSuccessUrl("/dashboard", true)
+                        .authenticationDetailsSource(branchWebAuthenticationDetailsSource)
+                        // Land on the user's own role dashboard, not a single shared page.
+                        .successHandler(authenticationSuccessHandler)
                         .failureHandler(authenticationFailureHandler)
                         .permitAll()
                 )
@@ -58,9 +79,16 @@ public class SecurityConfig {
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(true)
                         .sessionRegistry(sessionRegistry)
-                );
+                )
+                // Authenticated user without the required role -> friendly 403 page.
+                .exceptionHandling(exception -> exception.accessDeniedPage("/403"));
 
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return new RoleBasedAuthenticationSuccessHandler();
     }
 
     @Bean

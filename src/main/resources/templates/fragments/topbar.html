@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+<!--
+  Reusable topbar (+ mobile overlay). Keeps the original markup and the element IDs
+  (overlay, topbar, toggleBtn, mobileBtn) that the bundled main.js relies on.
+  The user dropdown shows the signed-in user (currentAccountName / currentRoleDisplay from the
+  model, populated by SidebarInterceptor from Spring Security) and holds Hồ sơ cá nhân,
+  Đổi mật khẩu and Đăng xuất.
+  Usage in a page: <div th:replace="~{fragments/topbar :: topbar}"></div>
+-->
+<th:block th:fragment="topbar">
+    <div id="overlay" class="overlay"></div>
+    <!-- TOPBAR -->
+    <nav id="topbar" class="navbar bg-white border-bottom fixed-top topbar pm-topbar px-3">
+        <div class="pm-topbar-inner">
+            <div class="pm-topbar-left">
+                <button id="mobileBtn"
+                        class="btn btn-light btn-icon btn-sm d-lg-none me-2"
+                        type="button"
+                        aria-label="Mở menu">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+
+                <h1 class="pm-topbar-title mb-0"
+                    th:text="${pageTitle != null ? pageTitle : (currentPageTitle != null ? currentPageTitle : 'Tổng quan')}">
+                    Tổng quan
+                </h1>
+            </div>
+
+            <div class="pm-topbar-actions">
+
+                <div class="dropdown">
+                    <a class="position-relative pm-topbar-icon-btn"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false"
+                       href="#"
+                       role="button"
+                       aria-label="Thông báo">
+                        <i class="ti ti-bell"></i>
+                        <span class="pm-notification-dot" aria-hidden="true"></span>
+                    </a>
+
+                    <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-0 pm-notification-menu">
+                        <ul class="list-unstyled p-0 m-0">
+                            <li class="p-3 border-bottom">
+                                <div class="small">
+                                    <p class="mb-1 fw-semibold">Cảnh báo tồn kho</p>
+                                    <p class="mb-0 text-secondary">Một số sản phẩm đã dưới mức tồn kho tối thiểu.</p>
+                                </div>
+                            </li>
+
+                            <li class="p-3 border-bottom">
+                                <div class="small">
+                                    <p class="mb-1 fw-semibold">Cảnh báo hạn sử dụng</p>
+                                    <p class="mb-0 text-secondary">Có lô hàng sắp hết hạn cần kiểm tra.</p>
+                                </div>
+                            </li>
+
+                            <li class="px-4 py-3 text-center">
+                                <a th:href="${currentNotificationsUrl != null ? currentNotificationsUrl : '#'}"
+                                   href="#"
+                                   class="pm-menu-link">
+                                    Xem tất cả thông báo
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="vr d-none d-md-block pm-topbar-divider"></div>
+
+                <div class="dropdown">
+                    <a href="#"
+                       class="pm-topbar-user"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+          <span class="pm-topbar-avatar"
+                th:text="${currentUserInitials != null ? currentUserInitials : 'U'}">
+            U
+          </span>
+
+                        <span class="pm-topbar-user-text d-none d-md-block">
+            <span class="pm-topbar-user-name"
+                  th:text="${currentAccountName != null ? currentAccountName : 'Người dùng'}">
+              Người dùng
+            </span>
+            <span class="pm-topbar-user-role"
+                  th:text="${currentRoleDisplay != null ? currentRoleDisplay : 'Vai trò'}">
+              Vai trò
+            </span>
+          </span>
+                    </a>
+
+                    <div class="dropdown-menu dropdown-menu-end p-0 pm-user-menu">
+                        <div class="d-flex gap-3 align-items-center border-bottom px-3 py-3">
+            <span class="pm-topbar-avatar pm-topbar-avatar-lg"
+                  th:text="${currentUserInitials != null ? currentUserInitials : 'U'}">
+              U
+            </span>
+
+                            <div>
+                                <h4 class="mb-0 small"
+                                    th:text="${currentAccountName != null ? currentAccountName : 'Người dùng'}">
+                                    Người dùng
+                                </h4>
+                                <span class="pm-role-badge mt-1"
+                                      th:text="${currentRoleDisplay != null ? currentRoleDisplay : 'Vai trò'}">
+                Vai trò
+              </span>
+                            </div>
+                        </div>
+
+                        <div class="p-3 d-flex flex-column gap-1 small lh-lg">
+                            <a th:href="@{/profile}" href="#!">
+                                <i class="ti ti-user me-1"></i>
+                                <span>Hồ sơ cá nhân</span>
+                            </a>
+
+                            <a th:href="@{/profile(section='password')}" href="#!">
+                                <i class="ti ti-key me-1"></i>
+                                <span>Đổi mật khẩu</span>
+                            </a>
+                        </div>
+
+                        <div class="border-top px-3 py-3">
+                            <form th:action="@{/logout}" method="post" class="m-0">
+                                <input type="hidden"
+                                       th:if="${_csrf}"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                                    <i class="ti ti-logout me-1"></i>
+                                    Đăng xuất
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <style>
+        .pm-topbar {
+            height: 60px;
+            margin-left: 240px;
+            z-index: 1020;
+            font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        .pm-topbar-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            min-width: 0;
+        }
+
+        .pm-topbar-left,
+        .pm-topbar-actions,
+        .pm-topbar-user {
+            display: flex;
+            align-items: center;
+        }
+
+        .pm-topbar-left {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .pm-topbar-title {
+            color: #111827;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pm-topbar-actions {
+            flex: 0 0 auto;
+            justify-content: flex-end;
+            gap: 16px;
+        }
+
+        .pm-topbar-icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #374151;
+            text-decoration: none;
+            background: #ffffff;
+            border: 1px solid transparent;
+            transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+        }
+
+        .pm-topbar-icon-btn:hover,
+        .pm-topbar-icon-btn:focus {
+            background: #f3f4f6;
+            border-color: #e5e7eb;
+            color: #059669;
+        }
+
+        .pm-topbar-icon-btn i {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .pm-notification-dot {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: #dc2626;
+            border: 1.5px solid #ffffff;
+        }
+
+        .pm-topbar-divider {
+            height: 24px;
+            opacity: .5;
+        }
+
+        .pm-topbar-user {
+            gap: 10px;
+            color: #111827;
+            text-decoration: none;
+        }
+
+        .pm-topbar-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            background: #dff3ec;
+            color: #059669;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            text-transform: uppercase;
+            letter-spacing: .01em;
+            flex: 0 0 auto;
+        }
+
+        .pm-topbar-avatar-lg {
+            width: 40px;
+            height: 40px;
+            font-size: 13px;
+        }
+
+        .pm-topbar-user-text {
+            min-width: 112px;
+        }
+
+        .pm-topbar-user-name,
+        .pm-topbar-user-role {
+            display: block;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pm-topbar-user-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.2;
+        }
+
+        .pm-topbar-user-role {
+            margin-top: 2px;
+            font-size: 11px;
+            color: #6b7280;
+            line-height: 1.2;
+        }
+
+        .pm-notification-menu {
+            min-width: 320px;
+        }
+
+        .pm-user-menu {
+            min-width: 240px;
+        }
+
+        .pm-user-menu,
+        .pm-notification-menu {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
+            overflow: hidden;
+        }
+
+        .pm-role-badge {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #dff3ec;
+            color: #059669;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .pm-user-menu a,
+        .pm-notification-menu a,
+        .pm-menu-link {
+            color: #059669 !important;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .pm-user-menu a:hover,
+        .pm-notification-menu a:hover,
+        .pm-menu-link:hover {
+            color: #047857 !important;
+            background: #e8f7f1;
+        }
+
+        .pm-user-menu .btn-outline-secondary {
+            border-color: #059669;
+            color: #059669;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .pm-user-menu .btn-outline-secondary:hover,
+        .pm-user-menu .btn-outline-secondary:focus {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
+
+        @media (max-width: 991.98px) {
+            .pm-topbar {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .pm-topbar-actions {
+                gap: 10px;
+            }
+        }
+    </style>
+
+</th:block>
+</body>
+
+</html>

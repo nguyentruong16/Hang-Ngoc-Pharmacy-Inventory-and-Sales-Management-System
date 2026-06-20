@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>Bảng phân quyền - Pharmacy Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png"
+          th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png"
+          th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png"
+          th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+    <style>
+        :root {
+            --pm-green: #059669;
+            --pm-green-dark: #047857;
+            --pm-green-soft: #e8f7f1;
+            --pm-green-light: #dcfce7;
+            --pm-bg: #f6f7f9;
+            --pm-card: #ffffff;
+            --pm-border: #e5e7eb;
+            --pm-muted: #6b7280;
+            --pm-text: #111827;
+        }
+
+        body {
+            background: var(--pm-bg);
+            color: var(--pm-text);
+        }
+
+        .permission-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        @media (max-width: 991.98px) {
+            .permission-page-content {
+                padding-top: 84px !important;
+            }
+        }
+
+        .permission-page-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--pm-text);
+        }
+
+        .permission-page-subtitle {
+            color: var(--pm-muted);
+            font-size: 14px;
+        }
+
+        .permission-card {
+            border: 1px solid var(--pm-border);
+            border-radius: 14px;
+            background: var(--pm-card);
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+            overflow: hidden;
+        }
+
+        .permission-card .card-header {
+            border-bottom: 1px solid var(--pm-border);
+            background: #ffffff !important;
+        }
+
+        .permission-card .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--pm-text);
+        }
+
+        .permission-card .form-control,
+        .permission-card .form-select {
+            border-radius: 10px;
+            border-color: var(--pm-border);
+            font-size: 13px;
+        }
+
+        .permission-card .form-control:focus,
+        .permission-card .form-select:focus {
+            border-color: var(--pm-green);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, .12);
+        }
+
+        .btn-pm-primary {
+            background: var(--pm-green);
+            border-color: var(--pm-green);
+            color: #ffffff;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .btn-pm-primary:hover,
+        .btn-pm-primary:focus {
+            background: var(--pm-green-dark);
+            border-color: var(--pm-green-dark);
+            color: #ffffff;
+        }
+
+        .btn-pm-light {
+            background: #ffffff;
+            border: 1px solid var(--pm-border);
+            color: var(--pm-text);
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .btn-pm-light:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            color: var(--pm-text);
+        }
+
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--pm-green-light);
+            color: var(--pm-green);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            border-color: var(--pm-green-light);
+            background: var(--pm-green-soft);
+            color: var(--pm-green-dark);
+        }
+
+        /* ---- Permission matrix ---- */
+        .permission-matrix-scroll {
+            max-height: calc(100vh - 280px);
+            overflow: auto;
+        }
+
+        .permission-matrix {
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 0;
+            width: 100%;
+        }
+
+        .permission-matrix thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #f9fafb;
+            color: var(--pm-muted);
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--pm-border);
+            padding: 12px 14px;
+            white-space: nowrap;
+            min-width: 180px;
+        }
+
+        .permission-matrix tbody td {
+            font-size: 13px;
+            padding: 10px 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--pm-border);
+            min-width: 180px;
+        }
+
+        /* Sticky first column so the account stays visible while scrolling branches. */
+        .permission-matrix th.permission-col-account,
+        .permission-matrix td.permission-col-account {
+            position: sticky;
+            left: 0;
+            background: #ffffff;
+            min-width: 220px;
+            border-right: 1px solid var(--pm-border);
+        }
+
+        .permission-matrix td.permission-col-account {
+            z-index: 1;
+        }
+
+        .permission-matrix thead th.permission-col-account {
+            z-index: 3;
+            background: #f9fafb;
+        }
+
+        .permission-matrix tbody tr:hover td,
+        .permission-matrix tbody tr:hover td.permission-col-account {
+            background: #f9fafb;
+        }
+
+        .permission-cell-select {
+            width: 100%;
+        }
+
+        .permission-owner-row td,
+        .permission-owner-row td.permission-col-account {
+            background: #f7fffb;
+        }
+
+        .permission-owner-row:hover td,
+        .permission-owner-row:hover td.permission-col-account {
+            background: #eefbf5;
+        }
+
+        footer {
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<!-- MAIN CONTENT -->
+<main id="content" class="content permission-page-content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-4">
+                    <h1 class="permission-page-title mb-1">Bảng phân quyền</h1>
+                    <p class="permission-page-subtitle mb-0">Chọn vai trò của từng tài khoản tại từng chi nhánh. Thay đổi
+                        được lưu ngay khi bạn chọn.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash messages -->
+        <div class="row" th:if="${successMessage}">
+            <div class="col-12">
+                <div class="alert alert-success d-flex align-items-center gap-2" role="alert">
+                    <i class="ti ti-circle-check"></i><span th:text="${successMessage}">OK</span>
+                </div>
+            </div>
+        </div>
+        <div class="row" th:if="${errorMessage}">
+            <div class="col-12">
+                <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                    <i class="ti ti-alert-circle"></i><span th:text="${errorMessage}">Error</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search + matrix -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card permission-card">
+                    <div class="card-header bg-transparent px-4 py-3">
+                        <form method="get" th:action="@{/owner/permissions}" class="row g-2 align-items-end">
+                            <div class="col-12 col-md-5">
+                                <label for="search" class="form-label small mb-1">Tìm kiếm tài khoản</label>
+                                <input id="search" name="search" type="text" class="form-control form-control-sm"
+                                       th:value="${search}" placeholder="Tên, tên đăng nhập hoặc email">
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label for="roleFilter" class="form-label small mb-1">Lọc theo vai trò</label>
+                                <select id="roleFilter" name="roleFilter" class="form-select form-select-sm">
+                                    <option value="">Tất cả vai trò</option>
+                                    <option th:each="entry : ${roleLabels}"
+                                            th:value="${entry.key}"
+                                            th:text="${entry.value}"
+                                            th:selected="${roleFilter != null and roleFilter == entry.key}">
+                                        Vai trò
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-3 d-flex gap-2">
+                                <button type="submit" class="btn btn-sm btn-pm-primary flex-grow-1">
+                                    <i class="ti ti-search me-1"></i>Lọc
+                                </button>
+                                <a th:href="@{/owner/permissions}" class="btn btn-sm btn-pm-light" title="Xóa bộ lọc">
+                                    <i class="ti ti-x"></i>
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card-body p-0">
+                        <div class="permission-matrix-scroll">
+                            <table class="table align-middle permission-matrix">
+                                <thead>
+                                <tr>
+                                    <th scope="col" class="permission-col-account">Tài khoản / Chi nhánh</th>
+                                    <th scope="col" th:each="branch : ${branches}" th:text="${branch.name}">Chi nhánh
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:if="${#lists.isEmpty(matrixRows)}">
+                                    <td class="text-center text-secondary py-4"
+                                        th:attr="colspan=${branches != null ? branches.size() + 1 : 1}">
+                                        Không tìm thấy tài khoản nào.
+                                    </td>
+                                </tr>
+                                <tr th:each="row : ${matrixRows}"
+                                    th:classappend="${row.ownerAccount} ? ' permission-owner-row' : ''">
+                                    <td class="permission-col-account">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="fw-semibold" th:text="${row.accountName}">ngoctn1</span>
+                                        </div>
+                                        <div class="small text-secondary" th:text="${row.usernameOrEmail}">
+                                            username/email
+                                        </div>
+                                    </td>
+
+                                    <td th:each="branch : ${branches}" th:with="cell=${row.getCell(branch.id)}">
+                                        <!-- Owner is read-only: show a badge, no dropdown. -->
+                                        <span th:if="${cell.ownerLocked}" class="role-badge">Chủ sở hữu</span>
+
+                                        <!-- Otherwise an inline role dropdown that auto-submits on change. -->
+                                        <form th:unless="${cell.ownerLocked}" method="post"
+                                              th:action="@{/owner/permissions/cell}" class="mb-0">
+                                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}"
+                                                   th:value="${_csrf.token}">
+                                            <input type="hidden" name="accountId" th:value="${row.accountId}">
+                                            <input type="hidden" name="branchId" th:value="${branch.id}">
+                                            <input type="hidden" name="search" th:value="${search}">
+                                            <input type="hidden" name="roleFilter" th:value="${roleFilter}">
+                                            <select name="role"
+                                                    class="form-select form-select-sm permission-cell-select"
+                                                    onchange="this.form.submit()">
+                                                <option value="" th:selected="${cell.role == null}">-- Chưa phân quyền --</option>
+                                                <option th:each="entry : ${assignableRoleLabels}"
+                                                        th:value="${entry.key}"
+                                                        th:text="${entry.value}"
+                                                        th:selected="${cell.role != null and cell.role == entry.key}">
+                                                    Vai trò
+                                                </option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <footer class="text-center py-2 mt-6 text-secondary">
+                    <p class="mb-0">Copyright © 2026 Pharmacy Management System.</p>
+                </footer>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+
+</html>

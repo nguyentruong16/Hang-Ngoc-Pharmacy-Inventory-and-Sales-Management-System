@@ -107,6 +107,47 @@
             opacity: 1;
         }
 
+        .password-field {
+            position: relative;
+        }
+
+        .password-field .form-control {
+            padding-left: 42px;
+            padding-right: 44px;
+        }
+
+        .password-icon,
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--profile-muted);
+        }
+
+        .password-icon {
+            left: 14px;
+            pointer-events: none;
+        }
+
+        .password-toggle {
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .password-toggle:hover,
+        .password-toggle:focus {
+            background: #ecfdf5;
+            color: var(--profile-green-dark);
+        }
+
         .btn-profile-save {
             background: var(--profile-green);
             border-color: var(--profile-green);
@@ -181,150 +222,11 @@
 </head>
 
 <body>
-<div id="overlay" class="overlay"></div>
-
 <!-- TOPBAR -->
-<nav id="topbar" class="navbar bg-white border-bottom fixed-top topbar px-3">
-    <button id="toggleBtn" class="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm">
-        <i class="ti ti-layout-sidebar-left-expand"></i>
-    </button>
-
-    <button id="mobileBtn" class="btn btn-light btn-icon btn-sm d-lg-none me-2">
-        <i class="ti ti-layout-sidebar-left-expand"></i>
-    </button>
-
-    <div class="ms-auto d-flex align-items-center gap-3">
-        <select class="form-select form-select-sm profile-branch-select" disabled>
-            <option th:text="${profile.branchName != null ? profile.branchName : 'Hang Ngoc Pharmacy'}">
-                Hang Ngoc Pharmacy - Nhánh 1
-            </option>
-        </select>
-
-        <a class="position-relative btn-icon btn-sm btn-light btn rounded-circle"
-           data-bs-toggle="dropdown" aria-expanded="false" href="#" role="button">
-            <i class="ti ti-bell fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-2 ms-n2">
-        2
-        <span class="visually-hidden">unread notifications</span>
-      </span>
-        </a>
-
-        <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-0">
-            <ul class="list-unstyled p-0 m-0">
-                <li class="p-3 border-bottom">
-                    <div class="small">
-                        <p class="mb-1 fw-semibold">Cảnh báo tồn kho</p>
-                        <p class="mb-0 text-secondary">Một số sản phẩm đã dưới mức tồn kho tối thiểu.</p>
-                    </div>
-                </li>
-                <li class="p-3 border-bottom">
-                    <div class="small">
-                        <p class="mb-1 fw-semibold">Cảnh báo hạn sử dụng</p>
-                        <p class="mb-0 text-secondary">Có lô hàng sắp hết hạn cần kiểm tra.</p>
-                    </div>
-                </li>
-                <li class="px-4 py-3 text-center">
-                    <a href="#" class="text-primary">Xem tất cả thông báo</a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="vr d-none d-md-block"></div>
-
-        <div class="profile-top-identity">
-            <div class="profile-top-avatar"
-                 th:text="${profile.name != null and !#strings.isEmpty(profile.name) ? #strings.substring(profile.name, 0, 1) : 'U'}">
-                U
-            </div>
-            <div class="d-none d-md-block">
-                <div class="small fw-semibold mb-0" th:text="${profile.name}">Nguyễn Thị Lan</div>
-                <div class="small text-secondary" th:text="${profile.role}">Kế toán</div>
-            </div>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
 
 <!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar">
-    <div class="logo-area">
-        <a href="/" th:href="@{/}" class="d-inline-flex align-items-center text-decoration-none">
-            <span class="fw-bold fs-5" style="color:#059669;">Pharma</span><span class="fw-bold fs-5 text-dark">Manager</span>
-        </a>
-    </div>
-
-    <ul class="nav flex-column">
-        <li>
-            <a class="nav-link" href="/" th:href="@{/}">
-                <i class="ti ti-layout-dashboard"></i>
-                <span class="nav-text">Tổng quan</span>
-            </a>
-        </li>
-
-        <li>
-            <a class="nav-link" href="#" th:href="@{/finance}">
-                <i class="ti ti-chart-bar"></i>
-                <span class="nav-text">Tài chính</span>
-            </a>
-        </li>
-        <li class="ps-5">
-            <a class="nav-link py-1 small" href="#" th:href="@{/expenses}">
-                <span class="nav-text">Danh sách khoản chi</span>
-            </a>
-        </li>
-        <li class="ps-5">
-            <a class="nav-link py-1 small" href="#" th:href="@{/debts}">
-                <span class="nav-text">Danh sách công nợ</span>
-            </a>
-        </li>
-        <li class="ps-5">
-            <a class="nav-link py-1 small" href="#" th:href="@{/financial-settings}">
-                <span class="nav-text">Thiết lập tài chính</span>
-            </a>
-        </li>
-
-        <li>
-            <a class="nav-link" href="#" th:href="@{/invoices}">
-                <i class="ti ti-file-invoice"></i>
-                <span class="nav-text">Hóa đơn</span>
-            </a>
-        </li>
-
-        <li>
-            <a class="nav-link" href="#" th:href="@{/cashbook}">
-                <i class="ti ti-cash"></i>
-                <span class="nav-text">Sổ quỹ</span>
-            </a>
-        </li>
-
-        <li>
-            <a class="nav-link" href="/reports" th:href="@{/reports}">
-                <i class="ti ti-report-analytics"></i>
-                <span class="nav-text">Báo cáo</span>
-            </a>
-        </li>
-
-        <li>
-            <a class="nav-link" href="/inventory" th:href="@{/inventory}">
-                <i class="ti ti-package"></i>
-                <span class="nav-text">Nhập hàng</span>
-            </a>
-        </li>
-
-        <li>
-            <a class="nav-link" href="#" th:href="@{/notifications}">
-                <i class="ti ti-bell"></i>
-                <span class="nav-text">Thông báo</span>
-            </a>
-        </li>
-
-        <li>
-            <a class="nav-link active" href="/profile" th:href="@{/profile}">
-                <i class="ti ti-user"></i>
-                <span class="nav-text">Hồ sơ cá nhân</span>
-            </a>
-        </li>
-    </ul>
-</aside>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 
 <!-- MAIN CONTENT -->
 <main id="content" class="content py-6">
@@ -348,9 +250,15 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
+        <div th:if="${param.passwordChanged}" class="alert alert-success alert-dismissible fade show" role="alert">
+            Mật khẩu đã được cập nhật thành công.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <div class="row g-4">
             <!-- LEFT PROFILE CARD -->
-            <div class="col-12 col-lg-4 col-xl-3">
+            <div class="col-12 col-lg-4 col-xl-3"
+                 th:unless="${param.section != null and param.section[0] == 'password'}">
                 <div class="profile-card h-100">
                     <div class="p-5 text-center">
                         <div class="profile-avatar mb-4"
@@ -374,13 +282,20 @@
                             <span class="profile-muted">Đăng nhập gần nhất:</span>
                             <span>--</span>
                         </div>
+
+                        <a href="/profile?section=password"
+                           th:href="@{/profile(section='password')}"
+                           class="btn btn-profile-outline w-100">
+                            Đổi mật khẩu
+                        </a>
                     </div>
                 </div>
             </div>
 
             <!-- RIGHT PROFILE FORM -->
-            <div class="col-12 col-lg-8 col-xl-7">
-                <div class="profile-card profile-form-card">
+            <div th:class="${param.section != null and param.section[0] == 'password'} ? 'col-12 col-lg-8 col-xl-7 mx-auto' : 'col-12 col-lg-8 col-xl-7'">
+                <div class="profile-card profile-form-card"
+                     th:unless="${param.section != null and param.section[0] == 'password'}">
                     <div class="p-5">
                         <h2 class="fs-5 mb-4">Thông tin cá nhân</h2>
 
@@ -470,11 +385,135 @@
                         </form>
                     </div>
                 </div>
+
+                <div class="profile-card profile-form-card"
+                     th:if="${param.section != null and param.section[0] == 'password'}">
+                    <div class="p-5">
+                        <h2 class="fs-5 mb-1">Đổi mật khẩu</h2>
+                        <p class="profile-muted small mb-4">Cập nhật mật khẩu mới để bảo mật tài khoản của bạn.</p>
+
+                        <div th:if="${passwordError}" class="alert alert-danger py-2" role="alert" th:text="${passwordError}">
+                            Không thể cập nhật mật khẩu.
+                        </div>
+
+                        <form method="post" th:action="@{/change-password}" novalidate>
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Mật khẩu hiện tại</label>
+                                <div class="password-field">
+                                    <span class="password-icon"><i class="ti ti-lock"></i></span>
+                                    <input id="currentPassword" name="currentPassword" type="password" class="form-control" required>
+                                    <button class="password-toggle" type="button" data-password-toggle="currentPassword" aria-label="Hiển thị mật khẩu">
+                                        <i class="ti ti-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">Vui lòng nhập mật khẩu hiện tại.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">Mật khẩu mới</label>
+                                <div class="password-field">
+                                    <span class="password-icon"><i class="ti ti-lock"></i></span>
+                                    <input id="newPassword" name="newPassword" type="password" class="form-control" required>
+                                    <button class="password-toggle" type="button" data-password-toggle="newPassword" aria-label="Hiển thị mật khẩu">
+                                        <i class="ti ti-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback" data-new-password-feedback>Vui lòng nhập mật khẩu mới.</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="confirmPassword" class="form-label">Xác nhận mật khẩu mới</label>
+                                <div class="password-field">
+                                    <span class="password-icon"><i class="ti ti-lock"></i></span>
+                                    <input id="confirmPassword" name="confirmPassword" type="password" class="form-control" required>
+                                    <button class="password-toggle" type="button" data-password-toggle="confirmPassword" aria-label="Hiển thị mật khẩu">
+                                        <i class="ti ti-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback" data-confirm-password-feedback>Vui lòng xác nhận mật khẩu mới.</div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <button type="submit" class="btn btn-profile-save w-100">
+                                        Cập nhật mật khẩu
+                                    </button>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <a href="/profile" th:href="@{/profile}" class="btn btn-profile-cancel w-100">
+                                        Hủy
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
 
     </div>
 </main>
+
+<script>
+    (() => {
+        const newPassword = document.querySelector('input[name="newPassword"]');
+        const confirmPassword = document.querySelector('input[name="confirmPassword"]');
+        const confirmPasswordFeedback = document.querySelector('[data-confirm-password-feedback]');
+        const confirmPasswordRequiredMessage = 'Vui lòng xác nhận mật khẩu mới.';
+        const confirmPasswordMismatchMessage = 'Mật khẩu xác nhận không trùng khớp.';
+
+        const validatePasswordConfirmation = () => {
+            if (!newPassword || !confirmPassword) {
+                return;
+            }
+
+            if (!confirmPassword.value) {
+                confirmPassword.setCustomValidity('');
+                if (confirmPasswordFeedback) {
+                    confirmPasswordFeedback.textContent = confirmPasswordRequiredMessage;
+                }
+                return;
+            }
+
+            if (newPassword.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity(confirmPasswordMismatchMessage);
+                if (confirmPasswordFeedback) {
+                    confirmPasswordFeedback.textContent = confirmPasswordMismatchMessage;
+                }
+                return;
+            }
+
+            confirmPassword.setCustomValidity('');
+            if (confirmPasswordFeedback) {
+                confirmPasswordFeedback.textContent = confirmPasswordRequiredMessage;
+            }
+        };
+
+        if (newPassword && confirmPassword) {
+            newPassword.addEventListener('input', validatePasswordConfirmation);
+            confirmPassword.addEventListener('input', validatePasswordConfirmation);
+        }
+
+        document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+            const input = document.getElementById(button.dataset.passwordToggle);
+            const icon = button.querySelector('i');
+            if (!input || !icon) {
+                return;
+            }
+
+            button.addEventListener('click', () => {
+                const shouldShow = input.type === 'password';
+                input.type = shouldShow ? 'text' : 'password';
+                icon.classList.toggle('ti-eye', !shouldShow);
+                icon.classList.toggle('ti-eye-off', shouldShow);
+                button.setAttribute('aria-label', shouldShow ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu');
+            });
+        });
+    })();
+</script>
 
 </body>
 </html>

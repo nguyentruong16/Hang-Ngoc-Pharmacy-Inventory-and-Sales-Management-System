@@ -1,6 +1,7 @@
 package com.example.project.controller;
 
 import com.example.project.security.AccountPrincipal;
+import com.example.project.repository.BranchRepository;
 import com.example.project.service.AccountPasswordService;
 import com.example.project.service.PasswordResetService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,18 +16,24 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Controller
 public class AuthController {
-    private static final String RESET_RESPONSE_MESSAGE = "If the email exists, a password reset link has been sent.";
+    private static final String RESET_RESPONSE_MESSAGE = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu sẽ được gửi vào email đó.";
 
     private final AccountPasswordService accountPasswordService;
     private final PasswordResetService passwordResetService;
+    private final BranchRepository branchRepository;
 
-    public AuthController(AccountPasswordService accountPasswordService, PasswordResetService passwordResetService) {
+    public AuthController(
+            AccountPasswordService accountPasswordService,
+            PasswordResetService passwordResetService,
+            BranchRepository branchRepository) {
         this.accountPasswordService = accountPasswordService;
         this.passwordResetService = passwordResetService;
+        this.branchRepository = branchRepository;
     }
 
     @GetMapping("/signin")
-    public String signin() {
+    public String signin(Model model) {
+        model.addAttribute("branches", branchRepository.findAllWithStatus());
         return "signin";
     }
 
@@ -48,7 +55,7 @@ public class AuthController {
     @GetMapping("/reset-password")
     public String resetPasswordForm(@RequestParam(name = "token", required = false) String token, Model model) {
         if (!passwordResetService.isTokenValid(token)) {
-            model.addAttribute("error", "Password reset link is invalid or expired.");
+            model.addAttribute("error", "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
             return "reset-password";
         }
         model.addAttribute("token", token);
@@ -68,14 +75,14 @@ public class AuthController {
             return "redirect:/signin";
         } catch (IllegalArgumentException exception) {
             model.addAttribute("token", token);
-            model.addAttribute("error", exception.getMessage());
+            model.addAttribute("error", toVietnamesePasswordMessage(exception.getMessage()));
             return "reset-password";
         }
     }
 
     @GetMapping("/change-password")
     public String changePassword() {
-        return "change-password";
+        return "redirect:/profile?section=password";
     }
 
     @PostMapping("/change-password")
@@ -84,14 +91,26 @@ public class AuthController {
             @RequestParam(name = "currentPassword", required = false) String currentPassword,
             @RequestParam(name = "newPassword", required = false) String newPassword,
             @RequestParam(name = "confirmPassword", required = false) String confirmPassword,
-            Model model) {
+            RedirectAttributes redirectAttributes) {
         try {
             accountPasswordService.changePassword(principal.getAccountId(), currentPassword, newPassword, confirmPassword);
-            return "redirect:/dashboard?passwordChanged";
+            return "redirect:/profile?passwordChanged";
         } catch (IllegalArgumentException exception) {
-            model.addAttribute("error", exception.getMessage());
-            return "change-password";
+            redirectAttributes.addFlashAttribute("passwordError", toVietnamesePasswordMessage(exception.getMessage()));
+            return "redirect:/profile?section=password";
         }
+    }
+
+    private String toVietnamesePasswordMessage(String message) {
+        return switch (message) {
+            case "Current password is required." -> "Vui lòng nhập mật khẩu hiện tại.";
+            case "Current password is incorrect." -> "Mật khẩu hiện tại không chính xác.";
+            case "New password is required." -> "Vui lòng nhập mật khẩu mới.";
+            case "Password confirmation is required." -> "Vui lòng xác nhận mật khẩu mới.";
+            case "Password confirmation does not match." -> "Mật khẩu xác nhận không trùng khớp.";
+            case "Password reset link is invalid or expired." -> "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";
+            default -> "Không thể cập nhật mật khẩu. Vui lòng kiểm tra lại thông tin.";
+        };
     }
 
     private String resetBaseUrl(HttpServletRequest request) {

@@ -21,6 +21,10 @@ public class AccountPasswordService {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found."));
 
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException("Current password is required.");
+        }
+
         if (account.getPassword() == null || account.getPassword().isBlank()
                 || !passwordEncoder.matches(currentPassword, account.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect.");
@@ -35,8 +39,8 @@ public class AccountPasswordService {
         if (newPassword == null || newPassword.isBlank()) {
             throw new IllegalArgumentException("New password is required.");
         }
-        if (newPassword.length() < 8) {
-            throw new IllegalArgumentException("New password must be at least 8 characters.");
+        if (confirmPassword == null || confirmPassword.isBlank()) {
+            throw new IllegalArgumentException("Password confirmation is required.");
         }
         if (!newPassword.equals(confirmPassword)) {
             throw new IllegalArgumentException("Password confirmation does not match.");
