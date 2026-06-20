@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-
+import java.text.Normalizer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,7 +52,11 @@ public class OwnerUserService {
 
         List<OwnerUserRowResponse> filteredUsers = accountRepository.findAll()
                 .stream()
-                .filter(account -> matchesSearch(account, keyword))
+                .filter(account -> matchesSearch(
+                        account,
+                        permissionMap.getOrDefault(account.getId(), List.of()),
+                        keyword
+                ))
                 .filter(account -> statusFilter == null
                         || statusFilter.equals(Boolean.TRUE.equals(account.getStatus())))
                 .filter(account -> roleFilter == null
@@ -91,19 +95,41 @@ public class OwnerUserService {
     public OwnerUserStatsResponse getStats() {
         List<Account> accounts = accountRepository.findAll();
 
-        Set<Integer> ownerAccountIds = accountpermissionRepository.findAllWithAccountAndBranch()
-                .stream()
+        List<Accountpermission> permissions = accountpermissionRepository.findAllWithAccountAndBranch();
+
+        Set<Integer> pharmacistAccountIds = permissions.stream()
                 .filter(ap -> ap.getAccountID() != null)
-                .filter(ap -> RoleConstants.OWNER.equals(ap.getRole()))
+                .filter(ap -> RoleConstants.PHARMACIST.equals(ap.getRole())
+                        || RoleConstants.CHIEF_PHARMACIST.equals(ap.getRole()))
+                .map(ap -> ap.getAccountID().getId())
+                .collect(Collectors.toSet());
+
+        Set<Integer> accountantAccountIds = permissions.stream()
+                .filter(ap -> ap.getAccountID() != null)
+                .filter(ap -> RoleConstants.ACCOUNTANT.equals(ap.getRole()))
+                .map(ap -> ap.getAccountID().getId())
+                .collect(Collectors.toSet());
+
+        Set<Integer> cashierAccountIds = permissions.stream()
+                .filter(ap -> ap.getAccountID() != null)
+                .filter(ap -> RoleConstants.CASHIER.equals(ap.getRole()))
                 .map(ap -> ap.getAccountID().getId())
                 .collect(Collectors.toSet());
 
         long total = accounts.size();
-        long active = accounts.stream().filter(account -> Boolean.TRUE.equals(account.getStatus())).count();
+        long active = accounts.stream()
+                .filter(account -> Boolean.TRUE.equals(account.getStatus()))
+                .count();
         long inactive = total - active;
-        long owners = ownerAccountIds.size();
 
-        return new OwnerUserStatsResponse(total, active, inactive, owners);
+        return new OwnerUserStatsResponse(
+                total,
+                active,
+                inactive,
+                pharmacistAccountIds.size(),
+                accountantAccountIds.size(),
+                cashierAccountIds.size()
+        );
     }
 
     @Transactional
@@ -166,16 +192,57 @@ public class OwnerUserService {
         }
     }
 
-    private boolean matchesSearch(Account account, String keyword) {
+    private boolean matchesSearch(Account account,
+                                  List<Accountpermission> permissions,
+                                  String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return true;
         }
 
-        return contains(account.getName(), keyword)
-                || contains(account.getUsername(), keyword)
-                || contains(account.getEmail(), keyword)
-                || contains(account.getPhoneNumber(), keyword)
-                || contains(formatEmployeeCode(account.getId()), keyword);
+        String normalizedKeyword = normalizeText(keyword);
+
+        boolean matchAccountInfo =
+                containsNormalized(account.getName(), normalizedKeyword)
+                        || containsNormalized(account.getUsername(), normalizedKeyword)
+                        || containsNormalized(account.getEmail(), normalizedKeyword)
+                        || containsNormalized(account.getPhoneNumber(), normalizedKeyword)
+                        || containsNormalized(formatEmployeeCode(account.getId()), normalizedKeyword);
+
+        if (matchAccountInfo) {
+            return true;
+        }
+
+        boolean matchRole = permissions != null && permissions.stream()
+                .map(Accountpermission::getRole)
+                .filter(Objects::nonNull)
+                .map(RoleConstants::vietnameseName)
+                .anyMatch(roleName -> containsNormalized(roleName, normalizedKeyword));
+
+        if (matchRole) {
+            return true;
+        }
+
+        return permissions != null && permissions.stream()
+                .map(Accountpermission::getBranchID)
+                .filter(Objects::nonNull)
+                .map(Branch::getName)
+                .anyMatch(branchName -> containsNormalized(branchName, normalizedKeyword));
+    }
+
+    private boolean containsNormalized(String value, String normalizedKeyword) {
+        return value != null && normalizeText(value).contains(normalizedKeyword);
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD);
+        normalized = normalized.replaceAll("\\p{M}", "");
+        normalized = normalized.replace("Đ", "D").replace("đ", "d");
+
+        return normalized.toLowerCase(Locale.ROOT).trim();
     }
 
     private boolean contains(String value, String keyword) {
@@ -188,7 +255,16 @@ public class OwnerUserService {
         }
 
         return permissions.stream()
-                .anyMatch(permission -> role.equals(permission.getRole()));
+                .map(Accountpermission::getRole)
+                .filter(Objects::nonNull)
+                .anyMatch(userRole -> {
+                    if (RoleConstants.PHARMACIST.equals(role)) {
+                        return RoleConstants.PHARMACIST.equals(userRole)
+                                || RoleConstants.CHIEF_PHARMACIST.equals(userRole);
+                    }
+
+                    return role.equals(userRole);
+                });
     }
 
     private OwnerUserRowResponse toRow(Account account, List<Accountpermission> permissions) {

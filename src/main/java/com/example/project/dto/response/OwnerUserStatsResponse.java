@@ -10,5 +10,8 @@ public class OwnerUserStatsResponse {
     private long totalUsers;
     private long activeUsers;
     private long inactiveUsers;
-    private long ownerUsers;
+
+    private long pharmacistUsers;
+    private long accountantUsers;
+    private long cashierUsers;
 }
