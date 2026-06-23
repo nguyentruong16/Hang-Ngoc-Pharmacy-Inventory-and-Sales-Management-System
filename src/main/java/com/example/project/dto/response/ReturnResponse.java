@@ -25,7 +25,6 @@ public class ReturnResponse {
     private BigDecimal totalRefund;
     private BigDecimal vatRefundAmount;
     private BigDecimal offsetDebtAmount;
-    private Integer offsetDebtId;
     private Integer expenseId;
     private Integer shiftReportId;
     private Integer vatAdjustmentId;
@@ -49,7 +48,6 @@ public class ReturnResponse {
                 returnEntity.getTotalRefund(),
                 returnEntity.getVatRefundAmount(),
                 returnEntity.getOffsetDebtAmount(),
-                returnEntity.getOffsetDebtID() != null ? returnEntity.getOffsetDebtID().getId() : null,
                 returnEntity.getExpenseID() != null ? returnEntity.getExpenseID().getId() : null,
                 returnEntity.getShiftReportID() != null ? returnEntity.getShiftReportID().getId() : null,
                 returnEntity.getVatAdjustmentID() != null ? returnEntity.getVatAdjustmentID().getId() : null,

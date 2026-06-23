@@ -17,7 +17,6 @@ public class ExpenseResponse {
     private Integer branchId;
     private Integer applicantId;
     private String expenseType;
-    private Integer debtPaymentId;
     private Integer returnId;
     private Integer shiftReportId;
     private Instant date;
@@ -38,7 +37,6 @@ public class ExpenseResponse {
                 expense.getBranchID() != null ? expense.getBranchID().getId() : null,
                 expense.getApplicantID() != null ? expense.getApplicantID().getId() : null,
                 expense.getExpenseType(),
-                expense.getDebtPaymentID() != null ? expense.getDebtPaymentID().getId() : null,
                 expense.getReturnID() != null ? expense.getReturnID().getId() : null,
                 expense.getShiftReportID() != null ? expense.getShiftReportID().getId() : null,
                 expense.getDate(),

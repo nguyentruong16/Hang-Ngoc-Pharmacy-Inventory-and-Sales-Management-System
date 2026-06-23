@@ -69,6 +69,10 @@ public class Product {
     @Column(name = "isPrescription")
     private Boolean isPrescription;
 
+    @ColumnDefault("0")
+    @Column(name = "hasSerial")
+    private Boolean hasSerial;
+
     @ColumnDefault("1")
     @Column(name = "status")
     private Boolean status;
