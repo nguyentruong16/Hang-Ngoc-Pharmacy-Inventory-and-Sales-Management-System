@@ -37,10 +37,6 @@ public class Income {
     private Invoice invoiceID;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "debtPaymentID")
-    private Debtpayment debtPaymentID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "returnID")
     private Return returnID;
 

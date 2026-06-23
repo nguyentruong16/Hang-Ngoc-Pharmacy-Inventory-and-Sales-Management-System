@@ -18,7 +18,6 @@ public class IncomeResponse {
     private Integer applicantId;
     private String incomeType;
     private Integer invoiceId;
-    private Integer debtPaymentId;
     private Integer returnId;
     private Integer shiftReportId;
     private Instant date;
@@ -36,7 +35,6 @@ public class IncomeResponse {
                 income.getApplicantID() != null ? income.getApplicantID().getId() : null,
                 income.getIncomeType(),
                 income.getInvoiceID() != null ? income.getInvoiceID().getId() : null,
-                income.getDebtPaymentID() != null ? income.getDebtPaymentID().getId() : null,
                 income.getReturnID() != null ? income.getReturnID().getId() : null,
                 income.getShiftReportID() != null ? income.getShiftReportID().getId() : null,
                 income.getDate(),

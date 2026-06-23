@@ -35,10 +35,6 @@ public class Expense {
     private String expenseType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "debtPaymentID")
-    private Debtpayment debtPaymentID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "returnID")
     private Return returnID;
 
