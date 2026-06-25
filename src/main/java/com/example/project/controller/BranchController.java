@@ -103,7 +103,16 @@ public class BranchController {
             return "create-branch";
         }
 
-        branchService.create(form);
+        // create(...) auto-assigns the Owner to the new branch in the same transaction; if that
+        // fails (e.g. no Owner account) the branch is rolled back and we show the reason.
+        try {
+            branchService.create(form);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            model.addAttribute("pageTitle", "Tạo chi nhánh");
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "create-branch";
+        }
+
         redirectAttributes.addFlashAttribute("success", "Tạo chi nhánh thành công");
         return "redirect:/owner/branch-list";
     }

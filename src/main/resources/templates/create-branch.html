@@ -155,6 +155,10 @@
             <div class="p-5">
               <h2 class="fs-5 mb-4">Thông tin chi nhánh</h2>
 
+              <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                <i class="ti ti-alert-circle"></i><span th:text="${errorMessage}">Lỗi</span>
+              </div>
+
               <form th:action="@{/owner/branch-list/create-branch}" th:object="${branchForm}" method="post" novalidate>
 
                 <div class="mb-3">
