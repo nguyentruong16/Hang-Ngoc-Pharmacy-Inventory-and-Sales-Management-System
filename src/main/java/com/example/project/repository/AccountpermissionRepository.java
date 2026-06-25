@@ -60,4 +60,22 @@ public interface AccountpermissionRepository extends JpaRepository<Accountpermis
     /** Largest existing id (0 when the table is empty); used to assign the next id. */
     @Query("select coalesce(max(ap.id), 0) from Accountpermission ap")
     Integer findMaxId();
+
+    /**
+     * Every {@code OWNER} assignment, account eagerly fetched, ordered by id. Used to locate the
+     * single system Owner account so it can be auto-assigned to newly created branches.
+     */
+    @Query("""
+           select ap
+           from Accountpermission ap
+           left join fetch ap.accountID
+           where upper(ap.role) = 'OWNER'
+           order by ap.id
+           """)
+    List<Accountpermission> findOwnerAssignments();
+
+    /** The first (lowest-id) Owner assignment, i.e. the system Owner account, if one exists. */
+    default Optional<Accountpermission> findFirstOwnerPermission() {
+        return findOwnerAssignments().stream().findFirst();
+    }
 }
