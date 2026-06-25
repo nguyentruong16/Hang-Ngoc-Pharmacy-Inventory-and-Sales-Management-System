@@ -37,10 +37,6 @@ public class Product {
     @JoinColumn(name = "typeID")
     private Type typeID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "positionID")
-    private Position positionID;
-
     @ColumnDefault("0")
     @Column(name = "maxStock")
     private Integer maxStock;
@@ -64,14 +60,6 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "baseUnitID")
     private Productunit baseUnitID;
-
-    @ColumnDefault("0")
-    @Column(name = "isPrescription")
-    private Boolean isPrescription;
-
-    @ColumnDefault("0")
-    @Column(name = "hasSerial")
-    private Boolean hasSerial;
 
     @ColumnDefault("1")
     @Column(name = "status")
