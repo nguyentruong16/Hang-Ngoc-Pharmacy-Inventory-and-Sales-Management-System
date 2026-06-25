@@ -110,12 +110,6 @@ public class OwnerUserService {
                 .map(ap -> ap.getAccountID().getId())
                 .collect(Collectors.toSet());
 
-        Set<Integer> cashierAccountIds = permissions.stream()
-                .filter(ap -> ap.getAccountID() != null)
-                .filter(ap -> RoleConstants.CASHIER.equals(ap.getRole()))
-                .map(ap -> ap.getAccountID().getId())
-                .collect(Collectors.toSet());
-
         long total = accounts.size();
         long active = accounts.stream()
                 .filter(account -> Boolean.TRUE.equals(account.getStatus()))
@@ -127,8 +121,7 @@ public class OwnerUserService {
                 active,
                 inactive,
                 pharmacistAccountIds.size(),
-                accountantAccountIds.size(),
-                cashierAccountIds.size()
+                accountantAccountIds.size()
         );
     }
 

@@ -20,14 +20,13 @@ public final class RoleConstants {
     public static final String CHIEF_PHARMACIST = "CHIEF_PHARMACIST";
     public static final String PHARMACIST = "PHARMACIST";
     public static final String ACCOUNTANT = "ACCOUNTANT";
-    public static final String CASHIER = "CASHIER";
 
     /** All valid roles, in display order. */
     public static final List<String> ALL = List.of(
-            OWNER, CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT, CASHIER);
+            OWNER, CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT);
 
     public static final List<String> NON_OWNER_ROLES = List.of(
-            CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT, CASHIER
+            CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT
     );
 
     /**
@@ -66,7 +65,7 @@ public final class RoleConstants {
         return sb.toString();
     }
 
-    /** Vietnamese display label for a role, e.g. {@code CASHIER -> "Thu ngân"}. */
+    /** Vietnamese display label for a role, e.g. {@code ACCOUNTANT -> "Kế toán"}. */
     public static String vietnameseName(String role) {
         if (role == null) {
             return "";
@@ -76,7 +75,6 @@ public final class RoleConstants {
             case CHIEF_PHARMACIST -> "Dược sĩ trưởng";
             case PHARMACIST -> "Dược sĩ";
             case ACCOUNTANT -> "Kế toán";
-            case CASHIER -> "Thu ngân";
             default -> role;
         };
     }

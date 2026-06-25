@@ -13,5 +13,4 @@ public class OwnerUserStatsResponse {
 
     private long pharmacistUsers;
     private long accountantUsers;
-    private long cashierUsers;
 }
