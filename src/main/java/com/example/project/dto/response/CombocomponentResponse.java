@@ -17,7 +17,6 @@ public class CombocomponentResponse {
     private String componentProductId;
     private Integer componentUnitId;
     private BigDecimal quantity;
-    private Integer baseQtyRequired;
     private String note;
 
     public static CombocomponentResponse from(Combocomponent combocomponent) {
@@ -27,7 +26,6 @@ public class CombocomponentResponse {
                 combocomponent.getComponentProductID() != null ? combocomponent.getComponentProductID().getProductID() : null,
                 combocomponent.getComponentUnitID() != null ? combocomponent.getComponentUnitID().getId() : null,
                 combocomponent.getQuantity(),
-                combocomponent.getBaseQtyRequired(),
                 combocomponent.getNote()
         );
     }

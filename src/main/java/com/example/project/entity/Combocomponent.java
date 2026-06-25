@@ -33,10 +33,6 @@ public class Combocomponent {
     @Column(name = "quantity", nullable = false, precision = 10, scale = 4)
     private BigDecimal quantity;
 
-    @NotNull
-    @Column(name = "baseQtyRequired", nullable = false)
-    private Integer baseQtyRequired;
-
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 

@@ -12,12 +12,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PositionResponse {
     private Integer id;
+    private String productId;
     private Integer branchId;
     private String name;
 
     public static PositionResponse from(Position position) {
         return new PositionResponse(
                 position.getId(),
+                position.getProductID() != null ? position.getProductID().getProductID() : null,
                 position.getBranchID() != null ? position.getBranchID().getId() : null,
                 position.getName()
         );

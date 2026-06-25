@@ -17,14 +17,12 @@ public class ProductResponse {
     private String code;
     private String barcode;
     private Integer typeId;
-    private Integer positionId;
     private Integer maxStock;
     private Integer minStock;
     private Integer producerId;
     private Integer originId;
     private String registrationNumber;
     private Integer baseUnitId;
-    private Boolean isPrescription;
     private Boolean status;
     private String image;
     private String note;
@@ -36,14 +34,12 @@ public class ProductResponse {
                 product.getCode(),
                 product.getBarcode(),
                 product.getTypeID() != null ? product.getTypeID().getId() : null,
-                product.getPositionID() != null ? product.getPositionID().getId() : null,
                 product.getMaxStock(),
                 product.getMinStock(),
                 product.getProducerID() != null ? product.getProducerID().getId() : null,
                 product.getOriginID() != null ? product.getOriginID().getId() : null,
                 product.getRegistrationNumber(),
                 product.getBaseUnitID() != null ? product.getBaseUnitID().getId() : null,
-                product.getIsPrescription(),
                 product.getStatus(),
                 product.getImage(),
                 product.getNote()

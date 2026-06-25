@@ -16,6 +16,11 @@ public class Position {
     @Column(name = "positionID", nullable = false)
     private Integer id;
 
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "productID", nullable = false)
+    private Product productID;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branchID")
     private Branch branchID;
