@@ -18,7 +18,7 @@ public class BranchPermissionRow {
     private final Integer accountId;
     private final String accountName;
     private final String usernameOrEmail;
-    private final String role;          // raw role code, e.g. "CASHIER"; null when unassigned
+    private final String role;          // raw role code, e.g. "PHARMACIST"; null when unassigned
     private final String roleDisplay;   // Vietnamese label, or "Chưa phân quyền" when unassigned
     private final boolean ownerLocked;  // true for the Owner row (read-only everywhere)
     private final boolean editable;     // branch active AND not the Owner row

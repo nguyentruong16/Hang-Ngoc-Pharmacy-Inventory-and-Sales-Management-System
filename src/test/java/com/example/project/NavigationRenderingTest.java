@@ -144,7 +144,7 @@ class NavigationRenderingTest {
         PermissionBranchOption inactive =
                 new PermissionBranchOption(3, "Hằng Ngọc 3", "Ngừng hoạt động", false, true, "Đã ngừng hoạt động");
         BranchPermissionRow row = new BranchPermissionRow(
-                4, "Trần Thị B", "cashier04", "CASHIER", "Thu ngân", false, false); // not editable
+                4, "Trần Thị B", "pharma04", "PHARMACIST", "Dược sĩ", false, false); // not editable
         PermissionPageView pageView = new PermissionPageView(
                 List.of(inactive), inactive, List.of(row), 0, 10, 1L, 1, null, null);
 
@@ -156,20 +156,20 @@ class NavigationRenderingTest {
                 .andExpect(content().string(containsString("Đã ngừng hoạt động")))   // inactive branch badge
                 .andExpect(content().string(containsString(
                         "Chi nhánh này đã ngừng hoạt động. Không thể chỉnh sửa phân quyền.")))  // notice
-                .andExpect(content().string(containsString("Thu ngân")))             // read-only role text
+                .andExpect(content().string(containsString("Dược sĩ")))              // read-only role text
                 // A non-editable row must NOT render the auto-submitting dropdown.
                 .andExpect(content().string(not(containsString("this.form.submit()"))));
     }
 
     @Test
-    void cashierIsForbiddenFromOwnerArea() throws Exception {
-        mvc.perform(get("/owner/permissions").with(as("CASHIER", "Cara Cashier", 2)))
+    void nonOwnerIsForbiddenFromOwnerArea() throws Exception {
+        mvc.perform(get("/owner/permissions").with(as("PHARMACIST", "Phong Pharmacist", 2)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void cashierSeesOwnRolePageWithVietnameseLabel() throws Exception {
-        mvc.perform(get("/cashier/customers").with(as("CASHIER", "Cara Cashier", 2)))
+    void pharmacistSeesOwnRolePageWithVietnameseLabel() throws Exception {
+        mvc.perform(get("/pharmacist/customers").with(as("PHARMACIST", "Phong Pharmacist", 2)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("placeholder"))
                 .andExpect(content().string(containsString("Khách hàng")));  // translated menu label
@@ -191,8 +191,8 @@ class NavigationRenderingTest {
 
     @Test
     void dashboardBridgeRedirectsToRoleDashboard() throws Exception {
-        mvc.perform(get("/dashboard").with(as("CASHIER", "Cara Cashier", 2)))
+        mvc.perform(get("/dashboard").with(as("PHARMACIST", "Phong Pharmacist", 2)))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/cashier/dashboard"));
+                .andExpect(redirectedUrl("/pharmacist/dashboard"));
     }
 }

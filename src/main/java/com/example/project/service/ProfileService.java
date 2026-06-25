@@ -89,7 +89,6 @@ public class ProfileService {
             case "pharmacist", "duoc_si", "1" -> "Dược sĩ";
             case "chief_pharmacist", "duoc_si_truong", "2" -> "Dược sĩ trưởng";
             case "accountant", "ke_toan", "3" -> "Kế toán";
-            case "cashier", "thu_ngan", "4" -> "Thu ngân";
             case "owner", "chu_nha_thuoc", "5" -> "Chủ nhà thuốc";
             default -> role;
         };
