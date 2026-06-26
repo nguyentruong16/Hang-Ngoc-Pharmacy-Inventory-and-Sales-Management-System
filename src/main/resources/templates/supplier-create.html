@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8"/>
+  <title>Tạo nhà cung cấp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+  <style>
+    :root {
+      --sup-green:      #059669;
+      --sup-green-dark: #047857;
+      --sup-border:     #e5e7eb;
+      --sup-muted:      #6b7280;
+    }
+    body { background: #f6f7f9; }
+    .sup-card {
+      background: #fff; border: 1px solid var(--sup-border);
+      border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    }
+    .sup-back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--sup-muted); font-size: 13px; font-weight: 500;
+      text-decoration: none; margin-bottom: 16px;
+    }
+    .sup-back-link:hover { color: var(--sup-green); }
+    .form-label { font-size: 13px; color: #111827; margin-bottom: 6px; }
+    .form-control {
+      min-height: 40px; border-radius: 10px;
+      border-color: var(--sup-border); font-size: 13px;
+    }
+    .form-control:focus {
+      border-color: #6ee7b7;
+      box-shadow: 0 0 0 3px rgba(5,150,105,.1);
+    }
+    .btn-sup-primary {
+      background: var(--sup-green); border-color: var(--sup-green); color: #fff;
+      border-radius: 10px; min-height: 42px; font-size: 13px;
+      font-weight: 500; display: inline-flex; align-items: center;
+      justify-content: center; gap: 6px; width: 100%;
+    }
+    .btn-sup-primary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
+    .btn-sup-secondary {
+      background: #fff; border: 1px solid var(--sup-green); color: var(--sup-green);
+      border-radius: 10px; min-height: 42px; font-size: 13px;
+      font-weight: 500; display: inline-flex; align-items: center;
+      justify-content: center; gap: 6px; width: 100%;
+    }
+    .btn-sup-secondary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
+    .btn-cancel {
+      background: transparent; border: none; color: var(--sup-muted);
+      font-size: 13px; font-weight: 500; min-height: 42px; width: 100%;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; text-decoration: none;
+    }
+    .btn-cancel:hover { color: #111827; }
+    .summary-label { font-size: 12px; color: var(--sup-muted); margin-bottom: 4px; }
+    .summary-value { font-size: 14px; color: #111827; font-weight: 500; }
+  </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content py-8">
+  <div class="container-fluid">
+
+    <a class="sup-back-link" th:href="@{/supplier}">
+      <i class="ti ti-arrow-left"></i>Quay lại danh sách nhà cung cấp
+    </a>
+
+    <div class="mb-4">
+      <h1 class="fs-4 mb-0">Tạo nhà cung cấp mới</h1>
+    </div>
+
+    <form th:action="@{/supplier/create}" th:object="${form}" method="post" novalidate id="createForm">
+      <div class="row g-4">
+
+        <!-- Form thông tin -->
+        <div class="col-12 col-lg-8">
+          <div class="sup-card p-4 p-md-5">
+            <h2 class="fs-6 mb-4">Thông tin nhà cung cấp</h2>
+
+            <div th:if="${errorMessage}" class="alert alert-danger mb-4">
+              <i class="ti ti-alert-circle me-2"></i>
+              <span th:text="${errorMessage}"></span>
+            </div>
+
+            <div class="mb-3">
+              <label for="supplierName" class="form-label">
+                Tên nhà cung cấp <span class="text-danger">*</span>
+              </label>
+              <input id="supplierName" type="text" class="form-control"
+                     th:field="*{name}"
+                     th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
+                     placeholder="Nhập tên nhà cung cấp">
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6">
+                <label for="supplierPhone" class="form-label">
+                  Số điện thoại <span class="text-danger">*</span>
+                </label>
+                <input id="supplierPhone" type="tel" class="form-control"
+                       th:field="*{phone}"
+                       th:classappend="${#fields.hasErrors('phone')} ? ' is-invalid'"
+                       inputmode="numeric" maxlength="10"
+                       pattern="0(2|3|5|7|8|9)[0-9]{8}"
+                       title="10 chữ số, bắt đầu bằng 02, 03, 05, 07, 08 hoặc 09"
+                       placeholder="0900000000">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="supplierEmail" class="form-label">
+                  Email <span class="text-danger">*</span>
+                </label>
+                <input id="supplierEmail" type="email" class="form-control"
+                       th:field="*{email}"
+                       th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'"
+                       maxlength="100"
+                       pattern="[A-Za-z0-9_-]+@[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*\.[A-Za-z]{2,}"
+                       title="Chỉ gồm chữ, số, '-', '_' và phải có đuôi hợp lệ (ví dụ .com, .vn)"
+                       placeholder="supplier@example.com">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+              </div>
+            </div>
+
+            <div class="mb-0">
+              <label for="supplierAddress" class="form-label">
+                Địa chỉ <span class="text-danger">*</span>
+              </label>
+              <textarea id="supplierAddress" class="form-control"
+                        th:field="*{address}"
+                        th:classappend="${#fields.hasErrors('address')} ? ' is-invalid'"
+                        rows="3"
+                        placeholder="Nhập địa chỉ nhà cung cấp"></textarea>
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel tóm tắt + nút thao tác -->
+        <div class="col-12 col-lg-4">
+          <div class="sup-card p-4">
+            <h2 class="fs-6 mb-4">Tóm tắt</h2>
+
+            <div class="mb-3">
+              <div class="summary-label">Loại</div>
+              <div class="summary-value">
+                <i class="ti ti-truck me-1 text-success"></i>Nhà cung cấp
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <div class="mb-3">
+              <div class="summary-label">Sản phẩm cung ứng</div>
+              <div class="summary-value">
+                <span class="badge bg-light text-dark border">0</span>
+                <span class="text-secondary small ms-1">(mới tạo)</span>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <div class="alert alert-info small p-3 mb-4">
+              <i class="ti ti-info-circle me-1"></i>
+              Sau khi tạo nhà cung cấp, có thể thêm sản phẩm cung ứng tại trang chi tiết.
+            </div>
+
+            <!-- Nút thao tác -->
+            <div class="d-grid gap-2">
+              <button type="submit" name="action" value="create" class="btn btn-sup-primary">
+                <i class="ti ti-check"></i>Tạo nhà cung cấp
+              </button>
+              <button type="submit" name="action" value="createAndAdd" class="btn btn-sup-secondary">
+                <i class="ti ti-plus"></i>Tạo &amp; thêm sản phẩm
+              </button>
+              <a th:href="@{/supplier}" class="btn-cancel">
+                <i class="ti ti-x"></i>Hủy
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Chi tiết - ' + ${supplier.name}">Chi tiết nhà cung cấp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+  <style>
+    :root {
+      --sup-green:      #059669;
+      --sup-green-dark: #047857;
+      --sup-green-bg:   #e8f7f1;
+      --sup-blue:       #0284c7;
+      --sup-border:     #e5e7eb;
+      --sup-muted:      #6b7280;
+    }
+    body { background: #f6f7f9; }
+
+    .sup-card {
+      background: #fff; border: 1px solid var(--sup-border);
+      border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    }
+    .sup-back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--sup-muted); font-size: 13px; font-weight: 500;
+      text-decoration: none; margin-bottom: 16px;
+    }
+    .sup-back-link:hover { color: var(--sup-green); }
+    .sup-code-badge {
+      display: inline-block; padding: 2px 10px;
+      background: #f3f4f6; border-radius: 999px;
+      font-size: 12px; font-weight: 600; color: var(--sup-muted); letter-spacing: .04em;
+    }
+
+    /* read-only info grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px 32px;
+    }
+    .info-grid .full { grid-column: 1 / -1; }
+    .info-label {
+      font-size: 12px; color: var(--sup-muted);
+      margin-bottom: 4px; font-weight: 500;
+    }
+    .info-value { font-size: 14px; color: #111827; font-weight: 500; }
+
+    /* summary panel */
+    .summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 0; border-bottom: 1px solid #f3f4f6;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-key { font-size: 13px; color: var(--sup-muted); }
+    .summary-val { font-size: 13px; color: #111827; font-weight: 600; }
+
+    /* form & buttons */
+    .form-label { font-size: 13px; color: #111827; margin-bottom: 6px; }
+    .form-control {
+      min-height: 40px; border-radius: 10px;
+      border-color: var(--sup-border); font-size: 13px;
+    }
+    .form-control:focus {
+      border-color: #6ee7b7; box-shadow: 0 0 0 3px rgba(5,150,105,.1);
+    }
+    .form-control[readonly] { background: #f9fafb; color: #9ca3af; opacity: 1; }
+    .btn-sup-primary {
+      background: var(--sup-green); border-color: var(--sup-green); color: #fff;
+      border-radius: 10px; min-height: 38px; font-size: 13px;
+      font-weight: 500; display: inline-flex; align-items: center;
+      justify-content: center; gap: 6px;
+    }
+    .btn-sup-primary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
+    .btn-sup-outline {
+      border: 1px solid var(--sup-border); background: #fff; color: #374151;
+      border-radius: 10px; min-height: 38px; font-size: 13px;
+      font-weight: 500; display: inline-flex; align-items: center;
+      justify-content: center; gap: 6px; text-decoration: none;
+    }
+    .btn-sup-outline:hover { background: #f9fafb; color: #111827; border-color: #d1d5db; }
+
+    .table thead th {
+      font-size: 12px; color: var(--sup-muted); font-weight: 600;
+      background: #f9fafb; white-space: nowrap;
+    }
+    .table tbody td { font-size: 13px; vertical-align: middle; }
+    .badge-preferred { background: #fef3c7; color: #92400e; font-size: 11px; }
+    .badge-active   { background: #dcfce7; color: #166534; font-size: 11px; }
+    .badge-inactive { background: #fee2e2; color: #991b1b; font-size: 11px; }
+  </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content py-8">
+  <div class="container-fluid">
+
+    <!-- Breadcrumb -->
+    <a class="sup-back-link" th:href="@{/supplier}">
+      <i class="ti ti-arrow-left"></i>Quay lại danh sách nhà cung cấp
+    </a>
+
+    <!-- Header + Action buttons -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+      <div>
+        <h1 class="fs-4 mb-1" th:text="${supplier.name}">Tên nhà cung cấp</h1>
+        <span class="sup-code-badge" th:text="${supplier.supplierCode}">NCC-000001</span>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="#" class="btn btn-sup-primary px-3">
+          <i class="ti ti-plus"></i>Thêm sản phẩm cung ứng
+        </a>
+        <a href="#" class="btn btn-sup-outline px-3">
+          <i class="ti ti-receipt"></i>Tạo phiếu nhập
+        </a>
+        <button type="button" class="btn btn-sup-outline px-3" id="btnToggleEdit">
+          <i class="ti ti-edit"></i>Cập nhật thông tin
+        </button>
+        <a th:href="@{/supplier}" class="btn btn-sup-outline px-3">
+          <i class="ti ti-arrow-left"></i>Quay lại
+        </a>
+      </div>
+    </div>
+
+    <!-- Toast thành công -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+      <i class="ti ti-circle-check me-2"></i>
+      <span th:text="${successMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Error -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+      <i class="ti ti-alert-circle me-2"></i>
+      <span th:text="${errorMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- Thông tin nhà cung cấp (read-only) -->
+      <div class="col-12 col-lg-8">
+        <div class="sup-card p-4 p-md-5">
+          <h2 class="fs-6 mb-4">Thông tin nhà cung cấp</h2>
+          <div class="info-grid">
+            <div>
+              <div class="info-label">Mã nhà cung cấp</div>
+              <div class="info-value" th:text="${supplier.supplierCode}">NCC-000001</div>
+            </div>
+            <div>
+              <div class="info-label">Tên nhà cung cấp</div>
+              <div class="info-value" th:text="${supplier.name}">Tên NCC</div>
+            </div>
+            <div>
+              <div class="info-label">Số điện thoại</div>
+              <div class="info-value" th:text="${supplier.phone != null ? supplier.phone : '—'}">—</div>
+            </div>
+            <div>
+              <div class="info-label">Email</div>
+              <div class="info-value" th:text="${supplier.email != null ? supplier.email : '—'}">—</div>
+            </div>
+            <div class="full">
+              <div class="info-label">Địa chỉ</div>
+              <div class="info-value" th:text="${supplier.address != null ? supplier.address : '—'}">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tóm tắt cung ứng -->
+      <div class="col-12 col-lg-4">
+        <div class="sup-card p-4">
+          <h3 class="fs-6 mb-3">Tóm tắt cung ứng</h3>
+          <div class="summary-row">
+            <span class="summary-key">Số sản phẩm cung ứng</span>
+            <span class="summary-val" th:text="${supplier.productCount}">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Mã nhà cung cấp</span>
+            <span class="summary-val" th:text="${supplier.supplierCode}">NCC-000001</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form chỉnh sửa (ẩn, mở bằng nút "Cập nhật thông tin") -->
+    <div class="sup-card p-4 p-md-5 mt-4" id="editForm"
+         th:style="${showEditForm} ? 'display:block;' : 'display:none;'">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fs-6 mb-0">Cập nhật thông tin nhà cung cấp</h2>
+        <button type="button" class="btn-close" id="btnCloseEdit" aria-label="Đóng"></button>
+      </div>
+
+      <form th:action="@{/supplier/{id}(id=${supplier.id})}"
+            th:object="${form}" method="post" novalidate>
+
+        <div class="mb-3">
+          <label class="form-label">Mã nhà cung cấp</label>
+          <input type="text" class="form-control" th:value="${supplier.supplierCode}" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label for="editName" class="form-label">
+            Tên nhà cung cấp <span class="text-danger">*</span>
+          </label>
+          <input id="editName" type="text" class="form-control"
+                 th:field="*{name}"
+                 th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
+                 placeholder="Nhập tên nhà cung cấp">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6">
+            <label for="editPhone" class="form-label">
+              Số điện thoại <span class="text-danger">*</span>
+            </label>
+            <input id="editPhone" type="tel" class="form-control"
+                   th:field="*{phone}"
+                   th:classappend="${#fields.hasErrors('phone')} ? ' is-invalid'"
+                   inputmode="numeric" maxlength="10"
+                   pattern="0(2|3|5|7|8|9)[0-9]{8}"
+                   title="10 chữ số, bắt đầu bằng 02, 03, 05, 07, 08 hoặc 09"
+                   placeholder="0900000000">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="editEmail" class="form-label">
+              Email <span class="text-danger">*</span>
+            </label>
+            <input id="editEmail" type="email" class="form-control"
+                   th:field="*{email}"
+                   th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'"
+                   maxlength="100"
+                   pattern="[A-Za-z0-9_-]+@[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*\.[A-Za-z]{2,}"
+                   title="Chỉ gồm chữ, số, '-', '_' và phải có đuôi hợp lệ (ví dụ .com, .vn)"
+                   placeholder="supplier@example.com">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="editAddress" class="form-label">
+            Địa chỉ <span class="text-danger">*</span>
+          </label>
+          <textarea id="editAddress" class="form-control"
+                    th:field="*{address}"
+                    th:classappend="${#fields.hasErrors('address')} ? ' is-invalid'"
+                    rows="3"
+                    placeholder="Nhập địa chỉ nhà cung cấp"></textarea>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-sup-primary px-4">
+            <i class="ti ti-device-floppy"></i>Lưu thay đổi
+          </button>
+          <a th:href="@{/supplier/{id}(id=${supplier.id})}" class="btn btn-sup-outline px-4">
+            <i class="ti ti-x"></i>Hủy
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Bảng sản phẩm cung ứng -->
+    <div class="sup-card p-4 p-md-5 mt-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fs-6 mb-0">Sản phẩm cung ứng</h2>
+        <span class="badge bg-light text-dark border"
+              th:text="${supplier.productCount + ' sản phẩm'}">0 sản phẩm</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Mã hàng</th>
+              <th>Tên hàng hóa</th>
+              <th class="text-end">Giá nhập tham khảo</th>
+              <th class="text-center">Ưu tiên</th>
+              <th class="text-center">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="sp : ${supplierProducts}">
+              <td class="fw-semibold text-secondary small"
+                  th:text="${sp.productCode != null ? sp.productCode : sp.productId}">SP001</td>
+              <td th:text="${sp.productName != null ? sp.productName : '—'}">Tên hàng hóa</td>
+              <td class="text-end">
+                <span th:if="${sp.costPrice != null}"
+                      th:text="${#numbers.formatInteger(sp.costPrice, 1, 'COMMA') + ' ₫'}">0 ₫</span>
+                <span th:unless="${sp.costPrice != null}" class="text-secondary">—</span>
+              </td>
+              <td class="text-center">
+                <span th:if="${sp.isPreferred}" class="badge badge-preferred rounded-pill">Ưu tiên</span>
+                <span th:unless="${sp.isPreferred}" class="text-secondary small">—</span>
+              </td>
+              <td class="text-center">
+                <span th:if="${sp.isActive}" class="badge badge-active rounded-pill">Đang cung ứng</span>
+                <span th:unless="${sp.isActive}" class="badge badge-inactive rounded-pill">Ngừng</span>
+              </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(supplierProducts)}">
+              <td colspan="5" class="text-center text-secondary py-5">
+                <i class="ti ti-package-off d-block fs-2 mb-2 text-muted"></i>
+                Chưa có sản phẩm cung ứng nào.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script th:inline="javascript">
+  (function () {
+    var editForm = document.getElementById('editForm');
+    var btnToggle = document.getElementById('btnToggleEdit');
+    var btnClose  = document.getElementById('btnCloseEdit');
+
+    function openEdit() {
+      editForm.style.display = 'block';
+      editForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function closeEdit() { editForm.style.display = 'none'; }
+
+    if (btnToggle) btnToggle.addEventListener('click', openEdit);
+    if (btnClose)  btnClose.addEventListener('click', closeEdit);
+
+    // Nếu form mở sẵn do lỗi validate → cuộn tới
+    if (editForm && editForm.style.display === 'block') {
+      editForm.scrollIntoView({ block: 'start' });
+    }
+  })();
+</script>
+</body>
+</html>
