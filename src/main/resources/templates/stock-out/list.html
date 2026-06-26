@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách xuất kho | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .stockout-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .stock-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: #dcfce7;
+            color: #059669;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .btn-stock-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 12px;
+        }
+
+        .btn-stock-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-reconciled {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-need-check {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .status-default {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .pagination .page-link {
+            color: #059669;
+            border-color: #e5e7eb;
+            font-size: 13px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+        }
+
+        @media (max-width: 991.98px) {
+            .stockout-page-content {
+                padding-top: 84px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content stockout-page-content">
+    <div class="container-fluid">
+
+        <div class="mb-4">
+            <h1 class="fs-4 mb-1">Danh sách xuất kho</h1>
+            <p class="text-secondary mb-0">Quản lý và đối chiếu các phiếu xuất kho nội bộ</p>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stock-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Phiếu xuất kho tháng này</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.monthlyCount}">0</div>
+                            <div class="text-success small">Tháng hiện tại</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-upload"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stock-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Chờ đối chiếu</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.pendingCount}">0</div>
+                            <div class="text-warning small">Cần xử lý sớm</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-clock"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stock-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Đã đối chiếu</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.reconciledCount}">0</div>
+                            <div class="text-success small">Hoàn tất</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-circle-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stock-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Cần kiểm tra</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.needCheckCount}">0</div>
+                            <div class="text-danger small">Cần xem xét ngay</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-alert-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stock-card p-4 mb-4">
+            <form th:action="${basePath}" method="get">
+                <input type="hidden" name="page" value="0">
+                <input type="hidden" name="size" th:value="${pageSize}">
+
+                <div class="row g-3">
+                    <div class="col-12 col-xl-4">
+                        <input type="text"
+                               class="form-control"
+                               name="keyword"
+                               th:value="${keyword}"
+                               placeholder="Tìm theo mã phiếu, sản phẩm hoặc lý do">
+                    </div>
+
+                    <div class="col-6 col-xl-2">
+                        <input type="date" class="form-control" name="fromDate" th:value="${fromDate}">
+                    </div>
+
+                    <div class="col-6 col-xl-2">
+                        <input type="date" class="form-control" name="toDate" th:value="${toDate}">
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <select class="form-select" name="outType">
+                            <option value="">Loại xuất kho</option>
+                            <option th:each="entry : ${outTypeLabels}"
+                                    th:value="${entry.key}"
+                                    th:text="${entry.value}"
+                                    th:selected="${filterOutType == entry.key}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <select class="form-select" name="branchId">
+                            <option value="">Chi nhánh</option>
+                            <option th:each="branch : ${branches}"
+                                    th:value="${branch.id}"
+                                    th:text="${branch.name}"
+                                    th:selected="${filterBranchId == branch.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <select class="form-select" name="statusId">
+                            <option value="">Trạng thái</option>
+                            <option th:each="status : ${statuses}"
+                                    th:value="${status.id}"
+                                    th:text="${status.name}"
+                                    th:selected="${filterStatusId == status.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <button type="submit" class="btn btn-stock-primary w-100">
+                            <i class="ti ti-search me-1"></i>
+                            Tìm kiếm
+                        </button>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
+                            <i class="ti ti-refresh me-1"></i>
+                            Đặt lại
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="stock-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="fs-6 mb-0">
+                    Danh sách xuất kho
+                    <span class="badge bg-success-subtle text-success ms-2"
+                          th:text="${totalItems + ' phiếu'}">0 phiếu</span>
+                </h2>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Mã phiếu xuất</th>
+                        <th>Ngày xuất</th>
+                        <th>Loại xuất</th>
+                        <th>Chi nhánh xuất</th>
+                        <th>Chi nhánh nhận</th>
+                        <th>Người tạo</th>
+                        <th>Số mặt hàng</th>
+                        <th>Giá trị ước tính</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="item : ${stockOuts}">
+                        <td class="fw-semibold text-success" th:text="${item.stockOutCode}">SO-000001</td>
+                        <td th:text="${item.dateDisplay}">01/06/2026 14:10</td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary"
+                                  th:text="${item.outTypeDisplay}">Chuyển chi nhánh</span>
+                        </td>
+                        <td th:text="${item.sourceBranchName}">Nhánh 1</td>
+                        <td th:text="${item.targetBranchName}">Nhánh 2</td>
+                        <td th:text="${item.createdByName}">Nguyễn Văn Minh</td>
+                        <td>
+                            <span class="badge bg-success-subtle text-success"
+                                  th:text="${item.totalItems}">2</span>
+                        </td>
+                        <td class="fw-semibold"
+                            th:text="${#numbers.formatDecimal(item.estimatedValue, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                            650.000đ
+                        </td>
+                        <td>
+                            <span class="status-badge"
+                                  th:classappend="${' ' + item.statusCssClass}"
+                                  th:text="${item.statusName}">
+                                Chờ đối chiếu
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               th:href="${basePath + '/' + item.id}">
+                                <i class="ti ti-eye me-1"></i>
+                                Xem
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(stockOuts)}">
+                        <td colspan="10" class="text-center text-secondary py-4">
+                            Không tìm thấy phiếu xuất kho nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4"
+                 th:if="${totalItems > 0}">
+                <div class="text-secondary small">
+                    Hiển thị
+                    <span th:text="${currentPage * pageSize + 1}">1</span>
+                    -
+                    <span th:text="${currentPage * pageSize + stockOuts.size()}">5</span>
+                    trong tổng số
+                    <span th:text="${totalItems}">0</span>
+                    phiếu
+                </div>
+
+                <nav th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, statusId=${filterStatusId}, page=${currentPage - 1}, size=${pageSize})}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${pageNumber == currentPage} ? ' active'">
+                            <a class="page-link"
+                               th:text="${pageNumber + 1}"
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, statusId=${filterStatusId}, page=${pageNumber}, size=${pageSize})}">
+                                1
+                            </a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, statusId=${filterStatusId}, page=${currentPage + 1}, size=${pageSize})}">
+                                Sau
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>
