@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Đăng nhập | Hang Ngoc PISMS</title>
+  <title>Đăng nhập | Nhà thuốc Hằng Ngọc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
@@ -15,9 +15,10 @@
     body { background: #f8fafc; }
     .auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr); }
     .auth-brand { background: linear-gradient(135deg, #e8fff3 0%, #d8f7ed 48%, #f3fbf7 100%); padding: 56px; display: flex; flex-direction: column; justify-content: space-between; color: #064e3b; }
-    .auth-logo { width: 48px; height: 48px; border-radius: 14px; background: #0f9f6e; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; }
+    .auth-logo { width: 48px; height: 48px; border-radius: 14px; background: #fff; border: 1px solid #d1fae5; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+    .auth-logo img { width: 100%; height: 100%; object-fit: contain; }
     .auth-brand-name { font-size: 22px; font-weight: 800; color: #064e3b; }
-    .auth-title { font-size: 36px; line-height: 1.15; font-weight: 800; max-width: 560px; color: #073b2c; }
+    .auth-title { font-size: 36px; line-height: 1.3; font-weight: 800; max-width: 560px; color: #073b2c; }
     .auth-copy { max-width: 560px; color: #26705b; font-size: 15px; line-height: 1.7; }
     .auth-feature { display: flex; align-items: center; gap: 12px; color: #0f5132; font-weight: 600; margin-top: 14px; }
     .auth-feature i { width: 28px; height: 28px; border-radius: 999px; background: #fff; color: #0f9f6e; display: inline-flex; align-items: center; justify-content: center; }
@@ -38,12 +39,12 @@
 <div class="auth-shell">
   <section class="auth-brand">
     <div class="d-flex align-items-center gap-3">
-      <div class="auth-logo">PM</div>
-      <div class="auth-brand-name">Hang Ngoc PISMS</div>
+      <div class="auth-logo"><img src="./assets/images/logo-icon.png" th:src="@{/assets/images/logo-icon.png}" alt="Nhà thuốc Hằng Ngọc"></div>
+      <div class="auth-brand-name">Nhà thuốc Hằng Ngọc</div>
     </div>
 
     <div>
-      <h2 class="auth-title mb-4">Nhà thuốc Hằng Ngọc</h2>
+      <h2 class="auth-title mb-4">Hệ thống quản lý nhà thuốc Hằng Ngọc</h2>
       <p class="auth-copy mb-4">
         Quản lý bán hàng, tồn kho, hóa đơn và cảnh báo hạn dùng trong một hệ thống nội bộ dành cho nhân viên nhà thuốc.
       </p>
@@ -53,7 +54,7 @@
     </div>
 
     <div class="auth-footer">
-      <span>© 2026 Hang Ngoc PISMS</span>
+      <span>© 2026 Nhà thuốc Hằng Ngọc</span>
       <span>Phiên bản nội bộ</span>
     </div>
   </section>
