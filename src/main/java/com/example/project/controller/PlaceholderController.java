@@ -32,7 +32,6 @@ public class PlaceholderController {
     @GetMapping({
             "/owner/dashboard",
             "/owner/products",
-            "/owner/origins",
             "/owner/types",
             "/owner/producers",
             "/owner/suppliers",
