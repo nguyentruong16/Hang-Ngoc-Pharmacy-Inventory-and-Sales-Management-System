@@ -40,7 +40,7 @@ public class BranchController {
         model.addAttribute("activeBranches", activeBranches); //so luong chi nhanh dang hoat dong
         model.addAttribute("inactiveBranches", branches.size() - activeBranches); //so luong chi nhanh ngung hoat dong
         model.addAttribute("pageTitle", "Danh sách chi nhánh");
-        return "branch-list";
+        return "owner/branch-list";
     }
 
     //xem chi tiet chi nhanh
@@ -59,7 +59,7 @@ public class BranchController {
         }
 
         model.addAttribute("pageTitle", "Chi tiết chi nhánh");
-        return "branch-detail";
+        return "owner/branch-detail";
     }
 
     //cap nhat chi nhanh
@@ -73,7 +73,7 @@ public class BranchController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("branch", branchService.getById(id));
             model.addAttribute("pageTitle", "Chi tiết chi nhánh");
-            return "branch-detail";
+            return "owner/branch-detail";
         }
 
         branchService.update(id, form);
@@ -88,7 +88,7 @@ public class BranchController {
             model.addAttribute("branchForm", new BranchCreateRequest());
         }
         model.addAttribute("pageTitle", "Tạo chi nhánh");
-        return "create-branch";
+        return "owner/create-branch";
     }
 
     //them chi nhanh
@@ -100,7 +100,7 @@ public class BranchController {
         //check validate ben dto request
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", "Tạo chi nhánh");
-            return "create-branch";
+            return "owner/create-branch";
         }
 
         // create(...) auto-assigns the Owner to the new branch in the same transaction; if that
@@ -110,7 +110,7 @@ public class BranchController {
         } catch (IllegalArgumentException | IllegalStateException ex) {
             model.addAttribute("pageTitle", "Tạo chi nhánh");
             model.addAttribute("errorMessage", ex.getMessage());
-            return "create-branch";
+            return "owner/create-branch";
         }
 
         redirectAttributes.addFlashAttribute("success", "Tạo chi nhánh thành công");

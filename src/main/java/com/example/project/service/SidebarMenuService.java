@@ -76,6 +76,9 @@ public class SidebarMenuService {
         if (uri.startsWith("/owner/branch-list/branch-detail")) {
             uri = "/owner/branch-list";
         }
+        if (uri.startsWith("/owner/origins/create-origin")) {
+            uri = "/owner/origins";
+        }
         String best = null;
         for (SidebarMenuGroup group : menu) {
             for (SidebarMenuItem item : group.getItems()) {

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Danh sách xuất xứ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+  <style>
+    :root {
+      --origin-green: #009a6a;
+      --origin-green-soft: #e4f6f0;
+      --origin-ink: #202124;
+      --origin-line: #e3e8ef;
+      --origin-panel: #ffffff;
+      --origin-bg: #f5f7f9;
+      --origin-font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: var(--origin-bg);
+      color: var(--origin-ink);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .origin-container button,
+    .origin-container input {
+      font-family: inherit;
+    }
+
+    .origin-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      font-family: var(--origin-font);
+      font-size: 0.9375rem;
+      font-weight: 400;
+      line-height: 1.65;
+    }
+
+    .origin-summary-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 360px);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .origin-stat {
+      padding: 18px 20px;
+      border: 1px solid var(--origin-line);
+      border-radius: 15px;
+      background: var(--origin-panel);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .origin-stat-label {
+      color: #7b8495;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      margin: 0 0 6px;
+    }
+
+    .origin-stat-value {
+      color: #202124;
+      font-size: 1.75rem;
+      line-height: 1;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin: 0;
+    }
+
+    .origin-stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      color: var(--origin-green);
+      background: var(--origin-green-soft);
+    }
+
+    .origin-panel {
+      background: var(--origin-panel);
+      border: 1px solid var(--origin-line);
+      border-radius: 15px;
+      padding: 24px;
+    }
+
+    .origin-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .origin-panel-title {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+
+    .origin-btn {
+      height: 42px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      padding: 0 22px;
+      font-weight: 500;
+      font-size: 0.875rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .origin-btn-primary {
+      background: var(--origin-green);
+      color: #ffffff;
+    }
+
+    .origin-btn-primary:hover {
+      background: #00835b;
+      color: #ffffff;
+    }
+
+    .origin-btn-light {
+      background: #ffffff;
+      color: #303746;
+      border-color: var(--origin-line);
+    }
+
+    .origin-btn-light:hover {
+      color: var(--origin-green);
+      border-color: #c7d8d1;
+    }
+
+    .origin-filter-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .origin-field {
+      position: relative;
+    }
+
+    .origin-field i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #99a3b2;
+      font-size: 1.05rem;
+      pointer-events: none;
+    }
+
+    .origin-input {
+      width: 100%;
+      height: 44px;
+      border: 1px solid var(--origin-line);
+      border-radius: 12px;
+      color: #303746;
+      background: #ffffff;
+      font-size: 0.875rem;
+      outline: none;
+      padding: 0 16px 0 44px;
+    }
+
+    .origin-input:focus {
+      border-color: #8bd7bf;
+      box-shadow: 0 0 0 3px rgba(0, 154, 106, .12);
+    }
+
+    .origin-table-wrap {
+      overflow-x: auto;
+    }
+
+    .origin-table {
+      width: 100%;
+      min-width: 520px;
+      border-collapse: collapse;
+    }
+
+    .origin-table th,
+    .origin-table td {
+      border-bottom: 1px solid var(--origin-line);
+      padding: 19px 0;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .origin-table th {
+      color: #737d8d;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .origin-table td {
+      color: #202124;
+      font-size: 0.9375rem;
+    }
+
+    .origin-table th.origin-col-code,
+    .origin-table td.origin-code {
+      text-align: center;
+    }
+
+    .origin-code {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .origin-empty {
+      color: #7b8495;
+      text-align: center;
+      padding: 34px 0;
+    }
+
+    .origin-alert {
+      margin-bottom: 24px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: var(--origin-green-soft);
+      color: var(--origin-green);
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 991.98px) {
+      .origin-filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .origin-panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div th:replace="~{fragments/topbar :: topbar}"></div>
+  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+  <main id="content" class="content py-10">
+    <div class="container-fluid">
+      <div class="origin-container">
+        <div th:if="${success}" class="origin-alert" role="status">
+          <i class="ti ti-circle-check"></i>
+          <span th:text="${success}">Thành công</span>
+        </div>
+
+        <section class="origin-summary-grid" aria-label="Tổng quan xuất xứ">
+          <article class="origin-stat">
+            <div>
+              <p class="origin-stat-label">Tổng xuất xứ</p>
+              <p class="origin-stat-value" th:text="${totalOrigins}"></p>
+            </div>
+            <span class="origin-stat-icon"><i class="ti ti-world"></i></span>
+          </article>
+        </section>
+
+        <section class="origin-panel" aria-labelledby="origin-table-title">
+          <div class="origin-panel-head">
+            <h2 id="origin-table-title" class="origin-panel-title">Danh sách xuất xứ</h2>
+            <a class="origin-btn origin-btn-primary" th:href="@{/owner/origins/create-origin}" href="#">
+              <i class="ti ti-plus"></i>
+              <span>Tạo xuất xứ</span>
+            </a>
+          </div>
+
+          <div class="origin-filter-grid">
+            <label class="origin-field">
+              <i class="ti ti-search"></i>
+              <input id="originSearch" class="origin-input" type="search" placeholder="Tìm theo tên xuất xứ" autocomplete="off">
+            </label>
+            <button id="originSearchButton" class="origin-btn origin-btn-primary" type="button">
+              <i class="ti ti-search"></i>
+              <span>Tìm kiếm</span>
+            </button>
+            <button id="originResetButton" class="origin-btn origin-btn-light" type="button">
+              <i class="ti ti-refresh"></i>
+              <span>Đặt lại</span>
+            </button>
+          </div>
+
+          <div class="origin-table-wrap">
+            <table class="origin-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="origin-col-code">Mã xuất xứ</th>
+                  <th scope="col">Tên xuất xứ</th>
+                </tr>
+              </thead>
+              <tbody id="originTableBody">
+                <tr th:each="origin : ${origins}" th:attr="data-name=${origin.name}">
+                  <td class="origin-code" th:text="${origin.id}"></td>
+                  <td th:text="${origin.name}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(origins)}">
+                  <td class="origin-empty" colspan="2">Chưa có xuất xứ nào.</td>
+                </tr>
+                <tr id="originNoResultRow" hidden>
+                  <td class="origin-empty" colspan="2">Không tìm thấy xuất xứ phù hợp.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    const searchInput = document.getElementById("originSearch");
+    const searchButton = document.getElementById("originSearchButton");
+    const resetButton = document.getElementById("originResetButton");
+    const noResultRow = document.getElementById("originNoResultRow");
+    const rows = Array.from(document.querySelectorAll("#originTableBody tr[data-name]"));
+
+    const normalize = (value) => (value || "").toString().trim().toLowerCase();
+
+    const applyFilters = () => {
+      const keyword = normalize(searchInput.value);
+      let visibleCount = 0;
+
+      rows.forEach((row) => {
+        const searchable = (row.dataset.name || "").toLowerCase();
+        const isVisible = !keyword || searchable.includes(keyword);
+        row.hidden = !isVisible;
+        if (isVisible) visibleCount += 1;
+      });
+
+      noResultRow.hidden = visibleCount !== 0 || rows.length === 0;
+    };
+
+    searchInput.addEventListener("input", applyFilters);
+    searchButton.addEventListener("click", applyFilters);
+    resetButton.addEventListener("click", () => {
+      searchInput.value = "";
+      applyFilters();
+      searchInput.focus();
+    });
+  </script>
+</body>
+
+</html>
