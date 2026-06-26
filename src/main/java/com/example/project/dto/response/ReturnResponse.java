@@ -23,14 +23,11 @@ public class ReturnResponse {
     private BigDecimal refundBanking;
     private BigDecimal refundCredit;
     private BigDecimal totalRefund;
-    private BigDecimal vatRefundAmount;
     private BigDecimal offsetDebtAmount;
     private Integer expenseId;
     private Integer shiftReportId;
-    private Integer vatAdjustmentId;
     private String reason;
     private Integer statusId;
-    private Integer approvedById;
     private Instant approvedAt;
     private String note;
 
@@ -46,14 +43,11 @@ public class ReturnResponse {
                 returnEntity.getRefundBanking(),
                 returnEntity.getRefundCredit(),
                 returnEntity.getTotalRefund(),
-                returnEntity.getVatRefundAmount(),
                 returnEntity.getOffsetDebtAmount(),
                 returnEntity.getExpenseID() != null ? returnEntity.getExpenseID().getId() : null,
                 returnEntity.getShiftReportID() != null ? returnEntity.getShiftReportID().getId() : null,
-                returnEntity.getVatAdjustmentID() != null ? returnEntity.getVatAdjustmentID().getId() : null,
                 returnEntity.getReason(),
                 returnEntity.getStatusID() != null ? returnEntity.getStatusID().getId() : null,
-                returnEntity.getApprovedBy() != null ? returnEntity.getApprovedBy().getId() : null,
                 returnEntity.getApprovedAt(),
                 returnEntity.getNote()
         );

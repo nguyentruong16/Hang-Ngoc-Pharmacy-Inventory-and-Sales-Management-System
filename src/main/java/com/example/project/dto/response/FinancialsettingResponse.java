@@ -13,26 +13,38 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class FinancialsettingResponse {
     private Integer id;
-    private Integer branchId;
     private BigDecimal vatRate;
+    private BigDecimal incomeTaxRate ;
     private Integer taxCalculationMethod;
     private BigDecimal returnProductOnInvoiceValueRate;
     private Boolean autoGenerateVATInvoice;
     private String vatInvoiceSeries;
-    private Integer vatInvoiceLastNumber;
     private BigDecimal openingCashDefault;
+    private String taxCode;
+    private String locationCode;
+    private String locationName;
+    private String phoneNumber;
+    private String email;
+    private String bankAccountNumber;
+    private String bankName;
 
     public static FinancialsettingResponse from(Financialsetting financialsetting) {
         return new FinancialsettingResponse(
                 financialsetting.getId(),
-                financialsetting.getBranchID() != null ? financialsetting.getBranchID().getId() : null,
                 financialsetting.getVatRate(),
+                financialsetting.getIncomeTaxRate(),
                 financialsetting.getTaxCalculationMethod(),
                 financialsetting.getReturnProductOnInvoiceValueRate(),
                 financialsetting.getAutoGenerateVATInvoice(),
                 financialsetting.getVatInvoiceSeries(),
-                financialsetting.getVatInvoiceLastNumber(),
-                financialsetting.getOpeningCashDefault()
+                financialsetting.getOpeningCashDefault(),
+                financialsetting.getTaxCode(),
+                financialsetting.getLocationCode(),
+                financialsetting.getLocationName(),
+                financialsetting.getPhoneNumber(),
+                financialsetting.getEmail(),
+                financialsetting.getBankAccountNumber(),
+                financialsetting.getBankName()
         );
     }
 }
