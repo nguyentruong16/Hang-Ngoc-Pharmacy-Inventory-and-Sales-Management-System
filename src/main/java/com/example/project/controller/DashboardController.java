@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * Entry / bridge routes shared by all signed-in users.
  *
  * <p>{@code /} and {@code /dashboard} are not pages of their own: they redirect the signed-in
- * user to their role dashboard (e.g. {@code /cashier/dashboard}). This is the landing target for
+ * user to their role dashboard (e.g. {@code /owner/dashboard}). This is the landing target for
  * the post-login success handler's fallback and for the change-password redirect, so role routing
  * stays in one place.</p>
  */

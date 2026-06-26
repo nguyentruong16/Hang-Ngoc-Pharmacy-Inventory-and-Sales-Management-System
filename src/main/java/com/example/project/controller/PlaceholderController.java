@@ -31,10 +31,17 @@ public class PlaceholderController {
 
     @GetMapping({
             "/owner/dashboard",
-            "/owner/branches/select",
-            "/owner/branches/create",
+            "/owner/products",
+            "/owner/types",
+            "/owner/producers",
+            "/owner/suppliers",
+            "/owner/purchase-invoices",
+            "/owner/debts",
+            "/owner/vat-invoices",
+            "/owner/financial-setting",
+            "/owner/stock-outs",
+            "/owner/customers",
             "/owner/approvals",
-            "/owner/internal-export",
             "/owner/notifications"
     })
     public String owner(HttpServletRequest request, Model model) {
@@ -43,25 +50,24 @@ public class PlaceholderController {
 
     @GetMapping({
             "/chief-pharmacist/dashboard",
+            "/chief-pharmacist/selling",
             "/chief-pharmacist/products",
-            "/chief-pharmacist/products/create",
-            "/chief-pharmacist/products/barcode",
-            "/chief-pharmacist/products/inventory-history",
+            "/chief-pharmacist/positions",
             "/chief-pharmacist/origins",
             "/chief-pharmacist/types",
             "/chief-pharmacist/producers",
-            "/chief-pharmacist/positions",
             "/chief-pharmacist/suppliers",
-            "/chief-pharmacist/suppliers/create",
-            "/chief-pharmacist/purchase-requisitions",
-            "/chief-pharmacist/purchase-requisitions/create",
             "/chief-pharmacist/procurements",
-            "/chief-pharmacist/procurements/create",
-            "/chief-pharmacist/expenses",
-            "/chief-pharmacist/expenses/create",
+            "/chief-pharmacist/purchase-requisitions",
+            "/chief-pharmacist/purchase-invoices",
+            "/chief-pharmacist/debts",
+            "/chief-pharmacist/stock-outs",
             "/chief-pharmacist/invoices",
-            "/chief-pharmacist/purchase-invoice-to-batch",
-            "/chief-pharmacist/export-cancellation",
+            "/chief-pharmacist/incomes",
+            "/chief-pharmacist/expenses",
+            "/chief-pharmacist/returns",
+            "/chief-pharmacist/customers",
+            "/chief-pharmacist/shift-reports",
             "/chief-pharmacist/notifications"
     })
     public String chiefPharmacist(HttpServletRequest request, Model model) {
@@ -70,8 +76,11 @@ public class PlaceholderController {
 
     @GetMapping({
             "/pharmacist/dashboard",
+            "/pharmacist/selling",
             "/pharmacist/products",
             "/pharmacist/invoices",
+            "/pharmacist/customers",
+            "/pharmacist/shift-reports",
             "/pharmacist/notifications"
     })
     public String pharmacist(HttpServletRequest request, Model model) {
@@ -80,38 +89,17 @@ public class PlaceholderController {
 
     @GetMapping({
             "/accountant/dashboard",
-            "/accountant/purchase-invoices",
-            "/accountant/purchase-invoices/create",
-            "/accountant/daily-reports",
-            "/accountant/daily-reports/create",
+            "/accountant/stock-outs",
             "/accountant/debts",
-            "/accountant/debts/create",
+            "/accountant/purchase-invoices",
             "/accountant/expenses",
-            "/accountant/expenses/create",
-            "/accountant/invoices",
-            "/accountant/income",
+            "/accountant/daily-reports",
             "/accountant/shift-reports",
-            "/accountant/financial-setting",
+            "/accountant/invoices",
+            "/accountant/vat-invoices",
             "/accountant/notifications"
     })
     public String accountant(HttpServletRequest request, Model model) {
-        return render(request, model);
-    }
-
-    @GetMapping({
-            "/cashier/dashboard",
-            "/cashier/customers",
-            "/cashier/customers/create",
-            "/cashier/invoices",
-            "/cashier/income",
-            "/cashier/income/create",
-            "/cashier/receipts/other",
-            "/cashier/debts",
-            "/cashier/shift-reports",
-            "/cashier/shift-reports/create",
-            "/cashier/notifications"
-    })
-    public String cashier(HttpServletRequest request, Model model) {
         return render(request, model);
     }
 

@@ -112,9 +112,6 @@ public class SidebarInterceptor implements HandlerInterceptor {
         if (RoleConstants.ACCOUNTANT.equals(role)) {
             return "/accountant/notifications";
         }
-        if (RoleConstants.CASHIER.equals(role)) {
-            return "/cashier/notifications";
-        }
         return "#";
     }
 

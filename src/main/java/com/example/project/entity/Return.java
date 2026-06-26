@@ -59,10 +59,6 @@ public class Return {
     private BigDecimal totalRefund;
 
     @ColumnDefault("0.00")
-    @Column(name = "vatRefundAmount", precision = 15, scale = 2)
-    private BigDecimal vatRefundAmount;
-
-    @ColumnDefault("0.00")
     @Column(name = "offsetDebtAmount", precision = 15, scale = 2)
     private BigDecimal offsetDebtAmount;
 
@@ -74,10 +70,6 @@ public class Return {
     @JoinColumn(name = "shiftReportID")
     private Shiftreport shiftReportID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vatAdjustmentID")
-    private Vatinvoice vatAdjustmentID;
-
     @NotNull
     @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
@@ -86,10 +78,6 @@ public class Return {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "statusID", nullable = false)
     private Status statusID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approvedBy")
-    private Account approvedBy;
 
     @Column(name = "approvedAt")
     private Instant approvedAt;

@@ -51,7 +51,6 @@ public class SecurityConfig {
                         .requestMatchers("/chief-pharmacist/**").hasRole(RoleConstants.CHIEF_PHARMACIST)
                         .requestMatchers("/pharmacist/**").hasRole(RoleConstants.PHARMACIST)
                         .requestMatchers("/accountant/**").hasRole(RoleConstants.ACCOUNTANT)
-                        .requestMatchers("/cashier/**").hasRole(RoleConstants.CASHIER)
                         // Everything else (/, /dashboard, /profile, /change-password, /403, REST APIs)
                         // requires only that the user is signed in.
                         .anyRequest().authenticated()

@@ -66,10 +66,6 @@ public class Expense {
     @Column(name = "paidByBanking", precision = 15, scale = 2)
     private BigDecimal paidByBanking;
 
-    @Size(max = 50)
-    @Column(name = "expenseCategoryCode", length = 50)
-    private String expenseCategoryCode;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "statusID")
     private Status statusID;

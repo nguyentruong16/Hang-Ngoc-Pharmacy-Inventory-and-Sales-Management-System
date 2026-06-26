@@ -48,16 +48,16 @@ class CustomAccountDetailsServiceTest {
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(activeAccount()));
         when(accountpermissionRepository.findByAccountIdAndBranchId(1, 2))
-                .thenReturn(List.of(perm(5, "CASHIER", 2)));
+                .thenReturn(List.of(perm(5, "PHARMACIST", 2)));
 
         AccountPrincipal principal = service.loadUserByUsernameAndBranch("u", 2);
 
-        assertEquals("CASHIER", principal.getPrimaryRole());
+        assertEquals("PHARMACIST", principal.getPrimaryRole());
         assertEquals(Integer.valueOf(2), principal.getBranchId());
         Set<String> authorities = principal.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
-        assertEquals(Set.of("ROLE_CASHIER"), authorities);
+        assertEquals(Set.of("ROLE_PHARMACIST"), authorities);
     }
 
     @Test

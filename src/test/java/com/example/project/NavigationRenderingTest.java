@@ -14,8 +14,9 @@ import com.example.project.security.BranchWebAuthenticationDetailsSource;
 import com.example.project.service.CustomAccountDetailsService;
 import com.example.project.service.OwnerPermissionService;
 import com.example.project.service.SidebarMenuService;
-import com.example.project.view.PermissionMatrixCell;
-import com.example.project.view.PermissionMatrixRow;
+import com.example.project.view.BranchPermissionRow;
+import com.example.project.view.PermissionBranchOption;
+import com.example.project.view.PermissionPageView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,14 +28,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -48,8 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Web-slice test (no database) for the real, security-backed navigation. It exercises the
  * SecurityConfig role rules, the SidebarInterceptor, and the Thymeleaf fragments/pages with an
  * authenticated {@link AccountPrincipal} injected per request — verifying both rendering and
- * URL-level role authorization. The DB-backed {@link OwnerPermissionService} is mocked (it
- * returns empty collections by default, which is enough to render the page).
+ * URL-level role authorization. The DB-backed {@link OwnerPermissionService} is mocked; by
+ * default it returns an empty {@link PermissionPageView} so the page renders without a database.
  */
 @WebMvcTest(controllers = {PermissionController.class, PlaceholderController.class, DashboardController.class})
 @Import({
@@ -73,12 +73,12 @@ class NavigationRenderingTest {
     @MockitoBean
     BranchRepository branchRepository;
 
-    // PermissionController depends on this DB-backed service; mock returns empty lists by default.
+    // PermissionController depends on this DB-backed service; mock returns an empty page by default.
     @MockitoBean
     OwnerPermissionService ownerPermissionService;
 
     @BeforeEach
-    void setUpBranchRepository() {
+    void setUp() {
         when(branchRepository.findById(any())).thenAnswer(invocation -> {
             Integer id = invocation.getArgument(0);
             Branch branch = new Branch();
@@ -87,6 +87,14 @@ class NavigationRenderingTest {
             return Optional.of(branch);
         });
         when(branchRepository.findAllWithStatus()).thenReturn(List.of());
+
+        // Default: a valid empty page so the Thymeleaf template renders without NPEs.
+        when(ownerPermissionService.getPermissionPage(any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(emptyPage());
+    }
+
+    private static PermissionPageView emptyPage() {
+        return new PermissionPageView(List.of(), null, List.of(), 0, 10, 0L, 0, null, null);
     }
 
     private static RequestPostProcessor as(String role, String displayName, Integer branchId) {
@@ -102,43 +110,66 @@ class NavigationRenderingTest {
         mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", 1)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("owner/permissions"))
-                .andExpect(content().string(containsString("Bảng phân quyền")))             // page title + sidebar link
-                .andExpect(content().string(containsString("Tài khoản / Chi nhánh")))       // matrix header
-                .andExpect(content().string(containsString("Olivia Owner")))               // topbar shows real user
-                .andExpect(content().string(not(containsString("Thêm phân quyền"))))        // add form removed
-                .andExpect(content().string(not(containsString("Demo: act as role"))));    // demo switcher gone
+                .andExpect(content().string(containsString("Bảng phân quyền")))           // title + sidebar link
+                .andExpect(content().string(containsString("Chọn chi nhánh")))            // branch button area
+                .andExpect(content().string(containsString("Chưa có chi nhánh nào.")))    // empty branch state
+                .andExpect(content().string(containsString("Olivia Owner")))             // topbar shows real user
+                .andExpect(content().string(not(containsString("Thêm phân quyền"))))      // add form removed
+                .andExpect(content().string(not(containsString("Demo: act as role"))));   // demo switcher gone
     }
 
     @Test
-    void ownerPageRendersMatrixRowsAndDropdownOptions() throws Exception {
-        Branch branch = new Branch();
-        branch.setId(2);
-        branch.setName("Hằng Ngọc 2");
-        Map<Integer, PermissionMatrixCell> cells = new LinkedHashMap<>();
-        cells.put(2, new PermissionMatrixCell(10, 1, 2, "PHARMACIST", "Dược sĩ", false));
-        PermissionMatrixRow row = new PermissionMatrixRow(1, "Nguyễn Văn A", "pharmacist01", false, cells);
+    void ownerPageRendersBranchTableAndDropdownOptions() throws Exception {
+        PermissionBranchOption branch =
+                new PermissionBranchOption(2, "Hằng Ngọc 2", "Đang hoạt động", true, true, "Đang hoạt động");
+        BranchPermissionRow row = new BranchPermissionRow(
+                1, "Nguyễn Văn A", "pharmacist01", "PHARMACIST", "Dược sĩ", false, true);
+        PermissionPageView pageView = new PermissionPageView(
+                List.of(branch), branch, List.of(row), 0, 10, 1L, 1, null, null);
 
-        when(ownerPermissionService.listBranches()).thenReturn(List.of(branch));
-        when(ownerPermissionService.listMatrixRows(any(), any())).thenReturn(List.of(row));
+        when(ownerPermissionService.getPermissionPage(any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(pageView);
 
         mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", 1)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Nguyễn Văn A")))   // account name cell
-                .andExpect(content().string(containsString("pharmacist01")))   // username/email sub-line
-                .andExpect(content().string(containsString("Hằng Ngọc 2")))    // branch column header
-                .andExpect(content().string(containsString("Dược sĩ")))        // role dropdown option
-                .andExpect(content().string(containsString("-- Chưa phân quyền --"))); // empty option
+                .andExpect(content().string(containsString("Nguyễn Văn A")))    // account row
+                .andExpect(content().string(containsString("pharmacist01")))    // username/email column
+                .andExpect(content().string(containsString("Hằng Ngọc 2")))     // branch button label
+                .andExpect(content().string(containsString("Dược sĩ")))         // role dropdown option
+                .andExpect(content().string(containsString("-- Chưa phân quyền --"))); // empty option on editable row
     }
 
     @Test
-    void cashierIsForbiddenFromOwnerArea() throws Exception {
-        mvc.perform(get("/owner/permissions").with(as("CASHIER", "Cara Cashier", 2)))
+    void inactiveBranchShowsReadOnlyNotice() throws Exception {
+        PermissionBranchOption inactive =
+                new PermissionBranchOption(3, "Hằng Ngọc 3", "Ngừng hoạt động", false, true, "Đã ngừng hoạt động");
+        BranchPermissionRow row = new BranchPermissionRow(
+                4, "Trần Thị B", "pharma04", "PHARMACIST", "Dược sĩ", false, false); // not editable
+        PermissionPageView pageView = new PermissionPageView(
+                List.of(inactive), inactive, List.of(row), 0, 10, 1L, 1, null, null);
+
+        when(ownerPermissionService.getPermissionPage(any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(pageView);
+
+        mvc.perform(get("/owner/permissions").param("branchId", "3").with(as("OWNER", "Olivia Owner", 1)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Đã ngừng hoạt động")))   // inactive branch badge
+                .andExpect(content().string(containsString(
+                        "Chi nhánh này đã ngừng hoạt động. Không thể chỉnh sửa phân quyền.")))  // notice
+                .andExpect(content().string(containsString("Dược sĩ")))              // read-only role text
+                // A non-editable row must NOT render the auto-submitting dropdown.
+                .andExpect(content().string(not(containsString("this.form.submit()"))));
+    }
+
+    @Test
+    void nonOwnerIsForbiddenFromOwnerArea() throws Exception {
+        mvc.perform(get("/owner/permissions").with(as("PHARMACIST", "Phong Pharmacist", 2)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void cashierSeesOwnRolePageWithVietnameseLabel() throws Exception {
-        mvc.perform(get("/cashier/customers").with(as("CASHIER", "Cara Cashier", 2)))
+    void pharmacistSeesOwnRolePageWithVietnameseLabel() throws Exception {
+        mvc.perform(get("/pharmacist/customers").with(as("PHARMACIST", "Phong Pharmacist", 2)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("placeholder"))
                 .andExpect(content().string(containsString("Khách hàng")));  // translated menu label
@@ -160,8 +191,8 @@ class NavigationRenderingTest {
 
     @Test
     void dashboardBridgeRedirectsToRoleDashboard() throws Exception {
-        mvc.perform(get("/dashboard").with(as("CASHIER", "Cara Cashier", 2)))
+        mvc.perform(get("/dashboard").with(as("PHARMACIST", "Phong Pharmacist", 2)))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/cashier/dashboard"));
+                .andExpect(redirectedUrl("/pharmacist/dashboard"));
     }
 }

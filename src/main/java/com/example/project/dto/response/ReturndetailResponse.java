@@ -21,8 +21,6 @@ public class ReturndetailResponse {
     private Integer returnQty;
     private Integer baseQtyRestored;
     private BigDecimal unitSellPrice;
-    private BigDecimal vatRate;
-    private BigDecimal vatRefund;
     private BigDecimal lineRefund;
     private Boolean restockable;
 
@@ -37,8 +35,6 @@ public class ReturndetailResponse {
                 returndetail.getReturnQty(),
                 returndetail.getBaseQtyRestored(),
                 returndetail.getUnitSellPrice(),
-                returndetail.getVatRate(),
-                returndetail.getVatRefund(),
                 returndetail.getLineRefund(),
                 returndetail.getRestockable()
         );

@@ -8,11 +8,13 @@
     - sidebarMenu : List<SidebarMenuGroup> for the current role
     - activeUrl   : URL of the item to highlight for the current request
   Behaviour:
+    * The sidebar is full width (no icon-rail, no collapse button) and scrolls vertically
+      when the menu is long.
     * A group with one item renders as a plain link (no header, no collapse).
-    * A group with several items is a collapsible section: hover or click the title to open;
-      it stays open when it contains the active page. In the icon-rail (collapsed) sidebar all
-      items are shown flat.
-  Keeps id="sidebar" so the existing bundled main.js toggle keeps working.
+    * A group with several items is a collapsible section: click the title to open/close it.
+      Several groups can stay open at once, and a group that contains the active page is open
+      by default.
+  Keeps id="sidebar" so the existing bundled main.js mobile toggle keeps working.
   Usage in a page:  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 -->
 <th:block th:fragment="sidebar">
@@ -282,33 +284,6 @@
             color: #059669;
             font-weight: 600;
             background: #e8f7f1;
-        }
-
-        /* Collapsed sidebar support */
-        .sidebar.collapsed {
-            width: 60px;
-        }
-
-        .sidebar.collapsed .logo-text,
-        .sidebar.collapsed .pm-nav-text,
-        .sidebar.collapsed .pm-caret,
-        .sidebar.collapsed .pm-submenu {
-            display: none;
-        }
-
-        .sidebar.collapsed .pm-nav-link,
-        .sidebar.collapsed .pm-nav-parent {
-            justify-content: center;
-            padding: 10px 0;
-        }
-
-        .sidebar.collapsed .pm-parent-left {
-            justify-content: center;
-        }
-
-        .sidebar.collapsed .pm-nav-link i,
-        .sidebar.collapsed .pm-parent-left i {
-            margin: 0;
         }
     </style>
 
