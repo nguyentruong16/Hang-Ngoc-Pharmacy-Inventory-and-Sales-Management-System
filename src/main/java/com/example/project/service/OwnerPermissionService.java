@@ -53,6 +53,8 @@ public class OwnerPermissionService {
     private static final String MSG_OWNER_LOCKED = "Không thể chỉnh sửa quyền Chủ sở hữu";
     private static final String MSG_BRANCH_INACTIVE =
             "Chi nhánh đã ngừng hoạt động, không thể thay đổi phân quyền";
+    private static final String MSG_CHIEF_PHARMACIST_LIMIT =
+            "Mỗi chi nhánh chỉ được có một Dược sĩ trưởng";
 
     private final AccountpermissionRepository accountpermissionRepository;
     private final AccountRepository accountRepository;
@@ -196,7 +198,6 @@ public class OwnerPermissionService {
 
         String normalized = role == null ? "" : canonicalRole(role);
         boolean clearing = normalized == null || normalized.isBlank();
-
         if (!clearing && isOwnerRole(normalized)) {
             throw new IllegalArgumentException(MSG_OWNER_LOCKED);
         }
@@ -208,6 +209,13 @@ public class OwnerPermissionService {
         // An Owner assignment is read-only: it can neither be edited nor removed from this screen.
         if (existing != null && isOwnerRole(existing.getRole())) {
             throw new IllegalArgumentException(MSG_OWNER_LOCKED);
+        }
+
+        // Each branch can have at most one Chief Pharmacist.
+        if (!clearing
+                && isChiefPharmacistRole(normalized)
+                && accountpermissionRepository.existsChiefPharmacistInBranchExcludingAccount(branchId, accountId)) {
+            throw new IllegalArgumentException(MSG_CHIEF_PHARMACIST_LIMIT);
         }
 
         if (clearing) {
@@ -284,6 +292,11 @@ public class OwnerPermissionService {
 
     private boolean isOwnerRole(String role) {
         return role != null && RoleConstants.OWNER.equals(role.trim().toUpperCase(Locale.ROOT));
+    }
+
+    private boolean isChiefPharmacistRole(String role) {
+        return role != null
+                && RoleConstants.CHIEF_PHARMACIST.equals(role.trim().toUpperCase(Locale.ROOT));
     }
 
     private String usernameOrEmail(Account account) {
