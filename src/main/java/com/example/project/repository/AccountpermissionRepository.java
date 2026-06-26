@@ -57,6 +57,21 @@ public interface AccountpermissionRepository extends JpaRepository<Accountpermis
                                         @Param("branchId") Integer branchId,
                                         @Param("excludeId") Integer excludeId);
 
+    /**
+     * True when the branch already has a Chief Pharmacist assigned to another account.
+     * Used by the Owner Permission Table to enforce:
+     * one CHIEF_PHARMACIST per branch.
+     */
+    @Query("""
+       select count(ap) > 0
+       from Accountpermission ap
+       where ap.branchID.id = :branchId
+         and upper(ap.role) = 'CHIEF_PHARMACIST'
+         and ap.accountID.id <> :accountId
+       """)
+    boolean existsChiefPharmacistInBranchExcludingAccount(@Param("branchId") Integer branchId,
+                                                          @Param("accountId") Integer accountId);
+
     /** Largest existing id (0 when the table is empty); used to assign the next id. */
     @Query("select coalesce(max(ap.id), 0) from Accountpermission ap")
     Integer findMaxId();
