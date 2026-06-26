@@ -22,11 +22,8 @@ public class InvoicedetailResponse {
     private Integer baseQtyDeducted;
     private BigDecimal unitSellPrice;
     private BigDecimal unitImportPrice;
-    private BigDecimal vatRate;
-    private BigDecimal vatAmount;
     private BigDecimal subimport;
     private BigDecimal subtotal;
-    private BigDecimal lineTotal;
     private Integer returnedQty;
 
     public static InvoicedetailResponse from(Invoicedetail invoicedetail) {
@@ -41,11 +38,8 @@ public class InvoicedetailResponse {
                 invoicedetail.getBaseQtyDeducted(),
                 invoicedetail.getUnitSellPrice(),
                 invoicedetail.getUnitImportPrice(),
-                invoicedetail.getVatRate(),
-                invoicedetail.getVatAmount(),
                 invoicedetail.getSubimport(),
                 invoicedetail.getSubtotal(),
-                invoicedetail.getLineTotal(),
                 invoicedetail.getReturnedQty()
         );
     }

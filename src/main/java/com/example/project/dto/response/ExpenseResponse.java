@@ -25,7 +25,6 @@ public class ExpenseResponse {
     private BigDecimal paid;
     private BigDecimal paidByCash;
     private BigDecimal paidByBanking;
-    private String expenseCategoryCode;
     private Integer statusId;
     private Integer approvedById;
     private Instant approvedAt;
@@ -45,7 +44,6 @@ public class ExpenseResponse {
                 expense.getPaid(),
                 expense.getPaidByCash(),
                 expense.getPaidByBanking(),
-                expense.getExpenseCategoryCode(),
                 expense.getStatusID() != null ? expense.getStatusID().getId() : null,
                 expense.getApprovedBy() != null ? expense.getApprovedBy().getId() : null,
                 expense.getApprovedAt(),

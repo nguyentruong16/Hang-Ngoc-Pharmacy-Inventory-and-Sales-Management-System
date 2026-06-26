@@ -21,16 +21,6 @@ public class Invoice {
     private Integer id;
 
     @NotNull
-    @ColumnDefault("'STANDARD'")
-    @Column(name = "invoiceType", nullable = false, columnDefinition = "enum('STANDARD','VAT')")
-    private String invoiceType;
-
-    @NotNull
-    @ColumnDefault("'RETAIL'")
-    @Column(name = "invoiceMode", nullable = false, columnDefinition = "enum('RETAIL','BULK_ANONYMOUS')")
-    private String invoiceMode;
-
-    @NotNull
     @Column(name = "date", nullable = false)
     private Instant date;
 
@@ -82,10 +72,6 @@ public class Invoice {
     @ColumnDefault("0")
     @Column(name = "prescriptionRequired")
     private Boolean prescriptionRequired;
-
-    @Size(max = 100)
-    @Column(name = "prescriptionRef", length = 100)
-    private String prescriptionRef;
 
     @ColumnDefault("'NONE'")
     @Column(name = "returnStatus", columnDefinition = "enum('NONE','PARTIAL','FULL')")
