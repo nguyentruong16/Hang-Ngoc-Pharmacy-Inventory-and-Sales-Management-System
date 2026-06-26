@@ -60,14 +60,6 @@ public class Invoicedetail {
     @Column(name = "unitImportPrice", nullable = false, precision = 15, scale = 2)
     private BigDecimal unitImportPrice;
 
-    @ColumnDefault("0.00")
-    @Column(name = "vatRate", precision = 5, scale = 2)
-    private BigDecimal vatRate;
-
-    @ColumnDefault("0.00")
-    @Column(name = "vatAmount", precision = 15, scale = 2)
-    private BigDecimal vatAmount;
-
     @NotNull
     @Column(name = "subimport", nullable = false, precision = 15, scale = 2)
     private BigDecimal subimport;
@@ -75,10 +67,6 @@ public class Invoicedetail {
     @NotNull
     @Column(name = "subtotal", nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal;
-
-    @NotNull
-    @Column(name = "lineTotal", nullable = false, precision = 15, scale = 2)
-    private BigDecimal lineTotal;
 
     @ColumnDefault("0")
     @Column(name = "returnedQty")

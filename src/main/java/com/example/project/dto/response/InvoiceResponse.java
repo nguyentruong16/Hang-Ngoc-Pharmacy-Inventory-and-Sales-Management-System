@@ -14,8 +14,6 @@ import java.time.Instant;
 @AllArgsConstructor
 public class InvoiceResponse {
     private Integer id;
-    private String invoiceType;
-    private String invoiceMode;
     private Instant date;
     private Integer branchId;
     private Integer employeeId;
@@ -29,7 +27,6 @@ public class InvoiceResponse {
     private BigDecimal paidByBanking;
     private BigDecimal debtAmount;
     private Boolean prescriptionRequired;
-    private String prescriptionRef;
     private String returnStatus;
     private Integer statusId;
     private Integer shiftReportId;
@@ -38,8 +35,6 @@ public class InvoiceResponse {
     public static InvoiceResponse from(Invoice invoice) {
         return new InvoiceResponse(
                 invoice.getId(),
-                invoice.getInvoiceType(),
-                invoice.getInvoiceMode(),
                 invoice.getDate(),
                 invoice.getBranchID() != null ? invoice.getBranchID().getId() : null,
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getId() : null,
@@ -53,7 +48,6 @@ public class InvoiceResponse {
                 invoice.getPaidByBanking(),
                 invoice.getDebtAmount(),
                 invoice.getPrescriptionRequired(),
-                invoice.getPrescriptionRef(),
                 invoice.getReturnStatus(),
                 invoice.getStatusID() != null ? invoice.getStatusID().getId() : null,
                 invoice.getShiftReportID() != null ? invoice.getShiftReportID().getId() : null,
