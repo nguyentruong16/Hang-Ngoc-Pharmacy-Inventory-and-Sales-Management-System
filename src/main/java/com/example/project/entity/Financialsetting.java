@@ -19,14 +19,13 @@ public class Financialsetting {
     @Column(name = "financialSettingID", nullable = false)
     private Integer id;
 
-    @NotNull
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "branchID", nullable = false)
-    private Branch branchID;
-
     @ColumnDefault("0.00")
     @Column(name = "vatRate", precision = 5, scale = 2)
     private BigDecimal vatRate;
+
+    @ColumnDefault("0.00")
+    @Column(name = "incomeTaxRate", precision = 5, scale = 2)
+    private BigDecimal incomeTaxRate ;
 
     @ColumnDefault("1")
     @Column(name = "taxCalculationMethod")
@@ -41,16 +40,47 @@ public class Financialsetting {
     private Boolean autoGenerateVATInvoice;
 
     @Size(max = 10)
-    @Column(name = "vatInvoiceSeries", length = 10)
+    @NotNull
+    @Column(name = "vatInvoiceSeries", nullable = false, length = 10)
     private String vatInvoiceSeries;
-
-    @ColumnDefault("0")
-    @Column(name = "vatInvoiceLastNumber")
-    private Integer vatInvoiceLastNumber;
 
     @ColumnDefault("0.00")
     @Column(name = "openingCashDefault", precision = 15, scale = 2)
     private BigDecimal openingCashDefault;
 
+    @Size(max = 100)
+    @NotNull
+    @Column(name = "taxCode", nullable = false, length = 100)
+    private String taxCode;
+
+    @Size(max = 20)
+    @NotNull
+    @Column(name = "locationCode", nullable = false, length = 20)
+    private String locationCode;
+
+    @Size(max = 100)
+    @NotNull
+    @Column(name = "locationName", nullable = false, length = 100)
+    private String locationName;
+
+    @Size(max = 10)
+    @NotNull
+    @Column(name = "phoneNumber", nullable = false, length = 10)
+    private String phoneNumber;
+
+    @Size(max = 100)
+    @NotNull
+    @Column(name = "email", nullable = false, length = 100)
+    private String email;
+
+    @Size(max = 20)
+    @NotNull
+    @Column(name = "bankAccountNumber", nullable = false, length = 20)
+    private String bankAccountNumber;
+
+    @Size(max = 100)
+    @NotNull
+    @Column(name = "bankName", nullable = false, length = 100)
+    private String bankName;
 
 }

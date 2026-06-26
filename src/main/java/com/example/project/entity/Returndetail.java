@@ -55,14 +55,6 @@ public class Returndetail {
     @Column(name = "unitSellPrice", nullable = false, precision = 15, scale = 2)
     private BigDecimal unitSellPrice;
 
-    @ColumnDefault("0.00")
-    @Column(name = "vatRate", precision = 5, scale = 2)
-    private BigDecimal vatRate;
-
-    @ColumnDefault("0.00")
-    @Column(name = "vatRefund", precision = 15, scale = 2)
-    private BigDecimal vatRefund;
-
     @NotNull
     @Column(name = "lineRefund", nullable = false, precision = 15, scale = 2)
     private BigDecimal lineRefund;
