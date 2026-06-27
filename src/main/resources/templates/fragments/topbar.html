@@ -359,6 +359,22 @@
         }
     </style>
 
+    <script th:inline="none">
+    (function () {
+        var POLL_MS = 30000;
+        var REDIRECT_URL = '/signin?roleChanged';
+        setInterval(function () {
+            fetch('/api/session/check')
+                .then(function (res) {
+                    if (res.redirected || res.status === 401 || res.status === 403) {
+                        window.location.replace(REDIRECT_URL);
+                    }
+                })
+                .catch(function () { /* bỏ qua lỗi mạng tạm thời */ });
+        }, POLL_MS);
+    })();
+    </script>
+
 </th:block>
 </body>
 

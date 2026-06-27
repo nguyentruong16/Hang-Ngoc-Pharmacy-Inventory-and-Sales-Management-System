@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8"/>
+  <title>Danh sách nhà cung cấp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+  <style>
+    :root {
+      --sup-green:       #059669;
+      --sup-green-dark:  #047857;
+      --sup-green-bg:    #e8f7f1;
+      --sup-blue:        #0284c7;
+      --sup-blue-bg:     #e0f2fe;
+      --sup-purple:      #7c3aed;
+      --sup-purple-bg:   #f5f3ff;
+      --sup-border:      #e5e7eb;
+      --sup-bg:          #f6f7f9;
+      --sup-muted:       #6b7280;
+    }
+
+    body { background: var(--sup-bg); }
+
+    /* ── KPI cards ── */
+    .kpi-card {
+      background: #fff;
+      border: 1px solid var(--sup-border);
+      border-radius: 14px;
+      padding: 20px 22px 18px;
+      box-shadow: 0 1px 2px rgba(16,24,40,.04);
+      position: relative;
+      min-height: 110px;
+    }
+    .kpi-label {
+      font-size: 12.5px;
+      color: var(--sup-muted);
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .kpi-number {
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #111827;
+      letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-sub {
+      font-size: 11.5px;
+      font-weight: 500;
+      margin-top: 5px;
+    }
+    .kpi-sub.green  { color: var(--sup-green); }
+    .kpi-sub.blue   { color: var(--sup-blue); }
+    .kpi-sub.purple { color: var(--sup-purple); }
+    .kpi-icon {
+      position: absolute;
+      top: 18px; right: 18px;
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .kpi-icon.green  { background: var(--sup-green-bg);  color: var(--sup-green); }
+    .kpi-icon.blue   { background: var(--sup-blue-bg);   color: var(--sup-blue); }
+    .kpi-icon.purple { background: var(--sup-purple-bg); color: var(--sup-purple); }
+
+    /* ── Main card (filter + table gộp chung) ── */
+    .main-card {
+      background: #fff;
+      border: 1px solid var(--sup-border);
+      border-radius: 14px;
+      box-shadow: 0 1px 2px rgba(16,24,40,.04);
+      padding: 24px;
+    }
+
+    /* ── Filter row ── */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .filter-input {
+      flex: 1 1 260px;
+      height: 40px;
+      border: 1px solid var(--sup-border);
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 13px;
+      color: #374151;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .filter-input:focus {
+      border-color: #6ee7b7;
+      box-shadow: 0 0 0 3px rgba(5,150,105,.1);
+    }
+    .btn-search {
+      height: 40px;
+      padding: 0 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-search.primary { background: var(--sup-green); color: #fff; }
+    .btn-search.primary:hover { background: var(--sup-green-dark); }
+    .btn-search.reset {
+      background: transparent;
+      color: #374151;
+      border: 1px solid var(--sup-border);
+      text-decoration: none;
+    }
+    .btn-search.reset:hover { background: #f9fafb; color: #111827; }
+
+    /* ── Table ── */
+    .sup-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    .sup-table th {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sup-muted);
+      background: #f9fafb;
+      border-bottom: 1px solid var(--sup-border);
+      white-space: nowrap;
+    }
+    .sup-table td {
+      padding: 13px 14px;
+      font-size: 13px;
+      color: #374151;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: middle;
+    }
+    .sup-table tr:last-child td { border-bottom: none; }
+    .sup-table tr:hover td { background: #fafafa; }
+    .sup-code {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sup-muted);
+      letter-spacing: .04em;
+    }
+    .sup-name { font-weight: 600; color: #111827; }
+    .sup-addr {
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--sup-muted);
+    }
+    .view-link {
+      color: var(--sup-green);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .view-link:hover { color: var(--sup-green-dark); text-decoration: underline; }
+
+    /* ── Create button ── */
+    .btn-create {
+      height: 40px;
+      padding: 0 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--sup-green);
+      color: #fff;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-create:hover { background: var(--sup-green-dark); color: #fff; }
+
+    /* ── Pagination ── */
+    .pagination .page-link { color: var(--sup-green); border-color: var(--sup-border); font-size: 13px; }
+    .pagination .page-item.active .page-link { background: var(--sup-green); border-color: var(--sup-green); color: #fff; }
+    .pagination .page-item.disabled .page-link { color: #d1d5db; }
+
+    /* ── Empty state ── */
+    .empty-row td { color: var(--sup-muted); font-size: 13px; padding: 40px 0; }
+
+    @media (max-width: 767px) {
+      .filter-row { flex-direction: column; align-items: stretch; }
+      .filter-input { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content py-8">
+  <div class="container-fluid">
+
+    <!-- Toast -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+      <i class="ti ti-circle-check me-2"></i>
+      <span th:text="${successMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- KPI Cards (3 thẻ — không có status) -->
+    <div class="row g-3 mb-4">
+
+      <!-- Tổng nhà cung cấp -->
+      <div class="col-12 col-md-4">
+        <div class="kpi-card">
+          <span class="kpi-icon green"><i class="ti ti-building-store"></i></span>
+          <div class="kpi-label">Tổng nhà cung cấp</div>
+          <div class="kpi-number" th:text="${totalSuppliers}">0</div>
+          <div class="kpi-sub green">Tất cả nhà cung cấp</div>
+        </div>
+      </div>
+
+      <!-- Có sản phẩm cung ứng -->
+      <div class="col-12 col-md-4">
+        <div class="kpi-card">
+          <span class="kpi-icon blue"><i class="ti ti-package"></i></span>
+          <div class="kpi-label">Có sản phẩm cung ứng</div>
+          <div class="kpi-number" th:text="${withProducts}">0</div>
+          <div class="kpi-sub blue">Nhà cung cấp có liên kết sản phẩm</div>
+        </div>
+      </div>
+
+      <!-- Tổng sản phẩm cung ứng -->
+      <div class="col-12 col-md-4">
+        <div class="kpi-card">
+          <span class="kpi-icon purple"><i class="ti ti-tags"></i></span>
+          <div class="kpi-label">Sản phẩm cung ứng</div>
+          <div class="kpi-number" th:text="${totalProducts}">0</div>
+          <div class="kpi-sub purple">Tổng sản phẩm</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card chứa tiêu đề + tìm kiếm + bảng -->
+    <div class="main-card">
+
+      <!-- Header của card -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách nhà cung cấp</h2>
+        <a th:href="@{/supplier/create}" class="btn-create">
+          <i class="ti ti-plus"></i>Tạo nhà cung cấp
+        </a>
+      </div>
+
+      <!-- Bộ lọc inline -->
+      <form th:action="@{/supplier}" method="get">
+        <input type="hidden" name="page" value="0">
+        <input type="hidden" name="size" th:value="${pageSize}">
+        <div class="filter-row">
+          <input type="text"
+                 class="filter-input"
+                 name="keyword"
+                 th:value="${keyword}"
+                 placeholder="Tìm theo tên nhà cung cấp, số điện thoại hoặc email">
+          <button type="submit" class="btn-search primary">
+            <i class="ti ti-search"></i>Tìm kiếm
+          </button>
+          <a th:href="@{/supplier}" class="btn-search reset">
+            <i class="ti ti-refresh"></i>Đặt lại
+          </a>
+        </div>
+      </form>
+
+      <!-- Bảng -->
+      <div style="overflow-x:auto;">
+        <table class="sup-table">
+          <thead>
+            <tr>
+              <th>Mã NCC</th>
+              <th>Tên nhà cung cấp</th>
+              <th>Số điện thoại</th>
+              <th>Email</th>
+              <th>Địa chỉ</th>
+              <th style="text-align:center;">Số sản phẩm cung ứng</th>
+              <th style="text-align:center;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="sup : ${suppliers}">
+              <td class="sup-code" th:text="${sup.supplierCode}">NCC-000001</td>
+              <td class="sup-name"  th:text="${sup.name}">Tên NCC</td>
+              <td th:text="${sup.phone != null ? sup.phone : '—'}">—</td>
+              <td th:text="${sup.email != null ? sup.email : '—'}">—</td>
+              <td class="sup-addr"
+                  th:text="${sup.address != null ? sup.address : '—'}"
+                  th:title="${sup.address}">—</td>
+              <td style="text-align:center;" th:text="${sup.productCount}">0</td>
+              <td style="text-align:center;">
+                <a class="view-link" th:href="@{/supplier/{id}(id=${sup.id})}">Xem</a>
+              </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(suppliers)}" class="empty-row">
+              <td colspan="7" style="text-align:center;">
+                Không tìm thấy nhà cung cấp nào.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Phân trang -->
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4"
+           th:if="${totalItems > 0}">
+        <div class="text-secondary" style="font-size:13px;">
+          Hiển thị
+          <span th:text="${currentPage * pageSize + 1}">1</span>–<span th:text="${currentPage * pageSize + suppliers.size()}">10</span>
+          trong tổng số <span th:text="${totalItems}" class="fw-semibold">0</span> nhà cung cấp
+        </div>
+        <nav th:if="${totalPages > 1}">
+          <ul class="pagination mb-0">
+            <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
+              <a class="page-link"
+                 th:href="@{/supplier(keyword=${keyword}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
+            </li>
+            <li class="page-item"
+                th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
+                th:classappend="${p == currentPage} ? ' active'">
+              <a class="page-link"
+                 th:text="${p + 1}"
+                 th:href="@{/supplier(keyword=${keyword}, page=${p}, size=${pageSize})}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
+              <a class="page-link"
+                 th:href="@{/supplier(keyword=${keyword}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div><!-- /main-card -->
+
+  </div>
+</main>
+</body>
+</html>

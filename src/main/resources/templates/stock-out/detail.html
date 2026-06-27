@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiết xuất kho | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .stockout-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .stock-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: #6b7280;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-reconciled {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-need-check {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .status-default {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .check-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .check-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d1d5db;
+            color: #9ca3af;
+        }
+
+        .check-icon.done {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+        }
+
+        .btn-stock-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 12px;
+        }
+
+        .btn-stock-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
+
+        .btn-stock-warning {
+            color: #d97706;
+            border-color: #f59e0b;
+            background: #fff;
+            border-radius: 12px;
+        }
+
+        .btn-stock-warning:hover {
+            background: #fffbeb;
+            border-color: #d97706;
+            color: #b45309;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        @media (max-width: 991.98px) {
+            .stockout-page-content {
+                padding-top: 84px !important;
+            }
+
+            .info-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content stockout-page-content">
+    <div class="container-fluid">
+
+        <div class="mb-4">
+            <h1 class="fs-4 mb-1">
+                Chi tiết xuất kho –
+                <span th:text="${detail.stockOutCode}">SO-000001</span>
+            </h1>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-9">
+
+                <div class="stock-card mb-4">
+                    <div class="p-4 border-bottom">
+                        <div class="section-title">
+                            <i class="ti ti-info-circle text-success me-1"></i>
+                            Thông tin phiếu xuất
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <div class="info-row">
+                            <div class="info-label">Mã phiếu xuất</div>
+                            <div class="fw-semibold text-success" th:text="${detail.stockOutCode}">SO-000001</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Ngày xuất</div>
+                            <div th:text="${detail.dateDisplay}">01/06/2026 14:10</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Loại xuất</div>
+                            <div th:text="${detail.outTypeDisplay}">Chuyển chi nhánh</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Chi nhánh xuất</div>
+                            <div th:text="${detail.sourceBranchName}">Hang Ngoc Pharmacy - Nhánh 1</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Chi nhánh nhận</div>
+                            <div th:text="${detail.targetBranchName}">Hang Ngoc Pharmacy - Nhánh 2</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Người tạo</div>
+                            <div th:text="${detail.createdByName}">Nguyễn Văn Minh</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Lý do</div>
+                            <div th:text="${detail.reason}">Chuyển hàng bổ sung tồn kho</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Trạng thái</div>
+                            <div>
+                                <span class="status-badge"
+                                      th:classappend="${' ' + detail.statusCssClass}"
+                                      th:text="${detail.statusName}">
+                                    Chờ đối chiếu
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="info-row" th:if="${detail.note != null && !detail.note.isBlank()}">
+                            <div class="info-label">Ghi chú</div>
+                            <div th:text="${detail.note}">Ghi chú</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="p-4 border-bottom">
+                        <div class="section-title">
+                            <i class="ti ti-package text-success me-1"></i>
+                            Hàng hóa xuất kho
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Mã hàng</th>
+                                <th>Tên hàng hóa</th>
+                                <th>Lô</th>
+                                <th>Hạn dùng</th>
+                                <th>Đơn vị</th>
+                                <th>Số lượng</th>
+                                <th>Giá trị ước tính</th>
+                                <th>Ghi chú</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            <tr th:each="item : ${detail.items}">
+                                <td class="fw-semibold text-success" th:text="${item.productId}">PARA500</td>
+                                <td th:text="${item.productName}">Paracetamol 500mg</td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary"
+                                          th:text="${item.lotNumber}">LOT-PARA-0526</span>
+                                </td>
+                                <td th:text="${item.expirationDateDisplay}">12/05/2028</td>
+                                <td th:text="${item.unitName}">Hộp</td>
+                                <td th:text="${item.quantity}">5</td>
+                                <td class="fw-semibold"
+                                    th:text="${#numbers.formatDecimal(item.lineCost, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    350.000đ
+                                </td>
+                                <td th:text="${item.note}">Chuyển bổ sung tồn kho</td>
+                            </tr>
+
+                            <tr class="fw-semibold">
+                                <td colspan="5">Tổng cộng</td>
+                                <td th:text="${detail.totalQuantity}">9</td>
+                                <td class="text-success"
+                                    th:text="${#numbers.formatDecimal(detail.estimatedValue, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    650.000đ
+                                </td>
+                                <td></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-12 col-xl-3">
+
+                <div class="stock-card mb-4">
+                    <div class="p-4 border-bottom">
+                        <div class="section-title">
+                            <i class="ti ti-chart-bar text-success me-1"></i>
+                            Tóm tắt đối chiếu
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tổng mặt hàng</span>
+                            <strong th:text="${detail.totalItems}">2</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tổng giá trị ước tính</span>
+                            <strong class="text-success"
+                                    th:text="${#numbers.formatDecimal(detail.estimatedValue, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                650.000đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Loại xuất</span>
+                            <strong th:text="${detail.outTypeDisplay}">Chuyển chi nhánh</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tác động chi phí</span>
+                            <em th:text="${detail.costImpactDisplay}">Không ghi nhận chi phí trực tiếp</em>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <span class="text-secondary">Trạng thái</span>
+                            <span class="status-badge"
+                                  th:classappend="${' ' + detail.statusCssClass}"
+                                  th:text="${detail.statusName}">
+                                Chờ đối chiếu
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stock-card mb-4">
+                    <div class="p-4 border-bottom">
+                        <div class="section-title">
+                            <i class="ti ti-circle-check text-success me-1"></i>
+                            Kiểm tra kế toán
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span th:text="${detail.accountingCheckDone + '/' + detail.accountingCheckTotal + ' mục đã kiểm tra'}">
+                                3/4 mục đã kiểm tra
+                            </span>
+                            <strong class="text-success" th:text="${detail.accountingCheckPercent + '%'}">75%</strong>
+                        </div>
+
+                        <div class="progress mb-4" style="height: 8px;">
+                            <div class="progress-bar bg-success"
+                                 th:style="${'width: ' + detail.accountingCheckPercent + '%'}">
+                            </div>
+                        </div>
+
+                        <div class="check-line">
+                            <span class="check-icon" th:classappend="${detail.sourceChecked} ? ' done'">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Đã kiểm tra chi nhánh xuất</span>
+                        </div>
+
+                        <div class="check-line">
+                            <span class="check-icon" th:classappend="${detail.targetChecked} ? ' done'">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Đã kiểm tra chi nhánh nhận</span>
+                        </div>
+
+                        <div class="check-line">
+                            <span class="check-icon" th:classappend="${detail.valueChecked} ? ' done'">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Đã kiểm tra giá trị hàng xuất</span>
+                        </div>
+
+                        <div class="check-line">
+                            <span class="check-icon" th:classappend="${detail.reasonChecked} ? ' done'">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Đã kiểm tra lý do xuất kho</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stock-card p-4">
+                    <form th:action="${basePath + '/' + detail.id + '/reconcile'}"
+                          method="post"
+                          class="mb-3"
+                          onsubmit="return confirm('Bạn có chắc chắn muốn đánh dấu phiếu này là đã đối chiếu không?');">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-stock-primary w-100">
+                            <i class="ti ti-circle-check me-1"></i>
+                            Đánh dấu đã đối chiếu
+                        </button>
+                    </form>
+
+                    <form th:action="${basePath + '/' + detail.id + '/request-check'}"
+                          method="post"
+                          class="mb-3"
+                          onsubmit="return confirm('Bạn có chắc chắn muốn gửi yêu cầu kiểm tra lại không?');">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-stock-warning w-100">
+                            <i class="ti ti-send me-1"></i>
+                            Gửi yêu cầu kiểm tra
+                        </button>
+                    </form>
+
+                    <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
+                        <i class="ti ti-arrow-left me-1"></i>
+                        Quay lại danh sách
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>
