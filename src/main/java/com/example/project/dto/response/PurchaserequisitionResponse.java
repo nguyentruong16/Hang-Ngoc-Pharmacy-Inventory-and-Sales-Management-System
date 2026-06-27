@@ -18,7 +18,6 @@ public class PurchaserequisitionResponse {
     private Integer requestedById;
     private Integer statusId;
     private Instant approvedAt;
-    private Integer planId;
     private Integer supplierId;
     private String note;
     private Instant createdAt;
@@ -31,7 +30,6 @@ public class PurchaserequisitionResponse {
                 purchaserequisition.getRequestedBy() != null ? purchaserequisition.getRequestedBy().getId() : null,
                 purchaserequisition.getStatusID() != null ? purchaserequisition.getStatusID().getId() : null,
                 purchaserequisition.getApprovedAt(),
-                purchaserequisition.getPlanID() != null ? purchaserequisition.getPlanID().getId() : null,
                 purchaserequisition.getSupplierID() != null ? purchaserequisition.getSupplierID().getId() : null,
                 purchaserequisition.getNote(),
                 purchaserequisition.getCreatedAt()

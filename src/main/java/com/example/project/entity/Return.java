@@ -39,7 +39,7 @@ public class Return {
     private Instant returnDate;
 
     @NotNull
-    @Column(name = "returnType", nullable = false, columnDefinition = "enum('CASH','BANKING')")
+    @Column(name = "returnType", nullable = false, columnDefinition = "enum('CASH','BANKING', 'DEBT')")
     private String returnType;
 
     @ColumnDefault("0.00")
