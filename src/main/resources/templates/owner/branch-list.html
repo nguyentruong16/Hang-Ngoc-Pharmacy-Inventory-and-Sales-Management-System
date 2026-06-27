@@ -2,494 +2,313 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Danh sách chi nhánh</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
-  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
-  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
-  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
-  <style>
-    :root {
-      --branch-green: #009a6a;
-      --branch-green-soft: #e4f6f0;
-      --branch-orange: #f59f2a;
-      --branch-orange-soft: #fff2db;
-      --branch-ink: #202124;
-      --branch-muted: #6f7787;
-      --branch-line: #e3e8ef;
-      --branch-panel: #ffffff;
-      --branch-bg: #f5f7f9;
-      --branch-font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
+    <meta charset="UTF-8"/>
+    <title>Danh sách chi nhánh | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    body {
-      background: var(--branch-bg);
-      color: var(--branch-ink);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
 
-    .branch-container button,
-    .branch-container input,
-    .branch-container select,
-    .branch-container textarea {
-      font-family: inherit;
-    }
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
 
-    .branch-container {
-      max-width: 1600px;
-      margin: 0 auto;
-      font-family: var(--branch-font);
-      font-size: 0.9375rem;
-      font-weight: 400;
-      line-height: 1.65;
-      letter-spacing: 0;
-      text-rendering: optimizeLegibility;
-    }
+    <style>
+        .owner-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
 
-    .branch-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
-    }
+        @media (max-width: 991.98px) {
+            .owner-page-content {
+                padding-top: 84px !important;
+            }
+        }
 
-    .branch-stat {
-      padding: 18px 20px;
-      border: 1px solid var(--branch-line);
-      border-radius: 15px;
-      background: var(--branch-panel);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
+        .owner-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
 
-    .branch-stat-label {
-      color: #7b8495;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      letter-spacing: 0.015em;
-      margin: 0 0 6px;
-    }
+        .stat-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            background: #e8f7f1;
+            color: #059669;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    .branch-stat-value {
-      color: #202124;
-      font-size: 1.75rem;
-      line-height: 1;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      font-variant-numeric: tabular-nums;
-      margin: 0;
-    }
+        .stat-icon-warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
 
-    .branch-stat-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem;
-      flex: 0 0 auto;
-    }
+        .btn-owner-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
 
-    .branch-stat-icon.green {
-      color: var(--branch-green);
-      background: var(--branch-green-soft);
-    }
+        .btn-owner-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
 
-    .branch-stat-icon.orange {
-      color: var(--branch-orange);
-      background: var(--branch-orange-soft);
-    }
+        .status-badge {
+            display: inline-flex;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
 
-    .branch-panel {
-      background: var(--branch-panel);
-      border: 1px solid var(--branch-line);
-      border-radius: 15px;
-      padding: 24px;
-    }
+        .status-active {
+            background: #dcfce7;
+            color: #059669;
+        }
 
-    .branch-panel-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 24px;
-      margin-bottom: 24px;
-    }
+        .status-inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
 
-    .branch-panel-title {
-      margin: 0;
-      font-size: 1.125rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            background: #f9fafb;
+        }
 
-    .branch-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
 
-    .branch-btn {
-      height: 42px;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border: 1px solid transparent;
-      padding: 0 22px;
-      font-weight: 500;
-      font-size: 0.875rem;
-      letter-spacing: 0;
-      text-decoration: none;
-      white-space: nowrap;
-    }
+        .pagination .page-link {
+            color: #059669;
+            border-color: #e5e7eb;
+            font-size: 13px;
+        }
 
-    .branch-btn-primary {
-      background: var(--branch-green);
-      color: #ffffff;
-    }
+        .pagination .page-item.active .page-link {
+            background-color: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
 
-    .branch-btn-primary:hover {
-      background: #00835b;
-      color: #ffffff;
-    }
-
-    .branch-btn-light {
-      background: #ffffff;
-      color: #303746;
-      border-color: var(--branch-line);
-    }
-
-    .branch-btn-light:hover {
-      color: var(--branch-green);
-      border-color: #c7d8d1;
-    }
-
-    .branch-filter-grid {
-      display: grid;
-      grid-template-columns: minmax(260px, 1fr) 200px auto auto;
-      align-items: end;
-      gap: 12px;
-      margin-bottom: 28px;
-    }
-
-    .branch-field {
-      position: relative;
-    }
-
-    .branch-field i {
-      position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #99a3b2;
-      font-size: 1.05rem;
-      pointer-events: none;
-    }
-
-    .branch-input,
-    .branch-status-select {
-      width: 100%;
-      height: 44px;
-      border: 1px solid var(--branch-line);
-      border-radius: 12px;
-      color: #303746;
-      background: #ffffff;
-      font-size: 0.875rem;
-      font-weight: 400;
-      letter-spacing: 0;
-      outline: none;
-      transition: border-color .15s ease, box-shadow .15s ease;
-    }
-
-    .branch-input {
-      padding: 0 16px 0 44px;
-    }
-
-    .branch-status-select {
-      padding: 0 15px;
-    }
-
-    .branch-input:focus,
-    .branch-status-select:focus {
-      border-color: #8bd7bf;
-      box-shadow: 0 0 0 3px rgba(0, 154, 106, .12);
-    }
-
-    .branch-table-wrap {
-      overflow-x: auto;
-    }
-
-    .branch-table {
-      width: 100%;
-      min-width: 860px;
-      border-collapse: collapse;
-    }
-
-    .branch-table th,
-    .branch-table td {
-      border-bottom: 1px solid var(--branch-line);
-      padding: 19px 0;
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    .branch-table th {
-      color: #737d8d;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-
-    .branch-table td {
-      color: #202124;
-      font-size: 0.9375rem;
-      font-weight: 400;
-      line-height: 1.6;
-    }
-
-    .branch-table th.branch-col-code,
-    .branch-table td.branch-code,
-    .branch-table th.branch-col-status,
-    .branch-table td.branch-col-status,
-    .branch-table th.branch-col-action,
-    .branch-table td.branch-col-action {
-      text-align: center;
-    }
-
-    .branch-table .branch-address {
-      color: #737d8d;
-    }
-
-    .branch-code {
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .branch-status {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      border-radius: 999px;
-      padding: 3px 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-    }
-
-    .branch-status--active {
-      color: var(--branch-green);
-      background: var(--branch-green-soft);
-    }
-
-    .branch-status--review {
-      color: #e88900;
-      background: var(--branch-orange-soft);
-    }
-
-    .branch-view-link {
-      color: var(--branch-green);
-      font-weight: 500;
-      font-size: 0.875rem;
-      text-decoration: none;
-    }
-
-    .branch-view-link:hover {
-      color: #00784f;
-      text-decoration: underline;
-    }
-
-    .branch-empty {
-      color: #7b8495;
-      text-align: center;
-      padding: 34px 0;
-    }
-
-    @media (max-width: 991.98px) {
-      .branch-summary-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      .branch-filter-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .branch-panel-head {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-    }
-
-    @media (max-width: 575.98px) {
-      .branch-panel {
-        padding: 18px;
-      }
-
-      .branch-stat {
-        padding: 16px 18px;
-      }
-    }
-  </style>
+        .pagination .page-item.disabled .page-link {
+            color: #9ca3af;
+        }
+    </style>
 </head>
 
 <body>
-  <div th:replace="~{fragments/topbar :: topbar}"></div>
-  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 
-  <main id="content" class="content py-10">
+<main id="content" class="content owner-page-content">
     <div class="container-fluid">
-      <div class="branch-container">
-      <section class="branch-summary-grid" aria-label="Tổng quan chi nhánh">
-        <article class="branch-stat">
-          <div>
-            <p class="branch-stat-label">Tổng chi nhánh</p>
-            <p class="branch-stat-value" th:text="${totalBranches}"></p>
-          </div>
-          <span class="branch-stat-icon green"><i class="ti ti-building-store"></i></span>
-        </article>
 
-        <article class="branch-stat">
-          <div>
-            <p class="branch-stat-label">Đang hoạt động</p>
-            <p class="branch-stat-value" th:text="${activeBranches}"></p>
-          </div>
-          <span class="branch-stat-icon green"><i class="ti ti-circle-check"></i></span>
-        </article>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Danh sách chi nhánh</h1>
+                <p class="text-secondary mb-0">Quản lý chi nhánh trong hệ thống</p>
+            </div>
 
-        <article class="branch-stat">
-          <div>
-            <p class="branch-stat-label">Ngừng hoạt động</p>
-            <p class="branch-stat-value" th:text="${inactiveBranches}"></p>
-          </div>
-          <span class="branch-stat-icon orange"><i class="ti ti-alert-circle"></i></span>
-        </article>
-      </section>
-
-      <section class="branch-panel" aria-labelledby="branch-table-title">
-        <div class="branch-panel-head">
-          <h2 id="branch-table-title" class="branch-panel-title">Danh sách chi nhánh</h2>
-          <div class="branch-actions">
-            <a class="branch-btn branch-btn-primary" th:href="@{/owner/branch-list/create-branch}" href="#">
-              <i class="ti ti-plus"></i>
-              <span>Tạo chi nhánh</span>
+            <a th:href="@{/owner/branch-list/create-branch}" class="btn btn-owner-primary">
+                <i class="ti ti-building-store me-1"></i>
+                Tạo chi nhánh mới
             </a>
-          </div>
         </div>
 
-        <div class="branch-filter-grid">
-          <label class="branch-field">
-            <i class="ti ti-search"></i>
-            <input id="branchSearch" class="branch-input" type="search" placeholder="Tìm theo tên chi nhánh hoặc địa chỉ" autocomplete="off">
-          </label>
-          <select id="branchStatusFilter" class="branch-status-select" aria-label="Lọc trạng thái">
-            <option value="all">Tất cả trạng thái</option>
-            <option value="active">Đang hoạt động</option>
-            <option value="inactive">Ngừng hoạt động</option>
-          </select>
-          <button id="branchSearchButton" class="branch-btn branch-btn-primary" type="button">
-            <i class="ti ti-search"></i>
-            <span>Tìm kiếm</span>
-          </button>
-          <button id="branchResetButton" class="branch-btn branch-btn-light" type="button">
-            <i class="ti ti-refresh"></i>
-            <span>Đặt lại</span>
-          </button>
+        <div th:if="${success}" class="alert alert-success" th:text="${success}">
+            Tạo chi nhánh thành công
         </div>
 
-        <div class="branch-table-wrap">
-          <table class="branch-table">
-            <thead>
-              <tr>
-                <th scope="col" class="branch-col-code">Mã chi nhánh</th>
-                <th scope="col">Tên chi nhánh</th>
-                <th scope="col">Địa chỉ</th>
-                <th scope="col" class="branch-col-status">Trạng thái</th>
-                <th scope="col" class="branch-col-action">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="branchTableBody">
-              <tr th:each="branch : ${branches}"
-                  th:attr="data-name=${branch.name},data-address=${branch.address},data-status=${branch.statusName == 'Đang hoạt động' ? 'active' : 'inactive'}">
-                <td class="branch-code" th:text="${branch.id}"></td>
-                <td th:text="${branch.name}"></td>
-                <td class="branch-address" th:text="${branch.address}"></td>
-                <td class="branch-col-status">
-                  <span class="branch-status"
-                        th:classappend="${branch.statusName == 'Đang hoạt động' ? 'branch-status--active' : 'branch-status--review'}"
-                        th:text="${branch.statusName}"></span>
-                </td>
-                <td class="branch-col-action">
-                  <a class="branch-view-link" th:href="@{/owner/branch-list/branch-detail/{id}(id=${branch.id})}">Xem</a>
-                </td>
-              </tr>
-              <tr th:if="${#lists.isEmpty(branches)}">
-                <td class="branch-empty" colspan="5">Chưa có chi nhánh nào.</td>
-              </tr>
-              <tr id="branchNoResultRow" hidden>
-                <td class="branch-empty" colspan="5">Không tìm thấy chi nhánh phù hợp.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6 col-xl-2">
+                <div class="owner-card p-4">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-secondary small">Tổng chi nhánh</div>
+                            <div class="fs-3 fw-bold" th:text="${totalBranches}">0</div>
+                            <div class="text-success small">Tất cả chi nhánh</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-building-store"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-2">
+                <div class="owner-card p-4">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-secondary small">Đang hoạt động</div>
+                            <div class="fs-3 fw-bold" th:text="${activeBranches}">0</div>
+                            <div class="text-success small">Đang vận hành</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-circle-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-2">
+                <div class="owner-card p-4">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-secondary small">Ngừng hoạt động</div>
+                            <div class="fs-3 fw-bold" th:text="${inactiveBranches}">0</div>
+                            <div class="text-danger small">Đã ngừng vận hành</div>
+                        </div>
+                        <div class="stat-icon stat-icon-warning">
+                            <i class="ti ti-alert-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </section>
-      </div>
+
+        <div class="owner-card p-4 mb-4">
+            <h2 class="fs-6 mb-3">Bộ lọc tìm kiếm</h2>
+
+            <form th:action="@{/owner/branch-list}" method="get">
+                <input type="hidden" name="page" value="0">
+                <input type="hidden" name="size" th:value="${pageSize}">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-5">
+                        <input type="text"
+                               class="form-control"
+                               name="search"
+                               th:value="${search}"
+                               placeholder="Tìm theo tên chi nhánh hoặc địa chỉ">
+                    </div>
+
+                    <div class="col-12 col-lg-3">
+                        <select class="form-select" name="status" aria-label="Lọc trạng thái">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="active" th:selected="${filterStatus == 'active'}">Đang hoạt động</option>
+                            <option value="inactive" th:selected="${filterStatus == 'inactive'}">Ngừng hoạt động</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-lg-2">
+                        <button type="submit" class="btn btn-owner-primary w-100">
+                            Tìm kiếm
+                        </button>
+                    </div>
+
+                    <div class="col-12 col-lg-2">
+                        <a th:href="@{/owner/branch-list}" class="btn btn-outline-secondary w-100">
+                            Đặt lại
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="owner-card p-4">
+            <h2 class="fs-6 mb-3">Danh sách chi nhánh</h2>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Mã chi nhánh</th>
+                        <th>Tên chi nhánh</th>
+                        <th>Địa chỉ</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="branch : ${branches}">
+                        <td th:text="${branch.id}">1</td>
+                        <td class="fw-semibold" th:text="${branch.name}">Chi nhánh 1</td>
+                        <td class="text-secondary" th:text="${branch.address}">Địa chỉ</td>
+                        <td>
+                            <span class="status-badge"
+                                  th:classappend="${branch.statusName == 'Đang hoạt động' ? ' status-active' : ' status-inactive'}"
+                                  th:text="${branch.statusName}">
+                                Đang hoạt động
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-success"
+                               th:href="@{/owner/branch-list/branch-detail/{id}(id=${branch.id})}">
+                                Xem
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(branches)}">
+                        <td colspan="5" class="text-center text-secondary py-4">
+                            Không tìm thấy chi nhánh nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4"
+                 th:if="${totalItems > 0}">
+
+                <div class="text-secondary small">
+                    Hiển thị
+                    <span th:text="${currentPage * pageSize + 1}">1</span>
+                    -
+                    <span th:text="${currentPage * pageSize + branches.size()}">5</span>
+                    trong tổng số
+                    <span th:text="${totalItems}">0</span>
+                    chi nhánh
+                </div>
+
+                <nav th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+
+                        <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/branch-list(search=${search}, status=${filterStatus}, page=${currentPage - 1}, size=${pageSize})}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${pageNumber == currentPage} ? ' active'">
+                            <a class="page-link"
+                               th:text="${pageNumber + 1}"
+                               th:href="@{/owner/branch-list(search=${search}, status=${filterStatus}, page=${pageNumber}, size=${pageSize})}">
+                                1
+                            </a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/branch-list(search=${search}, status=${filterStatus}, page=${currentPage + 1}, size=${pageSize})}">
+                                Sau
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
     </div>
-  </main>
+</main>
 
-  <script type="module">
-    const searchInput = document.getElementById("branchSearch");
-    const statusFilter = document.getElementById("branchStatusFilter");
-    const searchButton = document.getElementById("branchSearchButton");
-    const resetButton = document.getElementById("branchResetButton");
-    const noResultRow = document.getElementById("branchNoResultRow");
-    const rows = Array.from(document.querySelectorAll("#branchTableBody tr[data-name]"));
-
-    const normalize = (value) => (value || "").toString().trim().toLowerCase();
-
-    const applyFilters = () => {
-      const keyword = normalize(searchInput.value);
-      const selectedStatus = statusFilter.value;
-      let visibleCount = 0;
-
-      rows.forEach((row) => {
-        const searchable = `${row.dataset.name || ""} ${row.dataset.address || ""}`.toLowerCase();
-        const matchesKeyword = !keyword || searchable.includes(keyword);
-        const matchesStatus = selectedStatus === "all" || row.dataset.status === selectedStatus;
-        const isVisible = matchesKeyword && matchesStatus;
-
-        row.hidden = !isVisible;
-        if (isVisible) {
-          visibleCount += 1;
-        }
-      });
-
-      noResultRow.hidden = visibleCount !== 0 || rows.length === 0;
-    };
-
-    searchInput.addEventListener("input", applyFilters);
-    statusFilter.addEventListener("change", applyFilters);
-    searchButton.addEventListener("click", applyFilters);
-    resetButton.addEventListener("click", () => {
-      searchInput.value = "";
-      statusFilter.value = "all";
-      applyFilters();
-      searchInput.focus();
-    });
-  </script>
 </body>
-
 </html>

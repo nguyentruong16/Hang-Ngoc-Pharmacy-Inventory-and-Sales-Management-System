@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách phiếu nhập | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .purchase-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .purchase-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: #dcfce7;
+            color: #059669;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .btn-purchase-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-purchase-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #ffffff;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-completed {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-partial {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-pending {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .pagination .page-link {
+            color: #059669;
+            border-color: #e5e7eb;
+            font-size: 13px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #9ca3af;
+        }
+
+        @media (max-width: 991.98px) {
+            .purchase-page-content {
+                padding-top: 84px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content purchase-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Danh sách phiếu nhập</h1>
+                <p class="text-secondary mb-0">Quản lý các phiếu nhập hàng từ nhà cung cấp</p>
+            </div>
+
+            <a th:if="${basePath == '/accountant/purchase-invoices'}"
+               th:href="${basePath + '/create'}"
+               class="btn btn-purchase-primary">
+                <i class="ti ti-plus me-1"></i>
+                Tạo phiếu nhập
+            </a>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="purchase-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Phiếu nhập hôm nay</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.todayCount}">0</div>
+                            <div class="text-success small">Trong ngày hiện tại</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-packages"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="purchase-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Tổng giá trị nhập</div>
+                            <div class="fs-3 fw-bold"
+                                 th:text="${#numbers.formatDecimal(stats.totalAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </div>
+                            <div class="text-success small">Tổng tiền phiếu nhập</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="purchase-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Đã thanh toán</div>
+                            <div class="fs-3 fw-bold"
+                                 th:text="${#numbers.formatDecimal(stats.paidAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </div>
+                            <div class="text-success small">Đã trả nhà cung cấp</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-cash"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="purchase-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Còn nợ NCC</div>
+                            <div class="fs-3 fw-bold"
+                                 th:text="${#numbers.formatDecimal(stats.debtAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </div>
+                            <div class="text-warning small">Chưa thanh toán đủ</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-alert-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="purchase-card p-4 mb-4">
+            <form th:action="${basePath}" method="get">
+                <input type="hidden" name="page" value="0">
+                <input type="hidden" name="size" th:value="${pageSize}">
+
+                <div class="row g-3">
+                    <div class="col-12 col-xl-4">
+                        <input type="text"
+                               class="form-control"
+                               name="keyword"
+                               th:value="${keyword}"
+                               placeholder="Tìm theo mã phiếu, nhà cung cấp, sản phẩm hoặc ghi chú">
+                    </div>
+
+                    <div class="col-6 col-xl-2">
+                        <input type="date" class="form-control" name="fromDate" th:value="${fromDate}">
+                    </div>
+
+                    <div class="col-6 col-xl-2">
+                        <input type="date" class="form-control" name="toDate" th:value="${toDate}">
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <select class="form-select" name="supplierId">
+                            <option value="">Nhà cung cấp</option>
+                            <option th:each="supplier : ${suppliers}"
+                                    th:value="${supplier.id}"
+                                    th:text="${supplier.name}"
+                                    th:selected="${filterSupplierId == supplier.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <select class="form-select" name="branchId">
+                            <option value="">Chi nhánh</option>
+                            <option th:each="branch : ${branches}"
+                                    th:value="${branch.id}"
+                                    th:text="${branch.name}"
+                                    th:selected="${filterBranchId == branch.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <select class="form-select" name="paymentStatus">
+                            <option value="">Trạng thái</option>
+                            <option value="Hoàn tất" th:selected="${filterPaymentStatus == 'Hoàn tất'}">Hoàn tất</option>
+                            <option value="Thanh toán một phần" th:selected="${filterPaymentStatus == 'Thanh toán một phần'}">Thanh toán một phần</option>
+                            <option value="Chưa thanh toán" th:selected="${filterPaymentStatus == 'Chưa thanh toán'}">Chưa thanh toán</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <button type="submit" class="btn btn-purchase-primary w-100">
+                            <i class="ti ti-search me-1"></i>
+                            Tìm kiếm
+                        </button>
+                    </div>
+
+                    <div class="col-12 col-xl-2">
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
+                            <i class="ti ti-refresh me-1"></i>
+                            Đặt lại
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="purchase-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="fs-6 mb-0">
+                    Danh sách phiếu nhập
+                    <span class="badge bg-success-subtle text-success ms-2"
+                          th:text="${totalItems + ' phiếu'}">0 phiếu</span>
+                </h2>
+
+                <a th:if="${basePath == '/accountant/purchase-invoices'}"
+                   th:href="${basePath + '/create'}"
+                   class="btn btn-sm btn-purchase-primary">
+                    Tạo phiếu nhập
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Mã phiếu nhập</th>
+                        <th>Thời gian</th>
+                        <th>Nhà cung cấp</th>
+                        <th>Chi nhánh</th>
+                        <th>Người nhập</th>
+                        <th>Số mặt hàng</th>
+                        <th>Tổng tiền</th>
+                        <th>Đã trả</th>
+                        <th>Còn nợ</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="item : ${purchaseInvoices}">
+                        <td class="fw-semibold text-success" th:text="${item.purchaseCode}">PINV-000001</td>
+                        <td th:text="${item.dateDisplay}">01/06/2026 10:15</td>
+                        <td th:text="${item.supplierName}">Nhà cung cấp A</td>
+                        <td th:text="${item.branchName}">Hằng Ngọc 1</td>
+                        <td th:text="${item.employeeName}">Nguyễn Thị Lan</td>
+                        <td>
+                            <span class="badge bg-success-subtle text-success"
+                                  th:text="${item.totalItems}">2</span>
+                        </td>
+                        <td class="fw-semibold"
+                            th:text="${#numbers.formatDecimal(item.totalAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                            0đ
+                        </td>
+                        <td th:text="${#numbers.formatDecimal(item.paid, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                            0đ
+                        </td>
+                        <td class="text-warning fw-semibold"
+                            th:text="${#numbers.formatDecimal(item.debtAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                            0đ
+                        </td>
+                        <td>
+                            <span class="status-badge"
+                                  th:classappend="${' ' + item.statusCssClass}"
+                                  th:text="${item.paymentStatus}">
+                                Hoàn tất
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               th:href="${basePath + '/' + item.id}">
+                                <i class="ti ti-eye me-1"></i>
+                                Xem
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(purchaseInvoices)}">
+                        <td colspan="11" class="text-center text-secondary py-4">
+                            Không tìm thấy phiếu nhập nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4"
+                 th:if="${totalItems > 0}">
+                <div class="text-secondary small">
+                    Hiển thị
+                    <span th:text="${currentPage * pageSize + 1}">1</span>
+                    -
+                    <span th:text="${currentPage * pageSize + purchaseInvoices.size()}">5</span>
+                    trong tổng số
+                    <span th:text="${totalItems}">0</span>
+                    phiếu
+                </div>
+
+                <nav th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, supplierId=${filterSupplierId}, branchId=${filterBranchId}, paymentStatus=${filterPaymentStatus}, page=${currentPage - 1}, size=${pageSize})}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${pageNumber == currentPage} ? ' active'">
+                            <a class="page-link"
+                               th:text="${pageNumber + 1}"
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, supplierId=${filterSupplierId}, branchId=${filterBranchId}, paymentStatus=${filterPaymentStatus}, page=${pageNumber}, size=${pageSize})}">
+                                1
+                            </a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, supplierId=${filterSupplierId}, branchId=${filterBranchId}, paymentStatus=${filterPaymentStatus}, page=${currentPage + 1}, size=${pageSize})}">
+                                Sau
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>
