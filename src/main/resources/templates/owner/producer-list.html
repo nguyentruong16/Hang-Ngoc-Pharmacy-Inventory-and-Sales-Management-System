@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Danh sách chi nhánh | PharmaManager</title>
+    <title>Danh sách nhà sản xuất | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -44,11 +44,6 @@
             justify-content: center;
         }
 
-        .stat-icon-warning {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
         .btn-owner-primary {
             background: #059669;
             border-color: #059669;
@@ -60,24 +55,6 @@
             background: #047857;
             border-color: #047857;
             color: #fff;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-active {
-            background: #dcfce7;
-            color: #059669;
-        }
-
-        .status-inactive {
-            background: #fee2e2;
-            color: #dc2626;
         }
 
         .table thead th {
@@ -119,18 +96,18 @@
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="fs-4 mb-1">Danh sách chi nhánh</h1>
-                <p class="text-secondary mb-0">Quản lý chi nhánh trong hệ thống</p>
+                <h1 class="fs-4 mb-1">Danh sách nhà sản xuất</h1>
+                <p class="text-secondary mb-0">Quản lý nhà sản xuất sản phẩm trong hệ thống</p>
             </div>
 
-            <a th:href="@{/owner/branch-list/create-branch}" class="btn btn-owner-primary">
-                <i class="ti ti-building-store me-1"></i>
-                Tạo chi nhánh mới
+            <a th:href="@{/owner/producers/create-producer}" class="btn btn-owner-primary">
+                <i class="ti ti-building-factory-2 me-1"></i>
+                Tạo nhà sản xuất mới
             </a>
         </div>
 
         <div th:if="${success}" class="alert alert-success" th:text="${success}">
-            Tạo chi nhánh thành công
+            Tạo nhà sản xuất thành công
         </div>
 
         <div class="row g-3 mb-4">
@@ -138,42 +115,12 @@
                 <div class="owner-card p-4">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="text-secondary small">Tổng chi nhánh</div>
-                            <div class="fs-3 fw-bold" th:text="${totalBranches}">0</div>
-                            <div class="text-success small">Tất cả chi nhánh</div>
+                            <div class="text-secondary small">Tổng nhà sản xuất</div>
+                            <div class="fs-3 fw-bold" th:text="${totalProducers}">0</div>
+                            <div class="text-success small">Tất cả nhà sản xuất</div>
                         </div>
                         <div class="stat-icon">
-                            <i class="ti ti-building-store"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-2">
-                <div class="owner-card p-4">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <div class="text-secondary small">Đang hoạt động</div>
-                            <div class="fs-3 fw-bold" th:text="${activeBranches}">0</div>
-                            <div class="text-success small">Đang vận hành</div>
-                        </div>
-                        <div class="stat-icon">
-                            <i class="ti ti-circle-check"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-2">
-                <div class="owner-card p-4">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <div class="text-secondary small">Ngừng hoạt động</div>
-                            <div class="fs-3 fw-bold" th:text="${inactiveBranches}">0</div>
-                            <div class="text-danger small">Đã ngừng vận hành</div>
-                        </div>
-                        <div class="stat-icon stat-icon-warning">
-                            <i class="ti ti-alert-circle"></i>
+                            <i class="ti ti-building-factory-2"></i>
                         </div>
                     </div>
                 </div>
@@ -183,24 +130,16 @@
         <div class="owner-card p-4 mb-4">
             <h2 class="fs-6 mb-3">Bộ lọc tìm kiếm</h2>
 
-            <form th:action="@{/owner/branch-list}" method="get">
+            <form th:action="@{/owner/producers}" method="get">
                 <input type="hidden" name="page" value="0">
                 <input type="hidden" name="size" th:value="${pageSize}">
                 <div class="row g-3">
-                    <div class="col-12 col-lg-5">
+                    <div class="col-12 col-lg-8">
                         <input type="text"
                                class="form-control"
                                name="search"
                                th:value="${search}"
-                               placeholder="Tìm theo tên chi nhánh hoặc địa chỉ">
-                    </div>
-
-                    <div class="col-12 col-lg-3">
-                        <select class="form-select" name="status" aria-label="Lọc trạng thái">
-                            <option value="">Tất cả trạng thái</option>
-                            <option value="active" th:selected="${filterStatus == 'active'}">Đang hoạt động</option>
-                            <option value="inactive" th:selected="${filterStatus == 'inactive'}">Ngừng hoạt động</option>
-                        </select>
+                               placeholder="Tìm theo tên nhà sản xuất">
                     </div>
 
                     <div class="col-12 col-lg-2">
@@ -210,7 +149,7 @@
                     </div>
 
                     <div class="col-12 col-lg-2">
-                        <a th:href="@{/owner/branch-list}" class="btn btn-outline-secondary w-100">
+                        <a th:href="@{/owner/producers}" class="btn btn-outline-secondary w-100">
                             Đặt lại
                         </a>
                     </div>
@@ -219,43 +158,26 @@
         </div>
 
         <div class="owner-card p-4">
-            <h2 class="fs-6 mb-3">Danh sách chi nhánh</h2>
+            <h2 class="fs-6 mb-3">Danh sách nhà sản xuất</h2>
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                     <tr>
-                        <th>Mã chi nhánh</th>
-                        <th>Tên chi nhánh</th>
-                        <th>Địa chỉ</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
+                        <th>Mã nhà sản xuất</th>
+                        <th>Tên nhà sản xuất</th>
                     </tr>
                     </thead>
 
                     <tbody>
-                    <tr th:each="branch : ${branches}">
-                        <td th:text="${branch.id}">1</td>
-                        <td class="fw-semibold" th:text="${branch.name}">Chi nhánh 1</td>
-                        <td class="text-secondary" th:text="${branch.address}">Địa chỉ</td>
-                        <td>
-                            <span class="status-badge"
-                                  th:classappend="${branch.statusName == 'Đang hoạt động' ? ' status-active' : ' status-inactive'}"
-                                  th:text="${branch.statusName}">
-                                Đang hoạt động
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <a class="btn btn-sm btn-outline-success"
-                               th:href="@{/owner/branch-list/branch-detail/{id}(id=${branch.id})}">
-                                Xem
-                            </a>
-                        </td>
+                    <tr th:each="producer : ${producers}">
+                        <td th:text="${producer.id}">1</td>
+                        <td class="fw-semibold" th:text="${producer.name}">Công ty Dược phẩm ABC</td>
                     </tr>
 
-                    <tr th:if="${#lists.isEmpty(branches)}">
-                        <td colspan="5" class="text-center text-secondary py-4">
-                            Không tìm thấy chi nhánh nào.
+                    <tr th:if="${#lists.isEmpty(producers)}">
+                        <td colspan="2" class="text-center text-secondary py-4">
+                            Không tìm thấy nhà sản xuất nào.
                         </td>
                     </tr>
                     </tbody>
@@ -269,10 +191,10 @@
                     Hiển thị
                     <span th:text="${currentPage * pageSize + 1}">1</span>
                     -
-                    <span th:text="${currentPage * pageSize + branches.size()}">5</span>
+                    <span th:text="${currentPage * pageSize + producers.size()}">5</span>
                     trong tổng số
                     <span th:text="${totalItems}">0</span>
-                    chi nhánh
+                    nhà sản xuất
                 </div>
 
                 <nav th:if="${totalPages > 1}">
@@ -280,7 +202,7 @@
 
                         <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{/owner/branch-list(search=${search}, status=${filterStatus}, page=${currentPage - 1}, size=${pageSize})}">
+                               th:href="@{/owner/producers(search=${search}, page=${currentPage - 1}, size=${pageSize})}">
                                 Trước
                             </a>
                         </li>
@@ -290,14 +212,14 @@
                             th:classappend="${pageNumber == currentPage} ? ' active'">
                             <a class="page-link"
                                th:text="${pageNumber + 1}"
-                               th:href="@{/owner/branch-list(search=${search}, status=${filterStatus}, page=${pageNumber}, size=${pageSize})}">
+                               th:href="@{/owner/producers(search=${search}, page=${pageNumber}, size=${pageSize})}">
                                 1
                             </a>
                         </li>
 
                         <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{/owner/branch-list(search=${search}, status=${filterStatus}, page=${currentPage + 1}, size=${pageSize})}">
+                               th:href="@{/owner/producers(search=${search}, page=${currentPage + 1}, size=${pageSize})}">
                                 Sau
                             </a>
                         </li>

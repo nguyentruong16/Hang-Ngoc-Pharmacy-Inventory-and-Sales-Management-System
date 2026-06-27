@@ -79,6 +79,9 @@ public class SidebarMenuService {
         if (uri.startsWith("/owner/origins/create-origin")) {
             uri = "/owner/origins";
         }
+        if (uri.startsWith("/owner/producers/create-producer")) {
+            uri = "/owner/producers";
+        }
         String best = null;
         for (SidebarMenuGroup group : menu) {
             for (SidebarMenuItem item : group.getItems()) {
