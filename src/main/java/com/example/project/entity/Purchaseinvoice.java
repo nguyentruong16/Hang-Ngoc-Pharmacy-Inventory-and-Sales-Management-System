@@ -43,6 +43,13 @@ public class Purchaseinvoice {
     @Column(name = "totalAmount", precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requisitionID")
+    private Purchaserequisition requisitionID;
+
+    @Column(name = "paid", precision = 15, scale = 2)
+    private BigDecimal paid;
+
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
