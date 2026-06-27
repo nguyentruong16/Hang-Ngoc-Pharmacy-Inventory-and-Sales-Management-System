@@ -3,6 +3,7 @@ package com.example.project.service;
 import com.example.project.dto.request.StockOutDestroyCreateRequest;
 import com.example.project.dto.request.StockOutDestroyItemRequest;
 import com.example.project.dto.response.StockOutDestroyCandidateResponse;
+import com.example.project.repository.ProductunitRepository;
 import com.example.project.entity.*;
 import com.example.project.repository.*;
 import org.springframework.stereotype.Service;
@@ -27,19 +28,21 @@ public class StockOutDestroyService {
     private final BranchRepository branchRepository;
     private final AccountRepository accountRepository;
     private final StatusRepository statusRepository;
+    private final ProductunitRepository productunitRepository;
 
     public StockOutDestroyService(StockoutRepository stockoutRepository,
                                   StockoutdetailRepository stockoutdetailRepository,
                                   BatchRepository batchRepository,
                                   BranchRepository branchRepository,
                                   AccountRepository accountRepository,
-                                  StatusRepository statusRepository) {
+                                  StatusRepository statusRepository, ProductunitRepository productunitRepository) {
         this.stockoutRepository = stockoutRepository;
         this.stockoutdetailRepository = stockoutdetailRepository;
         this.batchRepository = batchRepository;
         this.branchRepository = branchRepository;
         this.accountRepository = accountRepository;
         this.statusRepository = statusRepository;
+        this.productunitRepository = productunitRepository;
     }
 
     @Transactional(readOnly = true)
@@ -211,12 +214,20 @@ public class StockOutDestroyService {
     }
 
     private Productunit resolveUnit(Batch batch, Product product) {
+        Productunit baseUnit = findBaseUnit(product).orElse(null);
+
+        if (baseUnit != null) {
+            return baseUnit;
+        }
+
         if (batch.getImportUnitID() != null) {
             return batch.getImportUnitID();
         }
 
-        if (product != null && product.getBaseUnitID() != null) {
-            return product.getBaseUnitID();
+        Productunit preferredUnit = findPreferredUnit(product).orElse(null);
+
+        if (preferredUnit != null) {
+            return preferredUnit;
         }
 
         throw new IllegalArgumentException("Lô hàng " + displayBatch(batch) + " chưa có đơn vị tính");
@@ -255,15 +266,17 @@ public class StockOutDestroyService {
     }
 
     private Productunit resolveCandidateUnit(Batch batch, Product product) {
+        Productunit baseUnit = findBaseUnit(product).orElse(null);
+
+        if (baseUnit != null) {
+            return baseUnit;
+        }
+
         if (batch.getImportUnitID() != null) {
             return batch.getImportUnitID();
         }
 
-        if (product != null) {
-            return product.getBaseUnitID();
-        }
-
-        return null;
+        return findPreferredUnit(product).orElse(null);
     }
 
     private boolean branchMatches(Batch batch, Integer branchId) {
@@ -325,5 +338,43 @@ public class StockOutDestroyService {
         }
 
         return value.trim();
+    }
+
+    private Optional<Productunit> findBaseUnit(Product product) {
+        if (product == null || product.getProductID() == null) {
+            return Optional.empty();
+        }
+
+        return productunitRepository.findByProductId(product.getProductID())
+                .stream()
+                .filter(unit -> !Boolean.FALSE.equals(unit.getIsActive()))
+                .filter(unit -> Boolean.TRUE.equals(unit.getIsBaseUnit()))
+                .findFirst();
+    }
+
+    private Optional<Productunit> findPreferredUnit(Product product) {
+        if (product == null || product.getProductID() == null) {
+            return Optional.empty();
+        }
+
+        return productunitRepository.findByProductId(product.getProductID())
+                .stream()
+                .filter(unit -> !Boolean.FALSE.equals(unit.getIsActive()))
+                .sorted(Comparator
+                        .comparingInt(this::stockOutUnitPriority)
+                        .thenComparing(unit -> unit.getId() == null ? Integer.MAX_VALUE : unit.getId()))
+                .findFirst();
+    }
+
+    private int stockOutUnitPriority(Productunit unit) {
+        if (Boolean.TRUE.equals(unit.getIsBaseUnit())) {
+            return 0;
+        }
+
+        if (Boolean.TRUE.equals(unit.getIsDefault())) {
+            return 1;
+        }
+
+        return 2;
     }
 }

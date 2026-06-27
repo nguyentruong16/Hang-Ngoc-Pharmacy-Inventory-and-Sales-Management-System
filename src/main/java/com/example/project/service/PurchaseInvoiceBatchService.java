@@ -8,6 +8,7 @@ import com.example.project.entity.*;
 import com.example.project.repository.BatchRepository;
 import com.example.project.repository.PurchasedetailRepository;
 import com.example.project.repository.PurchaseinvoiceRepository;
+import com.example.project.repository.ProductunitRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +28,16 @@ public class PurchaseInvoiceBatchService {
     private final PurchaseinvoiceRepository purchaseinvoiceRepository;
     private final PurchasedetailRepository purchasedetailRepository;
     private final BatchRepository batchRepository;
+    private final ProductunitRepository productunitRepository;
 
     public PurchaseInvoiceBatchService(PurchaseinvoiceRepository purchaseinvoiceRepository,
                                        PurchasedetailRepository purchasedetailRepository,
-                                       BatchRepository batchRepository) {
+                                       BatchRepository batchRepository,
+                                       ProductunitRepository productunitRepository) {
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.purchasedetailRepository = purchasedetailRepository;
         this.batchRepository = batchRepository;
+        this.productunitRepository = productunitRepository;
     }
 
     @Transactional(readOnly = true)
@@ -162,16 +166,17 @@ public class PurchaseInvoiceBatchService {
 
             Product product = detail.getProductID();
 
-            Productunit importUnit = product != null ? product.getBaseUnitID() : null;
+            Productunit importUnit = resolveImportUnit(product);
 
             BigDecimal importPrice = safe(detail.getImportPrice());
             BigDecimal importPricePerBase = calculateImportPricePerBase(importPrice, importUnit);
+            int storageQuantity = calculateBaseQuantity(detail.getQuantity(), importUnit);
 
             Batch batch = new Batch();
             batch.setProductID(product);
             batch.setPurchaseDetailID(detail);
             batch.setBranchID(invoice.getBranchID());
-            batch.setStorageQuantity(detail.getQuantity());
+            batch.setStorageQuantity(storageQuantity);
             batch.setImportUnitID(importUnit);
             batch.setImportQtyInUnit(detail.getQuantity());
             batch.setImportPrice(importPrice);
@@ -225,7 +230,7 @@ public class PurchaseInvoiceBatchService {
 
     private PurchaseInvoiceToBatchItemResponse toItemResponse(Purchasedetail detail, boolean batchCreated) {
         Product product = detail.getProductID();
-        Productunit unit = product != null ? product.getBaseUnitID() : null;
+        Productunit unit = resolveImportUnitOrNull(product).orElse(null);
 
         String statusDisplay;
         String statusCssClass;
@@ -317,5 +322,55 @@ public class PurchaseInvoiceBatchService {
         }
 
         return value.trim();
+    }
+
+    private Productunit resolveImportUnit(Product product) {
+        return resolveImportUnitOrNull(product)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Sản phẩm " + (product != null ? product.getName() : "") + " chưa có đơn vị nhập trong ProductUnit"
+                ));
+    }
+
+    private Optional<Productunit> resolveImportUnitOrNull(Product product) {
+        if (product == null || product.getProductID() == null) {
+            return Optional.empty();
+        }
+
+        return productunitRepository.findByProductId(product.getProductID())
+                .stream()
+                .filter(unit -> !Boolean.FALSE.equals(unit.getIsActive()))
+                .sorted(Comparator
+                        .comparingInt(this::importUnitPriority)
+                        .thenComparing(unit -> unit.getId() == null ? Integer.MAX_VALUE : unit.getId()))
+                .findFirst();
+    }
+
+    private int importUnitPriority(Productunit unit) {
+        if (Boolean.TRUE.equals(unit.getIsDefault())) {
+            return 0;
+        }
+
+        if (Boolean.TRUE.equals(unit.getIsBaseUnit())) {
+            return 1;
+        }
+
+        return 2;
+    }
+
+    private int calculateBaseQuantity(Integer importQuantity, Productunit importUnit) {
+        BigDecimal quantity = BigDecimal.valueOf(importQuantity == null ? 0 : importQuantity);
+
+        BigDecimal ratio = BigDecimal.ONE;
+
+        if (importUnit != null
+                && importUnit.getRatio() != null
+                && importUnit.getRatio().compareTo(BigDecimal.ZERO) > 0) {
+            ratio = importUnit.getRatio();
+        }
+
+        return quantity
+                .multiply(ratio)
+                .setScale(0, RoundingMode.HALF_UP)
+                .intValue();
     }
 }

@@ -13,12 +13,11 @@ public interface ProductRepository extends JpaRepository<Product, String> {
      * (type / producer / base unit) so the listing screen avoids lazy N+1 lookups.
      */
     @Query("""
-           select distinct p
-           from Product p
-           left join fetch p.typeID
-           left join fetch p.producerID
-           left join fetch p.baseUnitID
-           order by p.name asc
-           """)
+       select distinct p
+       from Product p
+       left join fetch p.typeID
+       left join fetch p.producerID
+       order by p.name asc
+       """)
     List<Product> findAllWithRelations();
 }
