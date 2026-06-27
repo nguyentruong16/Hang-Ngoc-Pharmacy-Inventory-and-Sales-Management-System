@@ -57,10 +57,6 @@ public class Product {
     @Column(name = "registrationNumber", length = 100)
     private String registrationNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "baseUnitID")
-    private Productunit baseUnitID;
-
     @ColumnDefault("1")
     @Column(name = "status")
     private Boolean status;

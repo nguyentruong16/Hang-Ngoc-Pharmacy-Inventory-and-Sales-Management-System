@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8"/>
+  <title>Tạo khách hàng</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+  <style>
+    :root {
+      --sup-green:      #059669;
+      --sup-green-dark: #047857;
+      --sup-border:     #e5e7eb;
+      --sup-muted:      #6b7280;
+    }
+    body { background: #f6f7f9; }
+    .sup-card {
+      background: #fff; border: 1px solid var(--sup-border);
+      border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    }
+    .sup-back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--sup-muted); font-size: 13px; font-weight: 500;
+      text-decoration: none; margin-bottom: 16px;
+    }
+    .sup-back-link:hover { color: var(--sup-green); }
+    .form-label { font-size: 13px; color: #111827; margin-bottom: 6px; }
+    .form-control, .form-select {
+      min-height: 40px; border-radius: 10px;
+      border-color: var(--sup-border); font-size: 13px;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #6ee7b7; box-shadow: 0 0 0 3px rgba(5,150,105,.1);
+    }
+    /* type toggle */
+    .type-toggle { display: flex; gap: 10px; flex-wrap: wrap; }
+    .type-option {
+      flex: 1 1 160px; border: 1px solid var(--sup-border); border-radius: 10px;
+      padding: 12px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+      transition: border-color .15s, background .15s;
+    }
+    .type-option input { accent-color: var(--sup-green); }
+    .type-option.active { border-color: var(--sup-green); background: #f0fdf9; }
+    .type-option .ti { font-size: 1.3rem; color: var(--sup-green); }
+    .type-option .t-title { font-size: 13px; font-weight: 600; color: #111827; }
+    .type-option .t-desc  { font-size: 11.5px; color: var(--sup-muted); }
+    .btn-sup-primary {
+      background: var(--sup-green); border-color: var(--sup-green); color: #fff;
+      border-radius: 10px; min-height: 42px; font-size: 13px; font-weight: 500;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    }
+    .btn-sup-primary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
+    .btn-sup-secondary {
+      background: #fff; border: 1px solid var(--sup-green); color: var(--sup-green);
+      border-radius: 10px; min-height: 42px; font-size: 13px; font-weight: 500;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    }
+    .btn-sup-secondary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
+    .btn-cancel {
+      background: transparent; border: none; color: var(--sup-muted);
+      font-size: 13px; font-weight: 500; min-height: 42px; width: 100%;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+    }
+    .btn-cancel:hover { color: #111827; }
+    .tip-list { list-style: none; padding: 0; margin: 0; }
+    .tip-list li {
+      display: flex; gap: 8px; align-items: flex-start;
+      font-size: 12.5px; color: #374151; margin-bottom: 12px;
+    }
+    .tip-list li .ti { color: var(--sup-green); margin-top: 1px; }
+  </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content py-8">
+  <div class="container-fluid">
+
+    <a class="sup-back-link" th:href="@{/customer}">
+      <i class="ti ti-arrow-left"></i>Quay lại danh sách khách hàng
+    </a>
+
+    <div class="mb-4">
+      <h1 class="fs-4 mb-0">Tạo khách hàng mới</h1>
+    </div>
+
+    <form th:action="@{/customer/create}" th:object="${form}" method="post" novalidate id="customerForm">
+      <div class="row g-4">
+
+        <!-- Form thông tin -->
+        <div class="col-12 col-lg-8">
+          <div class="sup-card p-4 p-md-5">
+            <h2 class="fs-6 mb-4">Thông tin khách hàng</h2>
+
+            <div th:if="${errorMessage}" class="alert alert-danger mb-4">
+              <i class="ti ti-alert-circle me-2"></i>
+              <span th:text="${errorMessage}"></span>
+            </div>
+
+            <!-- Loại khách hàng -->
+            <div class="mb-4">
+              <label class="form-label">Loại khách hàng <span class="text-danger">*</span></label>
+              <div class="type-toggle">
+                <label class="type-option" id="optIndividual">
+                  <input type="radio" th:field="*{customerType}" value="INDIVIDUAL">
+                  <i class="ti ti-user"></i>
+                  <span>
+                    <span class="t-title d-block">Cá nhân</span>
+                    <span class="t-desc">Khách lẻ mua thuốc</span>
+                  </span>
+                </label>
+                <label class="type-option" id="optCompany">
+                  <input type="radio" th:field="*{customerType}" value="COMPANY">
+                  <i class="ti ti-building"></i>
+                  <span>
+                    <span class="t-title d-block">Doanh nghiệp</span>
+                    <span class="t-desc">Có mã số thuế, thông tin ngân hàng</span>
+                  </span>
+                </label>
+              </div>
+              <div class="text-danger small mt-1" th:if="${#fields.hasErrors('customerType')}" th:errors="*{customerType}"></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="cusName" class="form-label">Tên khách hàng <span class="text-danger">*</span></label>
+              <input id="cusName" type="text" class="form-control"
+                     th:field="*{name}"
+                     th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
+                     placeholder="Nhập tên khách hàng">
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6">
+                <label for="cusPhone" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                <input id="cusPhone" type="tel" class="form-control"
+                       th:field="*{phoneNumber}"
+                       th:classappend="${#fields.hasErrors('phoneNumber')} ? ' is-invalid'"
+                       inputmode="numeric" maxlength="10"
+                       pattern="0(2|3|5|7|8|9)[0-9]{8}"
+                       title="10 chữ số, bắt đầu bằng 02, 03, 05, 07, 08 hoặc 09"
+                       placeholder="0900000000">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+              </div>
+              <div class="col-12 col-md-6 company-field">
+                <label for="cusTax" class="form-label">Mã số thuế</label>
+                <input id="cusTax" type="text" class="form-control"
+                       th:field="*{taxCode}"
+                       th:classappend="${#fields.hasErrors('taxCode')} ? ' is-invalid'"
+                       maxlength="100" placeholder="Nhập mã số thuế">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="cusAddress" class="form-label">Địa chỉ</label>
+              <input id="cusAddress" type="text" class="form-control"
+                     th:field="*{address}"
+                     th:classappend="${#fields.hasErrors('address')} ? ' is-invalid'"
+                     maxlength="100" placeholder="Nhập địa chỉ khách hàng">
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+            </div>
+
+            <div class="row g-3 mb-3 company-field">
+              <div class="col-12 col-md-6">
+                <label for="cusBankAcc" class="form-label">Số tài khoản ngân hàng</label>
+                <input id="cusBankAcc" type="text" class="form-control"
+                       th:field="*{bankAccountNumber}"
+                       th:classappend="${#fields.hasErrors('bankAccountNumber')} ? ' is-invalid'"
+                       maxlength="100" placeholder="Nhập số tài khoản">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="cusBankName" class="form-label">Tên ngân hàng</label>
+                <input id="cusBankName" type="text" class="form-control"
+                       th:field="*{bankName}"
+                       th:classappend="${#fields.hasErrors('bankName')} ? ' is-invalid'"
+                       maxlength="100" placeholder="Nhập tên ngân hàng">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></div>
+              </div>
+            </div>
+
+            <div class="mb-0">
+              <label for="cusNote" class="form-label">Ghi chú</label>
+              <textarea id="cusNote" class="form-control" th:field="*{note}" rows="3"
+                        placeholder="Ghi chú thêm về khách hàng (nếu có)"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel gợi ý + nút thao tác -->
+        <div class="col-12 col-lg-4">
+          <div class="sup-card p-4">
+            <h2 class="fs-6 mb-3">Gợi ý</h2>
+            <ul class="tip-list">
+              <li><i class="ti ti-phone"></i><span>Số điện thoại nên có đủ 10 chữ số và là duy nhất.</span></li>
+              <li><i class="ti ti-search"></i><span>Kiểm tra khách hàng trùng trước khi tạo mới.</span></li>
+              <li><i class="ti ti-building"></i><span>Khách doanh nghiệp cần điền mã số thuế và thông tin ngân hàng.</span></li>
+            </ul>
+
+            <hr class="my-3">
+
+            <div class="d-grid gap-2">
+              <button type="submit" name="action" value="create" class="btn btn-sup-primary">
+                <i class="ti ti-check"></i>Tạo khách hàng
+              </button>
+              <button type="submit" name="action" value="createAndSelect" class="btn btn-sup-secondary">
+                <i class="ti ti-user-check"></i>Tạo &amp; chọn khách hàng
+              </button>
+              <a th:href="@{/customer}" class="btn-cancel">
+                <i class="ti ti-x"></i>Hủy
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</main>
+
+<script th:inline="javascript">
+  (function () {
+    var form = document.getElementById('customerForm');
+    var companyFields = form.querySelectorAll('.company-field');
+    var optIndividual = document.getElementById('optIndividual');
+    var optCompany = document.getElementById('optCompany');
+
+    function selectedType() {
+      var checked = form.querySelector('input[name="customerType"]:checked');
+      return checked ? checked.value : 'INDIVIDUAL';
+    }
+
+    function apply() {
+      var isCompany = selectedType() === 'COMPANY';
+      companyFields.forEach(function (el) { el.style.display = isCompany ? '' : 'none'; });
+      optIndividual.classList.toggle('active', !isCompany);
+      optCompany.classList.toggle('active', isCompany);
+    }
+
+    form.querySelectorAll('input[name="customerType"]').forEach(function (r) {
+      r.addEventListener('change', apply);
+    });
+    apply();
+  })();
+</script>
+</body>
+</html>

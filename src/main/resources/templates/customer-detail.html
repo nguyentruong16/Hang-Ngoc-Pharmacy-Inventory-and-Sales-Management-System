@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Chi tiết - ' + ${customer.name}">Chi tiết khách hàng</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+  <style>
+    :root {
+      --sup-green:      #059669;
+      --sup-green-dark: #047857;
+      --sup-blue:       #0284c7;
+      --sup-blue-bg:    #e0f2fe;
+      --sup-purple:     #7c3aed;
+      --sup-purple-bg:  #f5f3ff;
+      --sup-border:     #e5e7eb;
+      --sup-muted:      #6b7280;
+    }
+    body { background: #f6f7f9; }
+
+    .sup-card {
+      background: #fff; border: 1px solid var(--sup-border);
+      border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    }
+    .sup-back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--sup-muted); font-size: 13px; font-weight: 500;
+      text-decoration: none; margin-bottom: 16px;
+    }
+    .sup-back-link:hover { color: var(--sup-green); }
+    .sup-code-badge {
+      display: inline-block; padding: 2px 10px; background: #f3f4f6; border-radius: 999px;
+      font-size: 12px; font-weight: 600; color: var(--sup-muted); letter-spacing: .04em;
+    }
+    .type-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+    }
+    .type-badge.individual { background: var(--sup-blue-bg); color: var(--sup-blue); }
+    .type-badge.company    { background: var(--sup-purple-bg); color: var(--sup-purple); }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 32px; }
+    .info-grid .full { grid-column: 1 / -1; }
+    .info-label { font-size: 12px; color: var(--sup-muted); margin-bottom: 4px; font-weight: 500; }
+    .info-value { font-size: 14px; color: #111827; font-weight: 500; }
+
+    .summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 0; border-bottom: 1px solid #f3f4f6;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-key { font-size: 13px; color: var(--sup-muted); }
+    .summary-val { font-size: 13px; color: #111827; font-weight: 600; }
+    .summary-val.debt { color: #d97706; }
+
+    .form-label { font-size: 13px; color: #111827; margin-bottom: 6px; }
+    .form-control {
+      min-height: 40px; border-radius: 10px; border-color: var(--sup-border); font-size: 13px;
+    }
+    .form-control:focus { border-color: #6ee7b7; box-shadow: 0 0 0 3px rgba(5,150,105,.1); }
+    .form-control[readonly] { background: #f9fafb; color: #9ca3af; opacity: 1; }
+    .type-toggle { display: flex; gap: 10px; flex-wrap: wrap; }
+    .type-option {
+      flex: 1 1 160px; border: 1px solid var(--sup-border); border-radius: 10px;
+      padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+    }
+    .type-option input { accent-color: var(--sup-green); }
+    .type-option.active { border-color: var(--sup-green); background: #f0fdf9; }
+    .type-option .ti { font-size: 1.2rem; color: var(--sup-green); }
+    .type-option .t-title { font-size: 13px; font-weight: 600; color: #111827; }
+    .btn-sup-primary {
+      background: var(--sup-green); border-color: var(--sup-green); color: #fff;
+      border-radius: 10px; min-height: 38px; font-size: 13px; font-weight: 500;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-sup-primary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
+    .btn-sup-outline {
+      border: 1px solid var(--sup-border); background: #fff; color: #374151;
+      border-radius: 10px; min-height: 38px; font-size: 13px; font-weight: 500;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+    }
+    .btn-sup-outline:hover { background: #f9fafb; color: #111827; border-color: #d1d5db; }
+
+    .table thead th { font-size: 12px; color: var(--sup-muted); font-weight: 600; background: #f9fafb; white-space: nowrap; }
+    .table tbody td { font-size: 13px; vertical-align: middle; }
+  </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content py-8">
+  <div class="container-fluid">
+
+    <a class="sup-back-link" th:href="@{/customer}">
+      <i class="ti ti-arrow-left"></i>Quay lại danh sách khách hàng
+    </a>
+
+    <!-- Header + Action buttons -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+      <div>
+        <h1 class="fs-4 mb-1" th:text="${customer.name}">Tên khách hàng</h1>
+        <span class="sup-code-badge me-2" th:text="${customer.customerCode}">CUS-000001</span>
+        <span th:if="${customer.customerType == 'COMPANY'}" class="type-badge company">Doanh nghiệp</span>
+        <span th:unless="${customer.customerType == 'COMPANY'}" class="type-badge individual">Cá nhân</span>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-sup-primary px-3" id="btnToggleEdit">
+          <i class="ti ti-edit"></i>Cập nhật thông tin
+        </button>
+        <a th:href="@{/customer}" class="btn btn-sup-outline px-3">
+          <i class="ti ti-arrow-left"></i>Quay lại danh sách
+        </a>
+      </div>
+    </div>
+
+    <!-- Toast / Error -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+      <i class="ti ti-circle-check me-2"></i><span th:text="${successMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+      <i class="ti ti-alert-circle me-2"></i><span th:text="${errorMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- Thông tin khách hàng (read-only) -->
+      <div class="col-12 col-lg-8">
+        <div class="sup-card p-4 p-md-5">
+          <h2 class="fs-6 mb-4">Thông tin khách hàng</h2>
+          <div class="info-grid">
+            <div>
+              <div class="info-label">Mã khách hàng</div>
+              <div class="info-value" th:text="${customer.customerCode}">CUS-000001</div>
+            </div>
+            <div>
+              <div class="info-label">Loại khách hàng</div>
+              <div class="info-value" th:text="${customer.customerTypeLabel}">Cá nhân</div>
+            </div>
+            <div>
+              <div class="info-label">Tên khách hàng</div>
+              <div class="info-value" th:text="${customer.name}">Tên KH</div>
+            </div>
+            <div>
+              <div class="info-label">Số điện thoại</div>
+              <div class="info-value" th:text="${customer.phoneNumber != null ? customer.phoneNumber : '—'}">—</div>
+            </div>
+            <div class="full">
+              <div class="info-label">Địa chỉ</div>
+              <div class="info-value" th:text="${customer.address != null ? customer.address : '—'}">—</div>
+            </div>
+
+            <!-- Trường doanh nghiệp -->
+            <div th:if="${customer.customerType == 'COMPANY' or customer.taxCode != null}">
+              <div class="info-label">Mã số thuế</div>
+              <div class="info-value" th:text="${customer.taxCode != null ? customer.taxCode : '—'}">—</div>
+            </div>
+            <div th:if="${customer.customerType == 'COMPANY' or customer.bankAccountNumber != null}">
+              <div class="info-label">Số tài khoản ngân hàng</div>
+              <div class="info-value" th:text="${customer.bankAccountNumber != null ? customer.bankAccountNumber : '—'}">—</div>
+            </div>
+            <div th:if="${customer.customerType == 'COMPANY' or customer.bankName != null}">
+              <div class="info-label">Tên ngân hàng</div>
+              <div class="info-value" th:text="${customer.bankName != null ? customer.bankName : '—'}">—</div>
+            </div>
+
+            <div class="full">
+              <div class="info-label">Ghi chú</div>
+              <div class="info-value" th:text="${customer.note != null ? customer.note : '—'}">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tóm tắt -->
+      <div class="col-12 col-lg-4">
+        <div class="sup-card p-4">
+          <h3 class="fs-6 mb-3">Tóm tắt</h3>
+          <div class="summary-row">
+            <span class="summary-key">Mã khách hàng</span>
+            <span class="summary-val" th:text="${customer.customerCode}">CUS-000001</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Số hóa đơn gần đây</span>
+            <span class="summary-val" th:text="${recentInvoices != null ? recentInvoices.size() : 0}">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Tổng công nợ</span>
+            <span class="summary-val debt"
+                  th:text="${#numbers.formatInteger(totalDebt != null ? totalDebt : 0, 1, 'COMMA') + ' ₫'}">0 ₫</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form chỉnh sửa (ẩn, mở bằng nút "Cập nhật thông tin") -->
+    <div class="sup-card p-4 p-md-5 mt-4" id="editForm"
+         th:style="${showEditForm} ? 'display:block;' : 'display:none;'">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fs-6 mb-0">Cập nhật thông tin khách hàng</h2>
+        <button type="button" class="btn-close" id="btnCloseEdit" aria-label="Đóng"></button>
+      </div>
+
+      <form th:action="@{/customer/{id}(id=${customer.id})}" th:object="${form}" method="post" novalidate id="editFormEl">
+
+        <div class="mb-3">
+          <label class="form-label">Mã khách hàng</label>
+          <input type="text" class="form-control" th:value="${customer.customerCode}" readonly>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Loại khách hàng <span class="text-danger">*</span></label>
+          <div class="type-toggle">
+            <label class="type-option" id="optIndividual">
+              <input type="radio" th:field="*{customerType}" value="INDIVIDUAL">
+              <i class="ti ti-user"></i><span class="t-title">Cá nhân</span>
+            </label>
+            <label class="type-option" id="optCompany">
+              <input type="radio" th:field="*{customerType}" value="COMPANY">
+              <i class="ti ti-building"></i><span class="t-title">Doanh nghiệp</span>
+            </label>
+          </div>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('customerType')}" th:errors="*{customerType}"></div>
+        </div>
+
+        <div class="mb-3">
+          <label for="editName" class="form-label">Tên khách hàng <span class="text-danger">*</span></label>
+          <input id="editName" type="text" class="form-control"
+                 th:field="*{name}"
+                 th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
+                 placeholder="Nhập tên khách hàng">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6">
+            <label for="editPhone" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+            <input id="editPhone" type="tel" class="form-control"
+                   th:field="*{phoneNumber}"
+                   th:classappend="${#fields.hasErrors('phoneNumber')} ? ' is-invalid'"
+                   inputmode="numeric" maxlength="10"
+                   pattern="0(2|3|5|7|8|9)[0-9]{8}"
+                   title="10 chữ số, bắt đầu bằng 02, 03, 05, 07, 08 hoặc 09"
+                   placeholder="0900000000">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+          </div>
+          <div class="col-12 col-md-6 company-field">
+            <label for="editTax" class="form-label">Mã số thuế</label>
+            <input id="editTax" type="text" class="form-control"
+                   th:field="*{taxCode}" maxlength="100" placeholder="Nhập mã số thuế">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="editAddress" class="form-label">Địa chỉ</label>
+          <input id="editAddress" type="text" class="form-control"
+                 th:field="*{address}" maxlength="100" placeholder="Nhập địa chỉ khách hàng">
+        </div>
+
+        <div class="row g-3 mb-3 company-field">
+          <div class="col-12 col-md-6">
+            <label for="editBankAcc" class="form-label">Số tài khoản ngân hàng</label>
+            <input id="editBankAcc" type="text" class="form-control"
+                   th:field="*{bankAccountNumber}" maxlength="100" placeholder="Nhập số tài khoản">
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="editBankName" class="form-label">Tên ngân hàng</label>
+            <input id="editBankName" type="text" class="form-control"
+                   th:field="*{bankName}" maxlength="100" placeholder="Nhập tên ngân hàng">
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="editNote" class="form-label">Ghi chú</label>
+          <textarea id="editNote" class="form-control" th:field="*{note}" rows="3"
+                    placeholder="Ghi chú thêm về khách hàng (nếu có)"></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-sup-primary px-4">
+            <i class="ti ti-device-floppy"></i>Lưu thay đổi
+          </button>
+          <a th:href="@{/customer/{id}(id=${customer.id})}" class="btn btn-sup-outline px-4">
+            <i class="ti ti-x"></i>Hủy
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Lịch sử mua hàng gần đây -->
+    <div class="sup-card p-4 p-md-5 mt-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fs-6 mb-0">Lịch sử mua hàng gần đây</h2>
+        <span class="badge bg-light text-dark border"
+              th:text="${(recentInvoices != null ? recentInvoices.size() : 0) + ' hóa đơn'}">0 hóa đơn</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Mã hóa đơn</th>
+              <th>Ngày</th>
+              <th class="text-end">Tổng tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="inv : ${recentInvoices}">
+              <td class="fw-semibold text-secondary small" th:text="${inv.invoiceCode}">HD-000001</td>
+              <td th:text="${inv.date}">01/01/2026 10:00</td>
+              <td class="text-end">
+                <span th:if="${inv.total != null}"
+                      th:text="${#numbers.formatInteger(inv.total, 1, 'COMMA') + ' ₫'}">0 ₫</span>
+                <span th:unless="${inv.total != null}" class="text-secondary">—</span>
+              </td>
+            </tr>
+
+            <tr th:if="${recentInvoices == null or #lists.isEmpty(recentInvoices)}">
+              <td colspan="3" class="text-center text-secondary py-5">
+                <i class="ti ti-receipt-off d-block fs-2 mb-2 text-muted"></i>
+                Khách hàng chưa có hóa đơn mua hàng nào.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script th:inline="javascript">
+  (function () {
+    var editForm = document.getElementById('editForm');
+    var editFormEl = document.getElementById('editFormEl');
+    var btnToggle = document.getElementById('btnToggleEdit');
+    var btnClose  = document.getElementById('btnCloseEdit');
+
+    function openEdit() {
+      editForm.style.display = 'block';
+      editForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function closeEdit() { editForm.style.display = 'none'; }
+
+    if (btnToggle) btnToggle.addEventListener('click', openEdit);
+    if (btnClose)  btnClose.addEventListener('click', closeEdit);
+
+    // Hiện/ẩn các trường doanh nghiệp theo loại khách hàng
+    var companyFields = editFormEl.querySelectorAll('.company-field');
+    var optIndividual = document.getElementById('optIndividual');
+    var optCompany = document.getElementById('optCompany');
+
+    function selectedType() {
+      var checked = editFormEl.querySelector('input[name="customerType"]:checked');
+      return checked ? checked.value : 'INDIVIDUAL';
+    }
+    function applyType() {
+      var isCompany = selectedType() === 'COMPANY';
+      companyFields.forEach(function (el) { el.style.display = isCompany ? '' : 'none'; });
+      if (optIndividual) optIndividual.classList.toggle('active', !isCompany);
+      if (optCompany) optCompany.classList.toggle('active', isCompany);
+    }
+    editFormEl.querySelectorAll('input[name="customerType"]').forEach(function (r) {
+      r.addEventListener('change', applyType);
+    });
+    applyType();
+
+    // Nếu form mở sẵn do lỗi validate → cuộn tới
+    if (editForm && editForm.style.display === 'block') {
+      editForm.scrollIntoView({ block: 'start' });
+    }
+  })();
+</script>
+</body>
+</html>
