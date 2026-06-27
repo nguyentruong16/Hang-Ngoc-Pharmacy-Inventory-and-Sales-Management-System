@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>Danh sách nhà sản xuất | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+    <style>
+        .owner-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        @media (max-width: 991.98px) {
+            .owner-page-content {
+                padding-top: 84px !important;
+            }
+        }
+
+        .owner-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .stat-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            background: #e8f7f1;
+            color: #059669;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-owner-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .btn-owner-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            background: #f9fafb;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .pagination .page-link {
+            color: #059669;
+            border-color: #e5e7eb;
+            font-size: 13px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #9ca3af;
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content owner-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Danh sách nhà sản xuất</h1>
+                <p class="text-secondary mb-0">Quản lý nhà sản xuất sản phẩm trong hệ thống</p>
+            </div>
+
+            <a th:href="@{/owner/producers/create-producer}" class="btn btn-owner-primary">
+                <i class="ti ti-building-factory-2 me-1"></i>
+                Tạo nhà sản xuất mới
+            </a>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success" th:text="${success}">
+            Tạo nhà sản xuất thành công
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6 col-xl-2">
+                <div class="owner-card p-4">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-secondary small">Tổng nhà sản xuất</div>
+                            <div class="fs-3 fw-bold" th:text="${totalProducers}">0</div>
+                            <div class="text-success small">Tất cả nhà sản xuất</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="ti ti-building-factory-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="owner-card p-4 mb-4">
+            <h2 class="fs-6 mb-3">Bộ lọc tìm kiếm</h2>
+
+            <form th:action="@{/owner/producers}" method="get">
+                <input type="hidden" name="page" value="0">
+                <input type="hidden" name="size" th:value="${pageSize}">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-8">
+                        <input type="text"
+                               class="form-control"
+                               name="search"
+                               th:value="${search}"
+                               placeholder="Tìm theo tên nhà sản xuất">
+                    </div>
+
+                    <div class="col-12 col-lg-2">
+                        <button type="submit" class="btn btn-owner-primary w-100">
+                            Tìm kiếm
+                        </button>
+                    </div>
+
+                    <div class="col-12 col-lg-2">
+                        <a th:href="@{/owner/producers}" class="btn btn-outline-secondary w-100">
+                            Đặt lại
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="owner-card p-4">
+            <h2 class="fs-6 mb-3">Danh sách nhà sản xuất</h2>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Mã nhà sản xuất</th>
+                        <th>Tên nhà sản xuất</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="producer : ${producers}">
+                        <td th:text="${producer.id}">1</td>
+                        <td class="fw-semibold" th:text="${producer.name}">Công ty Dược phẩm ABC</td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(producers)}">
+                        <td colspan="2" class="text-center text-secondary py-4">
+                            Không tìm thấy nhà sản xuất nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4"
+                 th:if="${totalItems > 0}">
+
+                <div class="text-secondary small">
+                    Hiển thị
+                    <span th:text="${currentPage * pageSize + 1}">1</span>
+                    -
+                    <span th:text="${currentPage * pageSize + producers.size()}">5</span>
+                    trong tổng số
+                    <span th:text="${totalItems}">0</span>
+                    nhà sản xuất
+                </div>
+
+                <nav th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+
+                        <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/producers(search=${search}, page=${currentPage - 1}, size=${pageSize})}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${pageNumber == currentPage} ? ' active'">
+                            <a class="page-link"
+                               th:text="${pageNumber + 1}"
+                               th:href="@{/owner/producers(search=${search}, page=${pageNumber}, size=${pageSize})}">
+                                1
+                            </a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/producers(search=${search}, page=${currentPage + 1}, size=${pageSize})}">
+                                Sau
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+</body>
+</html>

@@ -33,7 +33,6 @@ public class PlaceholderController {
             "/owner/dashboard",
             "/owner/products",
             "/owner/types",
-            "/owner/producers",
             "/owner/suppliers",
             "/owner/debts",
             "/owner/vat-invoices",

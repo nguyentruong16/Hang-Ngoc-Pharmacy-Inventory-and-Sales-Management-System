@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>Tạo nhà sản xuất | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+    <style>
+        .owner-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        @media (max-width: 991.98px) {
+            .owner-page-content {
+                padding-top: 84px !important;
+            }
+        }
+
+        .owner-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .btn-owner-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .btn-owner-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            min-height: 42px;
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content owner-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Tạo nhà sản xuất mới</h1>
+                <p class="text-secondary mb-0">Thêm nhà sản xuất mới vào hệ thống</p>
+            </div>
+
+            <a th:href="@{/owner/producers}" class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+
+        <div class="owner-card p-4">
+            <form th:action="@{/owner/producers/create-producer}" th:object="${producerForm}" method="post" novalidate>
+                <div class="row g-4">
+                    <div class="col-12 col-lg-8">
+                        <h2 class="fs-6 mb-3">Thông tin nhà sản xuất</h2>
+
+                        <div class="mb-3">
+                            <label for="producerName" class="form-label">Tên nhà sản xuất <span class="text-danger">*</span></label>
+                            <input id="producerName"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{name}"
+                                   placeholder="Nhập tên nhà sản xuất">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <h2 class="fs-6 mb-3">Thao tác</h2>
+
+                        <p class="text-secondary small mb-4">
+                            Kiểm tra kỹ thông tin trước khi tạo nhà sản xuất mới.
+                        </p>
+
+                        <button type="submit" class="btn btn-owner-primary w-100 mb-2">
+                            Tạo nhà sản xuất
+                        </button>
+
+                        <a th:href="@{/owner/producers}" class="btn btn-outline-secondary w-100">
+                            Hủy
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+</body>
+</html>
