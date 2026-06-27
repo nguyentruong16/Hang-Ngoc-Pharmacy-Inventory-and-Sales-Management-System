@@ -16,8 +16,10 @@ public class Type {
     @Column(name = "typeID", nullable = false)
     private Integer id;
 
-    @Column(name = "sortType")
-    private Integer sortType;
+    @Size(max = 100)
+    @NotNull
+    @Column(name = "sortType", nullable = false, length = 100)
+    private String sortType;
 
     @Size(max = 100)
     @NotNull
