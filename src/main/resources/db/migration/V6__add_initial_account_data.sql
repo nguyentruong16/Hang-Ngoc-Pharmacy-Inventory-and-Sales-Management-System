@@ -6,7 +6,7 @@ SET @initial_password_hash = '$2a$10$ukNGSf9ibpOpPipclZUYm.Qkh.yKW23vrOXoxR37KV7
 
 INSERT INTO account (accountID, name, username, password, status, phoneNumber, email)
 VALUES
-    (1, 'Trần Nguyễn Ngọc', 'ngoctn01', @initial_password_hash, 1, NULL, 'hangngocub@gmail.com'),
+    (1, 'Trần Nguyên Ngọc', 'ngoctn01', @initial_password_hash, 1, NULL, 'hangngocub@gmail.com'),
     (2, 'Vũ Thị Hằng', 'hangvt02', @initial_password_hash, 1, '0983276660', 'vuthihang01@gmail.com'),
     (3, 'Trần Anh Vũ', 'vuta03', @initial_password_hash, 1, '0329377669', 'vuta03@gmail.com'),
     (4, 'Vũ Cường Thịnh', 'thinhvc04', @initial_password_hash, 1, '0922553838', 'thinhvc04@gmail.com'),
@@ -31,8 +31,8 @@ VALUES
     (6, 3, 'CHIEF_PHARMACIST', 2),
     (7, 4, 'ACCOUNTANT', 1),
     (8, 5, 'ACCOUNTANT', 2),
-    (9, 6, 'CASHIER', 1),
-    (10, 7, 'CASHIER', 2)
+    (9, 6, 'PHARMACIST', 1),
+    (10, 7, 'PHARMACIST', 2)
 ON DUPLICATE KEY UPDATE
     accountID = VALUES(accountID),
     role = VALUES(role),
