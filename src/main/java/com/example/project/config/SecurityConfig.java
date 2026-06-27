@@ -77,6 +77,7 @@ public class SecurityConfig {
                         .sessionAuthenticationErrorUrl("/signin?sessionLimit")
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(true)
+                        .expiredUrl("/signin?roleChanged")
                         .sessionRegistry(sessionRegistry)
                 )
                 // Authenticated user without the required role -> friendly 403 page.

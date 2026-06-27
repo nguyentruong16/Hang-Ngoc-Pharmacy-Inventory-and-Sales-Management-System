@@ -115,7 +115,7 @@ public class SidebarMenuService {
                         i("Nhà sản xuất", "/owner/producers", "ti ti-building-factory-2")),
 
                 menuGroup("Cung ứng", "ti ti-truck",
-                        i("Danh sách nhà cung cấp", "/owner/suppliers", "ti ti-truck"),
+                        i("Danh sách nhà cung cấp", "/supplier", "ti ti-truck"),
                         i("Danh sách phiếu nhập", "/owner/purchase-invoices", "ti ti-receipt")),
 
                 menuGroup("Tài chính", "ti ti-cash-banknote",
@@ -152,7 +152,7 @@ public class SidebarMenuService {
                         i("Danh sách nhà sản xuất", "/chief-pharmacist/producers", "ti ti-building-factory-2")),
 
                 menuGroup("Cung ứng", "ti ti-truck",
-                        i("Danh sách nhà cung cấp", "/chief-pharmacist/suppliers", "ti ti-truck"),
+                        i("Danh sách nhà cung cấp", "/supplier", "ti ti-truck"),
                         i("Danh sách dự trù", "/chief-pharmacist/procurements", "ti ti-clipboard-list"),
                         i("Danh sách đề nghị mua hàng", "/chief-pharmacist/purchase-requisitions", "ti ti-shopping-cart-plus"),
                         i("Danh sách phiếu nhập", "/chief-pharmacist/purchase-invoices", "ti ti-receipt")),

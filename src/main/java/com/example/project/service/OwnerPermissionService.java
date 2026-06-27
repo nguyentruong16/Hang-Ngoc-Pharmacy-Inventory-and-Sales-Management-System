@@ -10,6 +10,9 @@ import com.example.project.repository.BranchRepository;
 import com.example.project.view.BranchPermissionRow;
 import com.example.project.view.PermissionBranchOption;
 import com.example.project.view.PermissionPageView;
+import com.example.project.security.AccountPrincipal;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Owner "role-by-branch" permission logic over the existing {@code AccountPermission} table:
@@ -59,13 +63,16 @@ public class OwnerPermissionService {
     private final AccountpermissionRepository accountpermissionRepository;
     private final AccountRepository accountRepository;
     private final BranchRepository branchRepository;
+    private final SessionRegistry sessionRegistry;
 
     public OwnerPermissionService(AccountpermissionRepository accountpermissionRepository,
                                   AccountRepository accountRepository,
-                                  BranchRepository branchRepository) {
+                                  BranchRepository branchRepository,
+                                  SessionRegistry sessionRegistry) {
         this.accountpermissionRepository = accountpermissionRepository;
         this.accountRepository = accountRepository;
         this.branchRepository = branchRepository;
+        this.sessionRegistry = sessionRegistry;
     }
 
     /**
@@ -221,6 +228,7 @@ public class OwnerPermissionService {
         if (clearing) {
             if (existing != null) {
                 accountpermissionRepository.delete(existing);
+                invalidateSessionsAt(accountId, branchId);
             }
             return;
         }
@@ -237,6 +245,16 @@ public class OwnerPermissionService {
             existing.setRole(normalized);
             accountpermissionRepository.save(existing);
         }
+        invalidateSessionsAt(accountId, branchId);
+    }
+
+    private void invalidateSessionsAt(Integer accountId, Integer branchId) {
+        sessionRegistry.getAllPrincipals().stream()
+                .filter(p -> p instanceof AccountPrincipal ap
+                        && ap.getAccountId().equals(accountId)
+                        && Objects.equals(ap.getBranchId(), branchId))
+                .flatMap(p -> sessionRegistry.getAllSessions(p, false).stream())
+                .forEach(SessionInformation::expireNow);
     }
 
     // ------------------------------------------------------------------

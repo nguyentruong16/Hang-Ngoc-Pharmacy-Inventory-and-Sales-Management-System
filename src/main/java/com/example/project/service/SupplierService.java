@@ -1,19 +1,128 @@
 package com.example.project.service;
 
+import com.example.project.dto.request.SupplierRequest;
 import com.example.project.dto.response.SupplierResponse;
+import com.example.project.dto.response.SupplierproductResponse;
+import com.example.project.entity.Supplier;
 import com.example.project.repository.SupplierRepository;
+import com.example.project.repository.SupplierproductRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class SupplierService {
-    private final SupplierRepository supplierRepository;
 
-    public SupplierService(SupplierRepository supplierRepository) {
+    private final SupplierRepository supplierRepository;
+    private final SupplierproductRepository supplierproductRepository;
+
+    public SupplierService(SupplierRepository supplierRepository,
+                           SupplierproductRepository supplierproductRepository) {
         this.supplierRepository = supplierRepository;
+        this.supplierproductRepository = supplierproductRepository;
     }
+
+    // ------------------------------------------------------------------ list
+
+    @Transactional(readOnly = true)
+    public Page<SupplierResponse> list(String keyword, Pageable pageable) {
+        String kw = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+
+        List<SupplierResponse> filtered = supplierRepository.findAll()
+                .stream()
+                .filter(s -> matchesKeyword(s, kw))
+                .sorted((a, b) -> {
+                    String nameA = a.getName() == null ? "" : a.getName();
+                    String nameB = b.getName() == null ? "" : b.getName();
+                    return nameA.compareToIgnoreCase(nameB);
+                })
+                .map(s -> {
+                    SupplierResponse r = SupplierResponse.from(s);
+                    r.setProductCount(supplierproductRepository.countBySupplierID_Id(s.getId()));
+                    return r;
+                })
+                .toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        List<SupplierResponse> pageContent = start >= filtered.size() ? List.of() : filtered.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, filtered.size());
+    }
+
+    // ------------------------------------------------------------------ stats
+
+    public record SupplierStats(long total, long withProducts, long withoutProducts, long totalProducts) {
+    }
+
+    @Transactional(readOnly = true)
+    public SupplierStats getStats() {
+        long total = supplierRepository.count();
+        long totalProducts = supplierproductRepository.count();
+        long withProducts = supplierproductRepository.countDistinctSuppliers();
+        long withoutProducts = total - withProducts;
+        return new SupplierStats(total, withProducts, withoutProducts, totalProducts);
+    }
+
+    // ------------------------------------------------------------------ getById
+
+    @Transactional(readOnly = true)
+    public SupplierResponse getById(Integer id) {
+        Supplier supplier = supplierRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
+        SupplierResponse r = SupplierResponse.from(supplier);
+        r.setProductCount(supplierproductRepository.countBySupplierID_Id(id));
+        return r;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SupplierproductResponse> getProducts(Integer supplierId) {
+        return supplierproductRepository.findBySupplierID_Id(supplierId)
+                .stream()
+                .map(SupplierproductResponse::from)
+                .toList();
+    }
+
+    // ------------------------------------------------------------------ create
+
+    @Transactional
+    public Integer create(SupplierRequest request) {
+        validatePhone(request.getPhone(), null);
+        validateEmail(request.getEmail(), null);
+
+        Supplier supplier = new Supplier();
+        supplier.setName(request.getName().trim());
+        supplier.setPhone(request.getPhone().trim());
+        supplier.setEmail(request.getEmail().trim());
+        supplier.setAddress(request.getAddress().trim());
+
+        return supplierRepository.save(supplier).getId();
+    }
+
+    // ------------------------------------------------------------------ update
+
+    @Transactional
+    public void update(Integer id, SupplierRequest request) {
+        Supplier supplier = supplierRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
+
+        validatePhone(request.getPhone(), id);
+        validateEmail(request.getEmail(), id);
+
+        supplier.setName(request.getName().trim());
+        supplier.setPhone(request.getPhone().trim());
+        supplier.setEmail(request.getEmail().trim());
+        supplier.setAddress(request.getAddress().trim());
+
+        supplierRepository.save(supplier);
+    }
+
+    // ------------------------------------------------------------------ legacy
 
     @Transactional(readOnly = true)
     public List<SupplierResponse> getAll() {
@@ -21,5 +130,36 @@ public class SupplierService {
                 .stream()
                 .map(SupplierResponse::from)
                 .toList();
+    }
+
+    // ------------------------------------------------------------------ helpers
+
+    private boolean matchesKeyword(Supplier s, String kw) {
+        if (kw.isBlank()) return true;
+        return contains(s.getName(), kw)
+                || contains(s.getPhone(), kw)
+                || contains(s.getEmail(), kw);
+    }
+
+    private boolean contains(String value, String keyword) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+    }
+
+    private void validatePhone(String phone, Integer excludeId) {
+        boolean duplicate = excludeId == null
+                ? supplierRepository.existsByPhone(phone.trim())
+                : supplierRepository.existsByPhoneAndIdNot(phone.trim(), excludeId);
+        if (duplicate) {
+            throw new IllegalArgumentException("Số điện thoại đã được sử dụng bởi nhà cung cấp khác");
+        }
+    }
+
+    private void validateEmail(String email, Integer excludeId) {
+        boolean duplicate = excludeId == null
+                ? supplierRepository.existsByEmailIgnoreCase(email.trim())
+                : supplierRepository.existsByEmailIgnoreCaseAndIdNot(email.trim(), excludeId);
+        if (duplicate) {
+            throw new IllegalArgumentException("Email đã được sử dụng bởi nhà cung cấp khác");
+        }
     }
 }
