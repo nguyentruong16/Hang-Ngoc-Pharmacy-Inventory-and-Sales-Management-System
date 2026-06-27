@@ -27,7 +27,6 @@ public class PurchaseinvoiceService {
     private final BranchRepository branchRepository;
     private final AccountRepository accountRepository;
     private final ProductRepository productRepository;
-    private final BatchRepository batchRepository;
 
     public PurchaseinvoiceService(PurchaseinvoiceRepository purchaseinvoiceRepository,
                                   PurchasedetailRepository purchasedetailRepository,
@@ -42,7 +41,6 @@ public class PurchaseinvoiceService {
         this.branchRepository = branchRepository;
         this.accountRepository = accountRepository;
         this.productRepository = productRepository;
-        this.batchRepository = batchRepository;
     }
 
     /**
@@ -243,9 +241,7 @@ public class PurchaseinvoiceService {
             detail.setExpirationDate(item.getExpirationDate());
             detail.setLotNumber(trimToNull(item.getLotNumber()));
 
-            Purchasedetail savedDetail = purchasedetailRepository.save(detail);
-
-            createBatchFromPurchaseDetail(savedDetail, product, branch, savedInvoice);
+            purchasedetailRepository.save(detail);
         }
 
         return savedInvoice.getId();
@@ -274,31 +270,6 @@ public class PurchaseinvoiceService {
                 .filter(product -> Boolean.TRUE.equals(product.getStatus()))
                 .sorted(Comparator.comparing(product -> product.getName() == null ? "" : product.getName()))
                 .toList();
-    }
-
-    private void createBatchFromPurchaseDetail(Purchasedetail detail,
-                                               Product product,
-                                               Branch branch,
-                                               Purchaseinvoice invoice) {
-        Productunit baseUnit = product.getBaseUnitID();
-
-        Batch batch = new Batch();
-        batch.setProductID(product);
-        batch.setPurchaseDetailID(detail);
-        batch.setBranchID(branch);
-        batch.setStorageQuantity(detail.getQuantity());
-        batch.setImportUnitID(baseUnit);
-        batch.setImportQtyInUnit(detail.getQuantity());
-        batch.setImportPrice(detail.getImportPrice());
-        batch.setImportPricePerBase(detail.getImportPrice());
-        batch.setImportDate(invoice.getDate());
-        batch.setProductionDate(detail.getProductionDate());
-        batch.setExpirationDate(detail.getExpirationDate());
-        batch.setLotNumber(detail.getLotNumber());
-        batch.setStatus(true);
-        batch.setNote("Tạo từ phiếu nhập " + formatPurchaseCode(invoice.getId()));
-
-        batchRepository.save(batch);
     }
 
     private void validateCreateRequest(PurchaseInvoiceCreateRequest request) {

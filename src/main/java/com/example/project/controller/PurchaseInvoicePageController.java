@@ -30,7 +30,8 @@ public class PurchaseInvoicePageController {
 
     @GetMapping({
             "/owner/purchase-invoices",
-            "/accountant/purchase-invoices"
+            "/accountant/purchase-invoices",
+            "/chief-pharmacist/purchase-invoices"
     })
     public String listPurchaseInvoices(@RequestParam(name = "keyword", required = false) String keyword,
                                        @RequestParam(name = "fromDate", required = false) String fromDate,
@@ -126,7 +127,8 @@ public class PurchaseInvoicePageController {
 
     @GetMapping({
             "/owner/purchase-invoices/{purchaseId}",
-            "/accountant/purchase-invoices/{purchaseId}"
+            "/accountant/purchase-invoices/{purchaseId}",
+            "/chief-pharmacist/purchase-invoices/{purchaseId}"
     })
     public String detailPage(@PathVariable Integer purchaseId,
                              HttpServletRequest request,
@@ -151,6 +153,10 @@ public class PurchaseInvoicePageController {
 
         if (uri.startsWith("/owner/purchase-invoices")) {
             return "/owner/purchase-invoices";
+        }
+
+        if (uri.startsWith("/chief-pharmacist/purchase-invoices")) {
+            return "/chief-pharmacist/purchase-invoices";
         }
 
         return "/accountant/purchase-invoices";

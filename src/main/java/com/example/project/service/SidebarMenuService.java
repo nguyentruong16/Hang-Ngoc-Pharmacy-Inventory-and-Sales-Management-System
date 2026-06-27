@@ -164,7 +164,8 @@ public class SidebarMenuService {
                         i("Danh sách công nợ", "/chief-pharmacist/debts", "ti ti-credit-card")),
 
                 menuGroup("Kho", "ti ti-archive",
-                        i("Xuất kho", "/chief-pharmacist/stock-outs", "ti ti-archive")),
+                        i("Xuất kho", "/chief-pharmacist/stock-outs", "ti ti-archive"),
+                        i("Tạo phiếu hủy xuất kho", "/chief-pharmacist/stock-outs/destroy/create", "ti ti-trash")),
 
                 menuGroup("Giao dịch", "ti ti-file-invoice",
                         i("Danh sách hóa đơn", "/chief-pharmacist/invoices", "ti ti-file-invoice"),

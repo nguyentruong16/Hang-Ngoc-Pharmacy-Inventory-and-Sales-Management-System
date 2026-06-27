@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Nhập hàng vào lô | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .batch-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .batch-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: #6b7280;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-ready {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-created {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .btn-batch-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-batch-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #ffffff;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 991.98px) {
+            .batch-page-content {
+                padding-top: 84px !important;
+            }
+
+            .info-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content batch-page-content">
+    <div class="container-fluid">
+
+        <div class="mb-4">
+            <h1 class="fs-4 mb-1">Nhập hàng vào lô</h1>
+            <p class="text-secondary mb-0">
+                Tạo lô hàng tồn kho từ phiếu nhập
+                <strong th:text="${pageData.purchaseCode}">PINV-000001</strong>
+            </p>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <form th:object="${form}" method="post">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div class="row g-4">
+                <div class="col-12 col-xl-9">
+
+                    <div class="batch-card mb-4">
+                        <div class="p-4 border-bottom">
+                            <div class="section-title">
+                                <i class="ti ti-info-circle text-success me-1"></i>
+                                Thông tin phiếu nhập
+                            </div>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="info-row">
+                                <div class="info-label">Mã phiếu nhập</div>
+                                <div class="fw-semibold text-success" th:text="${pageData.purchaseCode}">PINV-000001</div>
+                            </div>
+
+                            <div class="info-row">
+                                <div class="info-label">Ngày nhập</div>
+                                <div th:text="${pageData.dateDisplay}">01/06/2026</div>
+                            </div>
+
+                            <div class="info-row">
+                                <div class="info-label">Nhà cung cấp</div>
+                                <div th:text="${pageData.supplierName}">An Tâm Pharma</div>
+                            </div>
+
+                            <div class="info-row">
+                                <div class="info-label">Chi nhánh nhận</div>
+                                <div th:text="${pageData.branchName}">Nhánh 1</div>
+                            </div>
+
+                            <div class="info-row">
+                                <div class="info-label">Người nhập</div>
+                                <div th:text="${pageData.employeeName}">Phạm Đức Thành</div>
+                            </div>
+
+                            <div class="info-row">
+                                <div class="info-label">Tổng tiền</div>
+                                <div class="fw-semibold text-success"
+                                     th:text="${#numbers.formatDecimal(pageData.totalAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    0đ
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="batch-card">
+                        <div class="p-4 border-bottom">
+                            <div class="section-title">
+                                <i class="ti ti-package text-success me-1"></i>
+                                Hàng hóa cần tạo lô
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                <tr>
+                                    <th>Hàng hóa</th>
+                                    <th>Số lượng nhập</th>
+                                    <th>Đơn vị nhập</th>
+                                    <th>Giá nhập</th>
+                                    <th style="min-width: 140px;">Số lô</th>
+                                    <th style="min-width: 150px;">Ngày sản xuất</th>
+                                    <th style="min-width: 150px;">Hạn sử dụng</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                                </thead>
+
+                                <tbody>
+                                <tr th:each="item, iterStat : ${pageData.items}">
+                                    <td>
+                                        <div class="fw-semibold" th:text="${item.productName}">Paracetamol 500mg</div>
+                                        <div class="text-secondary small" th:text="${item.productId}">PARA500</div>
+
+                                        <input type="hidden"
+                                               th:field="*{items[__${iterStat.index}__].purchaseDetailId}">
+                                    </td>
+
+                                    <td th:text="${item.quantity}">100</td>
+
+                                    <td th:text="${item.unitName}">Hộp</td>
+
+                                    <td th:text="${#numbers.formatDecimal(item.importPrice, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                        0đ
+                                    </td>
+
+                                    <td>
+                                        <input type="text"
+                                               class="form-control form-control-sm"
+                                               th:field="*{items[__${iterStat.index}__].lotNumber}"
+                                               th:readonly="${item.batchCreated}"
+                                               placeholder="VD: LOT-001">
+                                    </td>
+
+                                    <td>
+                                        <input type="date"
+                                               class="form-control form-control-sm"
+                                               th:field="*{items[__${iterStat.index}__].productionDate}"
+                                               th:readonly="${item.batchCreated}">
+                                    </td>
+
+                                    <td>
+                                        <input type="date"
+                                               class="form-control form-control-sm"
+                                               th:field="*{items[__${iterStat.index}__].expirationDate}"
+                                               th:readonly="${item.batchCreated}">
+                                    </td>
+
+                                    <td>
+                                        <span class="status-badge"
+                                              th:classappend="${' ' + item.statusCssClass}"
+                                              th:text="${item.statusDisplay}">
+                                            Sẵn sàng
+                                        </span>
+                                    </td>
+                                </tr>
+
+                                <tr th:if="${#lists.isEmpty(pageData.items)}">
+                                    <td colspan="8" class="text-center text-secondary py-4">
+                                        Phiếu nhập chưa có sản phẩm.
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-12 col-xl-3">
+                    <div class="batch-card p-4 mb-4">
+                        <div class="section-title mb-4">
+                            Tóm tắt tạo lô
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Số sản phẩm</span>
+                            <strong th:text="${pageData.productCount}">0</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Tổng số lô tạo</span>
+                            <strong th:text="${pageData.batchToCreateCount}">0</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Tổng giá trị nhập</span>
+                            <strong class="text-success"
+                                    th:text="${#numbers.formatDecimal(pageData.totalAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Lô gần hạn</span>
+                            <strong class="text-warning" th:text="${pageData.nearExpiryCount}">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="ti ti-alert-triangle me-1"></i>
+                        Cần kiểm tra số lô và hạn sử dụng trước khi tạo lô. Lô đã tạo sẽ ảnh hưởng trực tiếp đến tồn kho.
+                    </div>
+
+                    <div class="batch-card p-4">
+                        <button type="submit"
+                                class="btn btn-batch-primary w-100 mb-3"
+                                th:formaction="${basePath + '/' + pageData.purchaseId + '/to-batch/create'}"
+                                th:disabled="${pageData.allBatchCreated}"
+                                onclick="return confirm('Bạn có chắc chắn muốn tạo lô hàng từ phiếu nhập này không?');">
+                            <i class="ti ti-package-import me-1"></i>
+                            Tạo lô hàng
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-outline-secondary w-100 mb-3"
+                                th:formaction="${basePath + '/' + pageData.purchaseId + '/to-batch/draft'}">
+                            Lưu nháp
+                        </button>
+
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
+                            Hủy
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</main>
+
+</body>
+</html>

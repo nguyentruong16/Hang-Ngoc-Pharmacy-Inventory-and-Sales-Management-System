@@ -54,7 +54,6 @@ public class PlaceholderController {
             "/chief-pharmacist/suppliers",
             "/chief-pharmacist/procurements",
             "/chief-pharmacist/purchase-requisitions",
-            "/chief-pharmacist/purchase-invoices",
             "/chief-pharmacist/debts",
             "/chief-pharmacist/invoices",
             "/chief-pharmacist/incomes",
