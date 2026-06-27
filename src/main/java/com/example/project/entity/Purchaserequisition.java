@@ -39,10 +39,6 @@ public class Purchaserequisition {
     @Column(name = "approvedAt")
     private Instant approvedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "planID")
-    private Procurementplan planID;
-
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "supplierID", nullable = false)

@@ -18,6 +18,7 @@ public class ExpenseResponse {
     private Integer applicantId;
     private String expenseType;
     private Integer returnId;
+    private Integer purchaseId;
     private Integer shiftReportId;
     private Instant date;
     private String reason;
@@ -26,7 +27,6 @@ public class ExpenseResponse {
     private BigDecimal paidByCash;
     private BigDecimal paidByBanking;
     private Integer statusId;
-    private Integer approvedById;
     private Instant approvedAt;
     private String note;
 
@@ -37,6 +37,7 @@ public class ExpenseResponse {
                 expense.getApplicantID() != null ? expense.getApplicantID().getId() : null,
                 expense.getExpenseType(),
                 expense.getReturnID() != null ? expense.getReturnID().getId() : null,
+                expense.getPurchaseID() != null ? expense.getPurchaseID().getId() : null,
                 expense.getShiftReportID() != null ? expense.getShiftReportID().getId() : null,
                 expense.getDate(),
                 expense.getReason(),
@@ -45,7 +46,6 @@ public class ExpenseResponse {
                 expense.getPaidByCash(),
                 expense.getPaidByBanking(),
                 expense.getStatusID() != null ? expense.getStatusID().getId() : null,
-                expense.getApprovedBy() != null ? expense.getApprovedBy().getId() : null,
                 expense.getApprovedAt(),
                 expense.getNote()
         );

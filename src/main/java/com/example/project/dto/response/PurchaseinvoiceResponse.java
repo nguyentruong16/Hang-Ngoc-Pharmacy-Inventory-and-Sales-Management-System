@@ -21,6 +21,8 @@ public class PurchaseinvoiceResponse {
     private BigDecimal additionCost;
     private BigDecimal discount;
     private BigDecimal totalAmount;
+    private Integer requisitionId;
+    private BigDecimal paid;
     private String note;
 
     public static PurchaseinvoiceResponse from(Purchaseinvoice purchaseinvoice) {
@@ -33,6 +35,8 @@ public class PurchaseinvoiceResponse {
                 purchaseinvoice.getAdditionCost(),
                 purchaseinvoice.getDiscount(),
                 purchaseinvoice.getTotalAmount(),
+                purchaseinvoice.getRequisitionID() != null ? purchaseinvoice.getRequisitionID().getId() : null,
+                purchaseinvoice.getPaid(),
                 purchaseinvoice.getNote()
         );
     }

@@ -39,6 +39,10 @@ public class Expense {
     private Return returnID;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchaseID")
+    private Purchaseinvoice purchaseID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shiftReportID")
     private Shiftreport shiftReportID;
 
@@ -69,10 +73,6 @@ public class Expense {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "statusID")
     private Status statusID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approvedBy")
-    private Account approvedBy;
 
     @Column(name = "approvedAt")
     private Instant approvedAt;
