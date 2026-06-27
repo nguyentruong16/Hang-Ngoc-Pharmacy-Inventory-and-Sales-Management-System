@@ -51,6 +51,12 @@ public class SecurityConfig {
                         .requestMatchers("/chief-pharmacist/**").hasRole(RoleConstants.CHIEF_PHARMACIST)
                         .requestMatchers("/pharmacist/**").hasRole(RoleConstants.PHARMACIST)
                         .requestMatchers("/accountant/**").hasRole(RoleConstants.ACCOUNTANT)
+                        // Shared Customer module (UC-048): reachable by Owner, Pharmacist and
+                        // Chief Pharmacist — not Accountant. Lives outside the role-prefixed trees.
+                        .requestMatchers("/customer/**").hasAnyRole(
+                                RoleConstants.OWNER,
+                                RoleConstants.PHARMACIST,
+                                RoleConstants.CHIEF_PHARMACIST)
                         // Everything else (/, /dashboard, /profile, /change-password, /403, REST APIs)
                         // requires only that the user is signed in.
                         .anyRequest().authenticated()
