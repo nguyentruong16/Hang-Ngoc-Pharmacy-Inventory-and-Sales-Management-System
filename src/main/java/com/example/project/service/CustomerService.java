@@ -1,19 +1,127 @@
 package com.example.project.service;
 
+import com.example.project.dto.request.CustomerRequest;
+import com.example.project.dto.response.CustomerInvoiceResponse;
 import com.example.project.dto.response.CustomerResponse;
+import com.example.project.entity.Customer;
+import com.example.project.entity.Invoice;
 import com.example.project.repository.CustomerRepository;
+import com.example.project.repository.InvoiceRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class CustomerService {
-    private final CustomerRepository customerRepository;
 
-    public CustomerService(CustomerRepository customerRepository) {
+    private final CustomerRepository customerRepository;
+    private final InvoiceRepository invoiceRepository;
+
+    public CustomerService(CustomerRepository customerRepository,
+                           InvoiceRepository invoiceRepository) {
         this.customerRepository = customerRepository;
+        this.invoiceRepository = invoiceRepository;
     }
+
+    // ------------------------------------------------------------------ list
+
+    @Transactional(readOnly = true)
+    public Page<CustomerResponse> list(String keyword, String type, Pageable pageable) {
+        String kw = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+        String typeFilter = (type == null || type.isBlank()) ? null : type.trim();
+
+        List<CustomerResponse> filtered = customerRepository.findAll().stream()
+                .filter(c -> matchesKeyword(c, kw))
+                .filter(c -> typeFilter == null || typeFilter.equals(c.getCustomerType()))
+                .sorted(Comparator.comparing(
+                        c -> c.getName() == null ? "" : c.getName(),
+                        String.CASE_INSENSITIVE_ORDER))
+                .map(CustomerResponse::from)
+                .toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        List<CustomerResponse> content = start >= filtered.size() ? List.of() : filtered.subList(start, end);
+        return new PageImpl<>(content, pageable, filtered.size());
+    }
+
+    // ------------------------------------------------------------------ stats
+
+    public record CustomerStats(long total, long individual, long company, long withDebt) {
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerStats getStats() {
+        List<Customer> all = customerRepository.findAll();
+        long total = all.size();
+        long individual = all.stream().filter(c -> "INDIVIDUAL".equals(c.getCustomerType())).count();
+        long company = all.stream().filter(c -> "COMPANY".equals(c.getCustomerType())).count();
+        long withDebt = invoiceRepository.findAll().stream()
+                .filter(i -> i.getCustomerID() != null)
+                .filter(i -> i.getDebtAmount() != null && i.getDebtAmount().compareTo(BigDecimal.ZERO) > 0)
+                .map(i -> i.getCustomerID().getId())
+                .distinct()
+                .count();
+        return new CustomerStats(total, individual, company, withDebt);
+    }
+
+    // ------------------------------------------------------------------ getById
+
+    @Transactional(readOnly = true)
+    public CustomerResponse getById(Integer id) {
+        return CustomerResponse.from(findOrThrow(id));
+    }
+
+    /** 5 hóa đơn gần nhất của khách hàng (suy ra từ FK Invoice.customerID). */
+    @Transactional(readOnly = true)
+    public List<CustomerInvoiceResponse> getRecentInvoices(Integer customerId) {
+        return invoiceRepository.findAll().stream()
+                .filter(i -> i.getCustomerID() != null && customerId.equals(i.getCustomerID().getId()))
+                .sorted(Comparator.comparing(Invoice::getDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .limit(5)
+                .map(CustomerInvoiceResponse::from)
+                .toList();
+    }
+
+    /** Tổng công nợ hiện tại = tổng debtAmount trên các hóa đơn của khách hàng. */
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalDebt(Integer customerId) {
+        return invoiceRepository.findAll().stream()
+                .filter(i -> i.getCustomerID() != null && customerId.equals(i.getCustomerID().getId()))
+                .map(Invoice::getDebtAmount)
+                .filter(d -> d != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // ------------------------------------------------------------------ create
+
+    @Transactional
+    public Integer create(CustomerRequest req) {
+        validatePhoneUnique(req.getPhoneNumber(), null);
+        Customer c = new Customer();
+        apply(c, req);
+        return customerRepository.save(c).getId();
+    }
+
+    // ------------------------------------------------------------------ update
+
+    @Transactional
+    public void update(Integer id, CustomerRequest req) {
+        Customer c = findOrThrow(id);
+        validatePhoneUnique(req.getPhoneNumber(), id);
+        apply(c, req);
+        customerRepository.save(c);
+    }
+
+    // ------------------------------------------------------------------ legacy
 
     @Transactional(readOnly = true)
     public List<CustomerResponse> getAll() {
@@ -21,5 +129,53 @@ public class CustomerService {
                 .stream()
                 .map(CustomerResponse::from)
                 .toList();
+    }
+
+    // ------------------------------------------------------------------ helpers
+
+    private Customer findOrThrow(Integer id) {
+        return customerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng"));
+    }
+
+    private void apply(Customer c, CustomerRequest req) {
+        boolean company = "COMPANY".equals(req.getCustomerType());
+        c.setCustomerType(company ? "COMPANY" : "INDIVIDUAL");
+        c.setName(trimToNull(req.getName()));
+        c.setPhoneNumber(trimToNull(req.getPhoneNumber()));
+        c.setAddress(trimToNull(req.getAddress()));
+        c.setNote(trimToNull(req.getNote()));
+        // Các trường doanh nghiệp chỉ lưu khi loại khách hàng = COMPANY
+        c.setTaxCode(company ? trimToNull(req.getTaxCode()) : null);
+        c.setBankAccountNumber(company ? trimToNull(req.getBankAccountNumber()) : null);
+        c.setBankName(company ? trimToNull(req.getBankName()) : null);
+    }
+
+    private void validatePhoneUnique(String phone, Integer excludeId) {
+        if (phone == null || phone.isBlank()) return;
+        String p = phone.trim();
+        boolean duplicate = customerRepository.findAll().stream()
+                .filter(c -> excludeId == null || !excludeId.equals(c.getId()))
+                .anyMatch(c -> p.equals(c.getPhoneNumber()));
+        if (duplicate) {
+            throw new IllegalArgumentException("Số điện thoại đã tồn tại trong hệ thống (MSG-44)");
+        }
+    }
+
+    private boolean matchesKeyword(Customer c, String kw) {
+        if (kw.isBlank()) return true;
+        return contains(c.getName(), kw)
+                || contains(c.getPhoneNumber(), kw)
+                || contains(c.getTaxCode(), kw);
+    }
+
+    private boolean contains(String value, String keyword) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String t = value.trim();
+        return t.isEmpty() ? null : t;
     }
 }

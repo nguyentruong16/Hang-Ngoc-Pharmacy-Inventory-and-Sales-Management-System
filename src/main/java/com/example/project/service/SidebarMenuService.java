@@ -79,6 +79,9 @@ public class SidebarMenuService {
         if (uri.startsWith("/owner/origins/create-origin")) {
             uri = "/owner/origins";
         }
+        if (uri.startsWith("/owner/producers/create-producer")) {
+            uri = "/owner/producers";
+        }
         String best = null;
         for (SidebarMenuGroup group : menu) {
             for (SidebarMenuItem item : group.getItems()) {
@@ -127,7 +130,7 @@ public class SidebarMenuService {
                         i("Xuất kho", "/owner/stock-outs", "ti ti-archive")),
 
                 linkGroup("Khách hàng", "ti ti-users",
-                        i("Khách hàng", "/owner/customers", "ti ti-users")),
+                        i("Khách hàng", "/customer", "ti ti-users")),
 
                 linkGroup("Phê duyệt", "ti ti-clipboard-check",
                         i("Phê duyệt", "/owner/approvals", "ti ti-clipboard-check"))
@@ -170,7 +173,7 @@ public class SidebarMenuService {
                         i("Danh sách trả hàng", "/chief-pharmacist/returns", "ti ti-rotate")),
 
                 linkGroup("Khách hàng", "ti ti-users",
-                        i("Khách hàng", "/chief-pharmacist/customers", "ti ti-users")),
+                        i("Khách hàng", "/customer", "ti ti-users")),
 
                 linkGroup("Báo cáo ca", "ti ti-report",
                         i("Báo cáo ca", "/chief-pharmacist/shift-reports", "ti ti-report"))
@@ -192,7 +195,7 @@ public class SidebarMenuService {
                         i("Hóa đơn", "/pharmacist/invoices", "ti ti-file-invoice")),
 
                 linkGroup("Khách hàng", "ti ti-users",
-                        i("Khách hàng", "/pharmacist/customers", "ti ti-users")),
+                        i("Khách hàng", "/customer", "ti ti-users")),
 
                 linkGroup("Báo cáo ca", "ti ti-report",
                         i("Báo cáo ca", "/pharmacist/shift-reports", "ti ti-report"))

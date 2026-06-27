@@ -4,6 +4,10 @@ import com.example.project.dto.request.BranchCreateRequest;
 import com.example.project.dto.response.BranchResponse;
 import com.example.project.service.BranchService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,9 +16,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Controller
 @RequestMapping("/owner")
@@ -25,20 +28,34 @@ public class BranchController {
         this.branchService = branchService;
     }
 
-    //hien ra danh sach chi nhanh
     @GetMapping("/branch-list")
-    public String branchList(Model model) {
+    public String branchList(@RequestParam(name = "search", required = false) String search,
+                             @RequestParam(name = "status", required = false) String status,
+                             @RequestParam(name = "page", defaultValue = "0") int page,
+                             @RequestParam(name = "size", defaultValue = "5") int size,
+                             Model model) {
+        if (page < 0) {
+            page = 0;
+        }
 
-        //lay danh sach chi nhanh
-        List<BranchResponse> branches = branchService.getAll();
+        if (size <= 0) {
+            size = 5;
+        }
 
-        //dem cac chi nhanh dang hoat dong
-        long activeBranches = branchService.countActiveBranches(branches);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        Page<BranchResponse> branchPage = branchService.list(search, status, pageable);
+        BranchService.BranchStats stats = branchService.getStats();
 
-        model.addAttribute("branches", branches); //danh sach chi nhanh
-        model.addAttribute("totalBranches", branches.size()); //so luong chi nhanh
-        model.addAttribute("activeBranches", activeBranches); //so luong chi nhanh dang hoat dong
-        model.addAttribute("inactiveBranches", branches.size() - activeBranches); //so luong chi nhanh ngung hoat dong
+        model.addAttribute("branches", branchPage.getContent());
+        model.addAttribute("totalBranches", stats.totalBranches());
+        model.addAttribute("activeBranches", stats.activeBranches());
+        model.addAttribute("inactiveBranches", stats.inactiveBranches());
+        model.addAttribute("search", search);
+        model.addAttribute("filterStatus", status);
+        model.addAttribute("currentPage", branchPage.getNumber());
+        model.addAttribute("totalPages", branchPage.getTotalPages());
+        model.addAttribute("pageSize", size);
+        model.addAttribute("totalItems", branchPage.getTotalElements());
         model.addAttribute("pageTitle", "Danh sách chi nhánh");
         return "owner/branch-list";
     }

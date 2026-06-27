@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TypeResponse {
     private Integer id;
-    private Integer sortType;
+    private String sortType;
     private String name;
 
     public static TypeResponse from(Type type) {
