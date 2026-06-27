@@ -38,4 +38,16 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
            where b.purchaseDetailID.id in :purchaseDetailIds
            """)
     List<Batch> findByPurchaseDetailIds(@Param("purchaseDetailIds") List<Integer> purchaseDetailIds);
+
+    @Query("""
+       select b
+       from Batch b
+       left join fetch b.productID
+       left join fetch b.branchID
+       left join fetch b.importUnitID
+       where b.status = true
+       and b.storageQuantity > 0
+       order by b.expirationDate asc
+       """)
+    List<Batch> findAvailableBatchesForDestroy();
 }

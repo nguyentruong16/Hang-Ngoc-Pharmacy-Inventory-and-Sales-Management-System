@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo phiếu hủy xuất kho | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .destroy-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .destroy-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .btn-destroy-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-destroy-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #ffffff;
+        }
+
+        .btn-destroy-danger {
+            border-color: #ef4444;
+            color: #dc2626;
+            border-radius: 12px;
+        }
+
+        .btn-destroy-danger:hover {
+            background: #fee2e2;
+            border-color: #dc2626;
+            color: #b91c1c;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-ready {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .check-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .check-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d1d5db;
+            color: #9ca3af;
+        }
+
+        .check-icon.done {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
+
+        @media (max-width: 991.98px) {
+            .destroy-page-content {
+                padding-top: 84px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content destroy-page-content">
+    <div class="container-fluid">
+
+        <div class="mb-4">
+            <h1 class="fs-4 mb-1">Tạo phiếu hủy xuất kho</h1>
+            <p class="text-secondary mb-0">Tạo phiếu xuất kho loại hủy hàng từ các lô tồn kho hiện có</p>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <form th:action="@{/chief-pharmacist/stock-outs/destroy/create}" th:object="${form}" method="post">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div class="row g-4">
+                <div class="col-12 col-xl-9">
+
+                    <div class="destroy-card p-4 mb-4">
+                        <div class="section-title mb-4">
+                            <i class="ti ti-clipboard text-success me-1"></i>
+                            Thông tin phiếu hủy xuất kho
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Mã phiếu</label>
+                                <input type="text" class="form-control" value="SO-CANCEL-NEW" readonly>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Ngày tạo</label>
+                                <input type="text" class="form-control" id="todayDisplay" readonly>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Người tạo</label>
+                                <input type="text" class="form-control" value="Tài khoản hiện tại" readonly>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Chi nhánh <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{branchId}">
+                                    <option value="">-- Chọn chi nhánh --</option>
+                                    <option th:each="branch : ${branches}"
+                                            th:value="${branch.id}"
+                                            th:text="${branch.name}">
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Lý do hủy <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{reason}">
+                                    <option value="">-- Chọn lý do hủy --</option>
+                                    <option value="Sắp hết hạn">Sắp hết hạn</option>
+                                    <option value="Hết hạn sử dụng">Hết hạn sử dụng</option>
+                                    <option value="Bao bì hỏng">Bao bì hỏng</option>
+                                    <option value="Hàng lỗi / kém chất lượng">Hàng lỗi / kém chất lượng</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Ghi chú</label>
+                                <textarea class="form-control" rows="3" th:field="*{note}"
+                                          placeholder="Nhập ghi chú nếu có"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="destroy-card mb-4">
+                        <div class="p-4 border-bottom">
+                            <div class="section-title">
+                                <i class="ti ti-search text-success me-1"></i>
+                                Chọn hàng hóa cần hủy
+                            </div>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-xl-7">
+                                    <label class="form-label">Tìm lô hàng</label>
+                                    <input type="text"
+                                           id="candidateKeyword"
+                                           class="form-control"
+                                           placeholder="Tìm theo tên hàng, mã hàng, số lô"
+                                           oninput="filterCandidateOptions()">
+                                </div>
+
+                                <div class="col-12 col-xl-3">
+                                    <label class="form-label">Lô hàng</label>
+                                    <select id="candidateSelect" class="form-select">
+                                        <option value="">-- Chọn lô hàng --</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 col-xl-2">
+                                    <button type="button" class="btn btn-destroy-primary w-100" onclick="addSelectedBatch()">
+                                        <i class="ti ti-plus me-1"></i>
+                                        Thêm
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="destroy-card">
+                        <div class="p-4 border-bottom">
+                            <div class="section-title">
+                                <i class="ti ti-info-circle text-success me-1"></i>
+                                Danh sách hàng hủy
+                                <span class="badge bg-success-subtle text-success ms-2" id="selectedCountBadge">0</span>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                <tr>
+                                    <th>Mã hàng</th>
+                                    <th>Tên hàng hóa</th>
+                                    <th>Số lô</th>
+                                    <th>Hạn dùng</th>
+                                    <th>Tồn hiện tại</th>
+                                    <th style="min-width: 120px;">Số lượng hủy</th>
+                                    <th style="min-width: 160px;">Lý do</th>
+                                    <th>Giá trị ước tính</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                                </thead>
+
+                                <tbody id="selectedItemsBody">
+                                <tr id="emptyRow">
+                                    <td colspan="9" class="text-center text-secondary py-4">
+                                        Chưa chọn hàng hóa cần hủy.
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-12 col-xl-3">
+                    <div class="destroy-card p-4 mb-4">
+                        <div class="section-title mb-4">Tóm tắt phiếu hủy</div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Tổng mặt hàng</span>
+                            <strong id="totalItemsDisplay">0</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Tổng số lượng hủy</span>
+                            <strong id="totalQuantityDisplay">0</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Tổng giá trị ước tính</span>
+                            <strong class="text-danger" id="totalValueDisplay">0đ</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="text-secondary">Trạng thái sau khi tạo</span>
+                            <span class="status-badge status-warning">Chờ xử lý</span>
+                        </div>
+                    </div>
+
+                    <div class="destroy-card p-4 mb-4">
+                        <div class="section-title mb-4">Kiểm tra trước khi tạo</div>
+
+                        <div class="check-line">
+                            <span class="check-icon" id="checkItemsIcon">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Đã chọn hàng hóa</span>
+                        </div>
+
+                        <div class="check-line">
+                            <span class="check-icon" id="checkQuantityIcon">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Số lượng hủy không vượt tồn kho</span>
+                        </div>
+
+                        <div class="check-line">
+                            <span class="check-icon" id="checkReasonIcon">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Đã nhập lý do hủy</span>
+                        </div>
+
+                        <div class="check-line">
+                            <span class="check-icon" id="checkExpiryIcon">
+                                <i class="ti ti-check"></i>
+                            </span>
+                            <span>Đã kiểm tra lô và hạn dùng</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="ti ti-alert-triangle me-1"></i>
+                        Cần kiểm tra số lô và hạn sử dụng trước khi tạo phiếu hủy.
+                    </div>
+
+                    <div class="destroy-card p-4">
+                        <button type="submit"
+                                class="btn btn-destroy-primary w-100 mb-3"
+                                onclick="return confirm('Bạn có chắc chắn muốn tạo phiếu hủy xuất kho không?');">
+                            <i class="ti ti-clipboard-plus me-1"></i>
+                            Tạo phiếu hủy xuất kho
+                        </button>
+
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100 mb-3">
+                            Lưu nháp
+                        </a>
+
+                        <a th:href="${basePath}" class="btn btn-destroy-danger w-100">
+                            Hủy
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const candidates = /*[[${candidates}]]*/ [];
+    const selectedBatchIds = new Set();
+
+    function formatMoney(value) {
+        value = Number(value || 0);
+        return value.toLocaleString('vi-VN') + 'đ';
+    }
+
+    function today() {
+        const date = new Date();
+        return date.toLocaleDateString('vi-VN');
+    }
+
+    function normalizeText(value) {
+        return (value || '')
+            .toString()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D')
+            .toLowerCase()
+            .trim();
+    }
+
+    function candidateLabel(candidate) {
+        return `${candidate.productName} - ${candidate.lotNumber || 'Không có số lô'} - Tồn: ${candidate.storageQuantity} - ${candidate.branchName}`;
+    }
+
+    function filterCandidateOptions() {
+        const keyword = normalizeText(document.getElementById('candidateKeyword').value);
+        const select = document.getElementById('candidateSelect');
+
+        select.innerHTML = '<option value="">-- Chọn lô hàng --</option>';
+
+        candidates
+            .filter(candidate => !selectedBatchIds.has(candidate.batchId))
+            .filter(candidate => {
+                if (!keyword) {
+                    return true;
+                }
+
+                return normalizeText(candidate.productId).includes(keyword)
+                    || normalizeText(candidate.productName).includes(keyword)
+                    || normalizeText(candidate.lotNumber).includes(keyword);
+            })
+            .forEach(candidate => {
+                const option = document.createElement('option');
+                option.value = candidate.batchId;
+                option.textContent = candidateLabel(candidate);
+                select.appendChild(option);
+            });
+    }
+
+    function addSelectedBatch() {
+        const select = document.getElementById('candidateSelect');
+        const batchId = Number(select.value);
+
+        if (!batchId) {
+            alert('Vui lòng chọn lô hàng cần hủy.');
+            return;
+        }
+
+        const candidate = candidates.find(item => item.batchId === batchId);
+
+        if (!candidate) {
+            alert('Không tìm thấy lô hàng đã chọn.');
+            return;
+        }
+
+        if (selectedBatchIds.has(batchId)) {
+            alert('Lô hàng này đã được thêm.');
+            return;
+        }
+
+        selectedBatchIds.add(batchId);
+
+        const emptyRow = document.getElementById('emptyRow');
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const tbody = document.getElementById('selectedItemsBody');
+        const index = tbody.querySelectorAll('tr').length;
+
+        const row = document.createElement('tr');
+        row.setAttribute('data-batch-id', batchId);
+        row.setAttribute('data-stock', candidate.storageQuantity);
+        row.setAttribute('data-unit-cost', candidate.unitCostPrice || 0);
+
+        row.innerHTML = `
+            <td class="fw-semibold text-success">
+                ${candidate.productId}
+                <input type="hidden" name="items[${index}].batchId" value="${candidate.batchId}" data-field="batchId">
+            </td>
+
+            <td>${candidate.productName}</td>
+
+            <td>
+                <span class="badge bg-secondary-subtle text-secondary">
+                    ${candidate.lotNumber || 'Không có'}
+                </span>
+            </td>
+
+            <td>
+                <span class="badge bg-warning-subtle text-warning">
+                    ${candidate.expirationDateDisplay || 'Không có'}
+                </span>
+            </td>
+
+            <td>${candidate.storageQuantity}</td>
+
+            <td>
+                <input type="number"
+                       min="1"
+                       max="${candidate.storageQuantity}"
+                       value="1"
+                       class="form-control form-control-sm quantity-input"
+                       name="items[${index}].quantity"
+                       data-field="quantity"
+                       oninput="calculateSummary()">
+            </td>
+
+            <td>
+                <input type="text"
+                       class="form-control form-control-sm"
+                       name="items[${index}].reason"
+                       data-field="reason"
+                       placeholder="VD: Sắp hết hạn">
+            </td>
+
+            <td class="fw-semibold line-cost">${formatMoney(candidate.unitCostPrice || 0)}</td>
+
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                    <i class="ti ti-trash"></i>
+                    Xóa
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+
+        refreshIndexes();
+        filterCandidateOptions();
+        calculateSummary();
+    }
+
+    function removeRow(button) {
+        const row = button.closest('tr');
+        const batchId = Number(row.getAttribute('data-batch-id'));
+
+        selectedBatchIds.delete(batchId);
+        row.remove();
+
+        const tbody = document.getElementById('selectedItemsBody');
+
+        if (tbody.querySelectorAll('tr').length === 0) {
+            tbody.innerHTML = `
+                <tr id="emptyRow">
+                    <td colspan="9" class="text-center text-secondary py-4">
+                        Chưa chọn hàng hóa cần hủy.
+                    </td>
+                </tr>
+            `;
+        }
+
+        refreshIndexes();
+        filterCandidateOptions();
+        calculateSummary();
+    }
+
+    function refreshIndexes() {
+        document.querySelectorAll('#selectedItemsBody tr[data-batch-id]').forEach((row, index) => {
+            row.querySelectorAll('[data-field]').forEach(input => {
+                const field = input.getAttribute('data-field');
+                input.setAttribute('name', `items[${index}].${field}`);
+            });
+        });
+    }
+
+    function calculateSummary() {
+        let totalItems = 0;
+        let totalQuantity = 0;
+        let totalValue = 0;
+        let quantityValid = true;
+
+        document.querySelectorAll('#selectedItemsBody tr[data-batch-id]').forEach(row => {
+            totalItems++;
+
+            const stock = Number(row.getAttribute('data-stock') || 0);
+            const unitCost = Number(row.getAttribute('data-unit-cost') || 0);
+            const quantityInput = row.querySelector('.quantity-input');
+            const quantity = Number(quantityInput.value || 0);
+
+            if (quantity <= 0 || quantity > stock) {
+                quantityValid = false;
+            }
+
+            const lineCost = quantity * unitCost;
+
+            totalQuantity += quantity;
+            totalValue += lineCost;
+
+            row.querySelector('.line-cost').textContent = formatMoney(lineCost);
+        });
+
+        document.getElementById('selectedCountBadge').textContent = totalItems;
+        document.getElementById('totalItemsDisplay').textContent = totalItems;
+        document.getElementById('totalQuantityDisplay').textContent = totalQuantity;
+        document.getElementById('totalValueDisplay').textContent = formatMoney(totalValue);
+
+        setCheck('checkItemsIcon', totalItems > 0);
+        setCheck('checkQuantityIcon', totalItems > 0 && quantityValid);
+        setCheck('checkReasonIcon', document.querySelector('[name="reason"]').value.trim().length > 0);
+        setCheck('checkExpiryIcon', totalItems > 0);
+    }
+
+    function setCheck(id, done) {
+        const icon = document.getElementById(id);
+
+        if (done) {
+            icon.classList.add('done');
+        } else {
+            icon.classList.remove('done');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('todayDisplay').value = today();
+
+        filterCandidateOptions();
+        calculateSummary();
+
+        const reasonSelect = document.querySelector('[name="reason"]');
+        if (reasonSelect) {
+            reasonSelect.addEventListener('change', calculateSummary);
+        }
+    });
+</script>
+
+</body>
+</html>
