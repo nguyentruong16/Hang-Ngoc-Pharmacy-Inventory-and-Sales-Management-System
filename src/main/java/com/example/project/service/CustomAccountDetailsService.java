@@ -35,13 +35,11 @@ public class CustomAccountDetailsService {
     @Transactional(readOnly = true)
     public AccountPrincipal loadUserByUsernameAndBranch(String loginId, Integer branchId) throws UsernameNotFoundException {
         String normalizedLoginId = loginId == null ? "" : loginId.trim();
-        if (normalizedLoginId.isBlank() || branchId == null) {
+        if (normalizedLoginId.isBlank()) {
             throw new UsernameNotFoundException("Invalid credentials");
         }
 
-        branchRepository.findById(branchId)
-                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
-
+        // Credential check first — branch is NOT needed to identify/authenticate the account.
         Account account = accountRepository
                 .findByUsernameIgnoreCaseOrEmailIgnoreCase(normalizedLoginId, normalizedLoginId)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
@@ -53,22 +51,47 @@ public class CustomAccountDetailsService {
             throw new UsernameNotFoundException("Invalid credentials");
         }
 
-        List<Accountpermission> validRows = accountpermissionRepository.findByAccountIdAndBranchId(account.getId(), branchId)
+        // All valid role rows for the account (across every branch).
+        List<Accountpermission> validRows = accountpermissionRepository.findProfilePermissionsByAccountId(account.getId())
                 .stream()
                 .filter(permission -> RoleConstants.isValid(canonicalRole(permission.getRole())))
                 .toList();
-
         if (validRows.isEmpty()) {
             throw new UsernameNotFoundException("Invalid credentials");
         }
 
-        Accountpermission selectedPermission = validRows.get(0);
+        // Owner is cross-branch: no branch selection required; branchId stays null = all branches.
+        boolean isOwner = validRows.stream()
+                .anyMatch(permission -> RoleConstants.OWNER.equals(canonicalRole(permission.getRole())));
+        if (isOwner) {
+            return buildPrincipal(account, RoleConstants.OWNER, null);
+        }
+
+        // Non-owner roles are branch-scoped: a valid branch must be chosen and matched.
+        if (branchId == null) {
+            throw new UsernameNotFoundException("Invalid credentials");
+        }
+        branchRepository.findById(branchId)
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
+
+        List<Accountpermission> branchRows = accountpermissionRepository.findByAccountIdAndBranchId(account.getId(), branchId)
+                .stream()
+                .filter(permission -> RoleConstants.isValid(canonicalRole(permission.getRole())))
+                .toList();
+        if (branchRows.isEmpty()) {
+            throw new UsernameNotFoundException("Invalid credentials");
+        }
+
+        Accountpermission selectedPermission = branchRows.get(0);
         String selectedRole = canonicalRole(selectedPermission.getRole());
         Integer selectedBranchId = selectedPermission.getBranchID() == null
                 ? branchId
                 : selectedPermission.getBranchID().getId();
-        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + selectedRole));
+        return buildPrincipal(account, selectedRole, selectedBranchId);
+    }
 
+    private AccountPrincipal buildPrincipal(Account account, String role, Integer branchId) {
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
         return new AccountPrincipal(
                 account.getId(),
                 account.getName(),
@@ -77,8 +100,8 @@ public class CustomAccountDetailsService {
                 account.getPassword(),
                 true,
                 authorities,
-                selectedRole,
-                selectedBranchId
+                role,
+                branchId
         );
     }
 

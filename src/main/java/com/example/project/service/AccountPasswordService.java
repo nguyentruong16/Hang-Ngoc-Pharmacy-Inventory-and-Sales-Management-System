@@ -39,6 +39,9 @@ public class AccountPasswordService {
         if (newPassword == null || newPassword.isBlank()) {
             throw new IllegalArgumentException("New password is required.");
         }
+        if (newPassword.length() < 6) {
+            throw new IllegalArgumentException("New password must be at least 6 characters.");
+        }
         if (confirmPassword == null || confirmPassword.isBlank()) {
             throw new IllegalArgumentException("Password confirmation is required.");
         }

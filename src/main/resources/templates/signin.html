@@ -97,7 +97,7 @@
 
         <div class="mb-3">
           <label for="branchId" class="form-label">Chi nhánh</label>
-          <select id="branchId" name="branchId" class="form-select" required>
+          <select id="branchId" name="branchId" class="form-select">
             <option value="">Chọn chi nhánh</option>
             <option th:each="branch : ${branches}"
                     th:value="${branch.id}"
@@ -105,6 +105,7 @@
               Chi nhánh
             </option>
           </select>
+          <div class="form-text">Chủ cửa hàng không cần chọn chi nhánh.</div>
         </div>
 
         <div class="form-check mb-4">

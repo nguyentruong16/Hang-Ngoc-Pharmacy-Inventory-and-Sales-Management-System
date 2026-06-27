@@ -126,8 +126,8 @@
                        th:field="*{email}"
                        th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'"
                        maxlength="100"
-                       pattern="[A-Za-z0-9_-]+@[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*\.[A-Za-z]{2,}"
-                       title="Chỉ gồm chữ, số, '-', '_' và phải có đuôi hợp lệ (ví dụ .com, .vn)"
+                       pattern="[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"
+                       title="Chỉ gồm chữ, số, '.', '-', '_' và phải có đuôi hợp lệ (ví dụ .com, .vn)"
                        placeholder="supplier@example.com">
                 <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
               </div>

@@ -29,7 +29,9 @@ public class BranchAwareAuthenticationProvider implements AuthenticationProvider
                 : authentication.getCredentials().toString();
         Integer branchId = extractBranchId(authentication.getDetails());
 
-        if (loginId == null || loginId.isBlank() || password.isBlank() || branchId == null) {
+        // branchId may be null here: the details service decides whether a branch is required
+        // (Owner is cross-branch and logs in without one; other roles still need a valid branch).
+        if (loginId == null || loginId.isBlank() || password.isBlank()) {
             throw new BadCredentialsException("Invalid credentials");
         }
 
