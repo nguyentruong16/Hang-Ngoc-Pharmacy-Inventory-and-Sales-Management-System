@@ -23,8 +23,8 @@ public class SupplierRequest {
 
     @NotBlank(message = "Email không được để trống")
     @Pattern(
-            regexp = "^[A-Za-z0-9_-]+@[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*\\.[A-Za-z]{2,}$",
-            message = "Email chỉ gồm chữ, số, '-', '_' và phải có đuôi hợp lệ (ví dụ .com, .vn)"
+            regexp = "^[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$",
+            message = "Email chỉ gồm chữ, số, '.', '-', '_' và phải có đuôi hợp lệ (ví dụ .com, .vn)"
     )
     @Size(max = 100, message = "Email không được vượt quá 100 ký tự")
     private String email;
