@@ -4,6 +4,8 @@ import com.example.project.dto.request.OriginCreateRequest;
 import com.example.project.dto.response.OriginResponse;
 import com.example.project.entity.Origin;
 import com.example.project.repository.OriginRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,20 @@ public class OriginService {
                 .stream()
                 .map(OriginResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OriginResponse> list(String search, Pageable pageable) {
+        String keyword = search == null ? "" : search.trim();
+        Page<Origin> page = keyword.isEmpty()
+                ? originRepository.findAll(pageable)
+                : originRepository.findByNameContainingIgnoreCase(keyword, pageable);
+        return page.map(OriginResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public long countAll() {
+        return originRepository.count();
     }
 
     @Transactional

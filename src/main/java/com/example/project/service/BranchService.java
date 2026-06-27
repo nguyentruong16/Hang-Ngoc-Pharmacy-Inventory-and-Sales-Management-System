@@ -10,14 +10,20 @@ import com.example.project.entity.Status;
 import com.example.project.repository.AccountpermissionRepository;
 import com.example.project.repository.BranchRepository;
 import com.example.project.repository.StatusRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class BranchService {
     private static final String ACTIVE_STATUS_NAME = "Đang hoạt động";
+    private static final String INACTIVE_STATUS_NAME = "Ngừng hoạt động";
     private static final String MSG_OWNER_NOT_FOUND =
             "Không tìm thấy tài khoản Chủ sở hữu để gán cho chi nhánh mới";
 
@@ -47,6 +53,58 @@ public class BranchService {
         return branches.stream()
                 .filter(branch -> ACTIVE_STATUS_NAME.equals(branch.getStatusName()))
                 .count();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BranchResponse> list(String search, String status, Pageable pageable) {
+        String keyword = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        String statusFilter = resolveStatusFilter(status);
+
+        List<BranchResponse> filtered = branchRepository.findAllWithStatus()
+                .stream()
+                .map(BranchResponse::from)
+                .filter(branch -> matchesSearch(branch, keyword))
+                .filter(branch -> statusFilter == null || statusFilter.equals(branch.getStatusName()))
+                .sorted(Comparator.comparing(BranchResponse::getId))
+                .toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        List<BranchResponse> pageContent = start >= filtered.size() ? List.of() : filtered.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, filtered.size());
+    }
+
+    @Transactional(readOnly = true)
+    public BranchStats getStats() {
+        List<BranchResponse> branches = getAll();
+        long activeBranches = countActiveBranches(branches);
+        return new BranchStats(branches.size(), activeBranches, branches.size() - activeBranches);
+    }
+
+    public record BranchStats(long totalBranches, long activeBranches, long inactiveBranches) {
+    }
+
+    private boolean matchesSearch(BranchResponse branch, String keyword) {
+        if (keyword.isEmpty()) {
+            return true;
+        }
+
+        String name = branch.getName() == null ? "" : branch.getName().toLowerCase(Locale.ROOT);
+        String address = branch.getAddress() == null ? "" : branch.getAddress().toLowerCase(Locale.ROOT);
+        return name.contains(keyword) || address.contains(keyword);
+    }
+
+    private String resolveStatusFilter(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        return switch (status) {
+            case "active" -> ACTIVE_STATUS_NAME;
+            case "inactive" -> INACTIVE_STATUS_NAME;
+            default -> null;
+        };
     }
 
     //lay ra chi tiet chi nhanh theo id

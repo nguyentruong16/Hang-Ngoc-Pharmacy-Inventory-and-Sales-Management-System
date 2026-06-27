@@ -68,6 +68,22 @@
             font-size: 13px;
             vertical-align: middle;
         }
+
+        .pagination .page-link {
+            color: #059669;
+            border-color: #e5e7eb;
+            font-size: 13px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #9ca3af;
+        }
     </style>
 </head>
 
@@ -114,27 +130,31 @@
         <div class="owner-card p-4 mb-4">
             <h2 class="fs-6 mb-3">Bộ lọc tìm kiếm</h2>
 
-            <div class="row g-3">
-                <div class="col-12 col-lg-8">
-                    <input id="originSearch"
-                           type="text"
-                           class="form-control"
-                           placeholder="Tìm theo tên xuất xứ"
-                           autocomplete="off">
-                </div>
+            <form th:action="@{/owner/origins}" method="get">
+                <input type="hidden" name="page" value="0">
+                <input type="hidden" name="size" th:value="${pageSize}">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-8">
+                        <input type="text"
+                               class="form-control"
+                               name="search"
+                               th:value="${search}"
+                               placeholder="Tìm theo tên xuất xứ">
+                    </div>
 
-                <div class="col-12 col-lg-2">
-                    <button id="originSearchButton" type="button" class="btn btn-owner-primary w-100">
-                        Tìm kiếm
-                    </button>
-                </div>
+                    <div class="col-12 col-lg-2">
+                        <button type="submit" class="btn btn-owner-primary w-100">
+                            Tìm kiếm
+                        </button>
+                    </div>
 
-                <div class="col-12 col-lg-2">
-                    <button id="originResetButton" type="button" class="btn btn-outline-secondary w-100">
-                        Đặt lại
-                    </button>
+                    <div class="col-12 col-lg-2">
+                        <a th:href="@{/owner/origins}" class="btn btn-outline-secondary w-100">
+                            Đặt lại
+                        </a>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
 
         <div class="owner-card p-4">
@@ -149,64 +169,68 @@
                     </tr>
                     </thead>
 
-                    <tbody id="originTableBody">
-                    <tr th:each="origin : ${origins}" th:attr="data-name=${origin.name}">
+                    <tbody>
+                    <tr th:each="origin : ${origins}">
                         <td th:text="${origin.id}">1</td>
                         <td class="fw-semibold" th:text="${origin.name}">Việt Nam</td>
                     </tr>
 
                     <tr th:if="${#lists.isEmpty(origins)}">
                         <td colspan="2" class="text-center text-secondary py-4">
-                            Chưa có xuất xứ nào.
-                        </td>
-                    </tr>
-
-                    <tr id="originNoResultRow" hidden>
-                        <td colspan="2" class="text-center text-secondary py-4">
-                            Không tìm thấy xuất xứ phù hợp.
+                            Không tìm thấy xuất xứ nào.
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4"
+                 th:if="${totalItems > 0}">
+
+                <div class="text-secondary small">
+                    Hiển thị
+                    <span th:text="${currentPage * pageSize + 1}">1</span>
+                    -
+                    <span th:text="${currentPage * pageSize + origins.size()}">10</span>
+                    trong tổng số
+                    <span th:text="${totalItems}">0</span>
+                    xuất xứ
+                </div>
+
+                <nav th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+
+                        <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/origins(search=${search}, page=${currentPage - 1}, size=${pageSize})}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${pageNumber == currentPage} ? ' active'">
+                            <a class="page-link"
+                               th:text="${pageNumber + 1}"
+                               th:href="@{/owner/origins(search=${search}, page=${pageNumber}, size=${pageSize})}">
+                                1
+                            </a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/origins(search=${search}, page=${currentPage + 1}, size=${pageSize})}">
+                                Sau
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
         </div>
 
     </div>
 </main>
-
-<script type="module">
-    const searchInput = document.getElementById("originSearch");
-    const searchButton = document.getElementById("originSearchButton");
-    const resetButton = document.getElementById("originResetButton");
-    const noResultRow = document.getElementById("originNoResultRow");
-    const rows = Array.from(document.querySelectorAll("#originTableBody tr[data-name]"));
-
-    const normalize = (value) => (value || "").toString().trim().toLowerCase();
-
-    const applyFilters = () => {
-        const keyword = normalize(searchInput.value);
-        let visibleCount = 0;
-
-        rows.forEach((row) => {
-            const searchable = (row.dataset.name || "").toLowerCase();
-            const isVisible = !keyword || searchable.includes(keyword);
-            row.hidden = !isVisible;
-            if (isVisible) {
-                visibleCount += 1;
-            }
-        });
-
-        noResultRow.hidden = visibleCount !== 0 || rows.length === 0;
-    };
-
-    searchInput.addEventListener("input", applyFilters);
-    searchButton.addEventListener("click", applyFilters);
-    resetButton.addEventListener("click", () => {
-        searchInput.value = "";
-        applyFilters();
-        searchInput.focus();
-    });
-</script>
 
 </body>
 </html>
