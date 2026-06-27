@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo phiếu nhập | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .purchase-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .purchase-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .btn-purchase-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-purchase-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #ffffff;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .money-summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 991.98px) {
+            .purchase-page-content {
+                padding-top: 84px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content purchase-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Tạo phiếu nhập</h1>
+                <p class="text-secondary mb-0">Tạo phiếu nhập hàng từ nhà cung cấp và tự động tạo lô hàng</p>
+            </div>
+
+            <a th:href="${basePath}" class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <form th:action="${basePath + '/create'}" th:object="${form}" method="post">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div class="row g-4">
+                <div class="col-12 col-xl-9">
+
+                    <div class="purchase-card p-4 mb-4">
+                        <div class="section-title mb-4">
+                            <i class="ti ti-info-circle text-success me-1"></i>
+                            Thông tin phiếu nhập
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Nhà cung cấp <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{supplierId}">
+                                    <option value="">-- Chọn nhà cung cấp --</option>
+                                    <option th:each="supplier : ${suppliers}"
+                                            th:value="${supplier.id}"
+                                            th:text="${supplier.name}">
+                                    </option>
+                                </select>
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('supplierId')}"
+                                     th:errors="*{supplierId}">
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Chi nhánh nhập <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{branchId}">
+                                    <option value="">-- Chọn chi nhánh --</option>
+                                    <option th:each="branch : ${branches}"
+                                            th:value="${branch.id}"
+                                            th:text="${branch.name}">
+                                    </option>
+                                </select>
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('branchId')}"
+                                     th:errors="*{branchId}">
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Chi phí phát sinh</label>
+                                <input type="number"
+                                       min="0"
+                                       step="1000"
+                                       class="form-control"
+                                       th:field="*{additionCost}"
+                                       id="additionCost"
+                                       oninput="calculateSummary()">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('additionCost')}"
+                                     th:errors="*{additionCost}">
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Chiết khấu</label>
+                                <input type="number"
+                                       min="0"
+                                       step="1000"
+                                       class="form-control"
+                                       th:field="*{discount}"
+                                       id="discount"
+                                       oninput="calculateSummary()">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('discount')}"
+                                     th:errors="*{discount}">
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Đã thanh toán</label>
+                                <input type="number"
+                                       min="0"
+                                       step="1000"
+                                       class="form-control"
+                                       th:field="*{paid}"
+                                       id="paid"
+                                       oninput="calculateSummary()">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('paid')}"
+                                     th:errors="*{paid}">
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Ghi chú</label>
+                                <textarea class="form-control" rows="3" th:field="*{note}"
+                                          placeholder="Nhập ghi chú nếu có"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="purchase-card">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                            <div class="section-title">
+                                <i class="ti ti-package text-success me-1"></i>
+                                Hàng hóa nhập
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-purchase-primary" onclick="addItemRow()">
+                                <i class="ti ti-plus me-1"></i>
+                                Thêm sản phẩm
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                <tr>
+                                    <th style="min-width: 220px;">Sản phẩm</th>
+                                    <th style="min-width: 110px;">Số lượng</th>
+                                    <th style="min-width: 140px;">Giá nhập</th>
+                                    <th style="min-width: 140px;">Ngày sản xuất</th>
+                                    <th style="min-width: 140px;">Hạn dùng</th>
+                                    <th style="min-width: 140px;">Số lô</th>
+                                    <th style="min-width: 130px;">Thành tiền</th>
+                                    <th class="text-end">Xóa</th>
+                                </tr>
+                                </thead>
+
+                                <tbody id="detailRows">
+                                <tr th:each="detail, iterStat : *{details}">
+                                    <td>
+                                        <select class="form-select product-select"
+                                                th:field="*{details[__${iterStat.index}__].productId}">
+                                            <option value="">-- Chọn sản phẩm --</option>
+                                            <option th:each="product : ${products}"
+                                                    th:value="${product.productID}"
+                                                    th:text="${product.name}">
+                                            </option>
+                                        </select>
+                                    </td>
+
+                                    <td>
+                                        <input type="number"
+                                               min="1"
+                                               class="form-control quantity-input"
+                                               th:field="*{details[__${iterStat.index}__].quantity}"
+                                               oninput="calculateSummary()">
+                                    </td>
+
+                                    <td>
+                                        <input type="number"
+                                               min="0"
+                                               step="1000"
+                                               class="form-control price-input"
+                                               th:field="*{details[__${iterStat.index}__].importPrice}"
+                                               oninput="calculateSummary()">
+                                    </td>
+
+                                    <td>
+                                        <input type="date"
+                                               class="form-control"
+                                               th:field="*{details[__${iterStat.index}__].productionDate}">
+                                    </td>
+
+                                    <td>
+                                        <input type="date"
+                                               class="form-control"
+                                               th:field="*{details[__${iterStat.index}__].expirationDate}">
+                                    </td>
+
+                                    <td>
+                                        <input type="text"
+                                               class="form-control"
+                                               th:field="*{details[__${iterStat.index}__].lotNumber}"
+                                               placeholder="VD: LOT-001">
+                                    </td>
+
+                                    <td class="fw-semibold line-total">0đ</td>
+
+                                    <td class="text-end">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="removeItemRow(this)">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="text-danger small"
+                                 th:if="${#fields.hasErrors('details')}"
+                                 th:errors="*{details}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex gap-3">
+                        <button type="submit" class="btn btn-purchase-primary px-4">
+                            Lưu phiếu nhập
+                        </button>
+
+                        <a th:href="${basePath}" class="btn btn-outline-secondary px-4">
+                            Hủy
+                        </a>
+                    </div>
+
+                </div>
+
+                <div class="col-12 col-xl-3">
+                    <div class="purchase-card p-4 mb-4">
+                        <div class="section-title mb-4">
+                            <i class="ti ti-calculator text-success me-1"></i>
+                            Tóm tắt thanh toán
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Tiền hàng</span>
+                            <strong id="subtotalDisplay">0đ</strong>
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Chi phí phát sinh</span>
+                            <strong id="additionCostDisplay">0đ</strong>
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Chiết khấu</span>
+                            <strong id="discountDisplay">0đ</strong>
+                        </div>
+
+                        <hr>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Tổng tiền</span>
+                            <strong class="text-success" id="totalAmountDisplay">0đ</strong>
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Đã thanh toán</span>
+                            <strong id="paidDisplay">0đ</strong>
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Còn nợ</span>
+                            <strong class="text-warning" id="debtDisplay">0đ</strong>
+                        </div>
+                    </div>
+
+                    <div class="purchase-card p-4">
+                        <div class="section-title mb-3">
+                            Gợi ý nhập hàng
+                        </div>
+
+                        <div class="text-secondary small">
+                            <p class="mb-2">1. Chọn đúng nhà cung cấp và chi nhánh nhập.</p>
+                            <p class="mb-2">2. Mỗi dòng sản phẩm sẽ tạo một chi tiết phiếu nhập.</p>
+                            <p class="mb-2">3. Sau khi lưu, hệ thống sẽ tạo lô hàng tương ứng.</p>
+                            <p class="mb-0">4. Hạn dùng không được trước ngày sản xuất.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const products = /*[[${products}]]*/ [];
+
+    function formatMoney(value) {
+        value = Number(value || 0);
+        return value.toLocaleString('vi-VN') + 'đ';
+    }
+
+    function numberValue(input) {
+        if (!input || input.value === '') {
+            return 0;
+        }
+
+        return Number(input.value);
+    }
+
+    function calculateSummary() {
+        let subtotal = 0;
+
+        document.querySelectorAll('#detailRows tr').forEach(row => {
+            const quantity = numberValue(row.querySelector('.quantity-input'));
+            const price = numberValue(row.querySelector('.price-input'));
+            const lineTotal = quantity * price;
+
+            subtotal += lineTotal;
+
+            const lineTotalCell = row.querySelector('.line-total');
+            if (lineTotalCell) {
+                lineTotalCell.textContent = formatMoney(lineTotal);
+            }
+        });
+
+        const additionCost = numberValue(document.getElementById('additionCost'));
+        const discount = numberValue(document.getElementById('discount'));
+        const paid = numberValue(document.getElementById('paid'));
+
+        let totalAmount = subtotal + additionCost - discount;
+        if (totalAmount < 0) {
+            totalAmount = 0;
+        }
+
+        let debt = totalAmount - paid;
+        if (debt < 0) {
+            debt = 0;
+        }
+
+        document.getElementById('subtotalDisplay').textContent = formatMoney(subtotal);
+        document.getElementById('additionCostDisplay').textContent = formatMoney(additionCost);
+        document.getElementById('discountDisplay').textContent = formatMoney(discount);
+        document.getElementById('totalAmountDisplay').textContent = formatMoney(totalAmount);
+        document.getElementById('paidDisplay').textContent = formatMoney(paid);
+        document.getElementById('debtDisplay').textContent = formatMoney(debt);
+    }
+
+    function refreshRowIndexes() {
+        document.querySelectorAll('#detailRows tr').forEach((row, index) => {
+            row.querySelectorAll('[data-field]').forEach(input => {
+                const field = input.getAttribute('data-field');
+                input.setAttribute('name', `details[${index}].${field}`);
+                input.setAttribute('id', `details${index}.${field}`);
+            });
+        });
+    }
+
+    function productOptionsHtml() {
+        let html = '<option value="">-- Chọn sản phẩm --</option>';
+
+        products.forEach(product => {
+            const id = product.productID || product.id || '';
+            const name = product.name || id;
+            html += `<option value="${id}">${name}</option>`;
+        });
+
+        return html;
+    }
+
+    function addItemRow() {
+        const tbody = document.getElementById('detailRows');
+        const index = tbody.querySelectorAll('tr').length;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <select class="form-select product-select" data-field="productId" name="details[${index}].productId">
+                    ${productOptionsHtml()}
+                </select>
+            </td>
+
+            <td>
+                <input type="number" min="1" class="form-control quantity-input"
+                       data-field="quantity" name="details[${index}].quantity"
+                       oninput="calculateSummary()">
+            </td>
+
+            <td>
+                <input type="number" min="0" step="1000" class="form-control price-input"
+                       data-field="importPrice" name="details[${index}].importPrice"
+                       oninput="calculateSummary()">
+            </td>
+
+            <td>
+                <input type="date" class="form-control"
+                       data-field="productionDate" name="details[${index}].productionDate">
+            </td>
+
+            <td>
+                <input type="date" class="form-control"
+                       data-field="expirationDate" name="details[${index}].expirationDate">
+            </td>
+
+            <td>
+                <input type="text" class="form-control"
+                       data-field="lotNumber" name="details[${index}].lotNumber"
+                       placeholder="VD: LOT-001">
+            </td>
+
+            <td class="fw-semibold line-total">0đ</td>
+
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)">
+                    <i class="ti ti-trash"></i>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+        refreshRowIndexes();
+        calculateSummary();
+    }
+
+    function removeItemRow(button) {
+        const rows = document.querySelectorAll('#detailRows tr');
+
+        if (rows.length <= 1) {
+            alert('Phiếu nhập phải có ít nhất một sản phẩm.');
+            return;
+        }
+
+        button.closest('tr').remove();
+        refreshRowIndexes();
+        calculateSummary();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('#detailRows tr').forEach(row => {
+            row.querySelectorAll('select, input').forEach(input => {
+                const name = input.getAttribute('name');
+                if (!name) {
+                    return;
+                }
+
+                const match = name.match(/details\[\d+\]\.(.+)/);
+                if (match) {
+                    input.setAttribute('data-field', match[1]);
+                }
+            });
+        });
+
+        calculateSummary();
+    });
+</script>
+
+</body>
+</html>
