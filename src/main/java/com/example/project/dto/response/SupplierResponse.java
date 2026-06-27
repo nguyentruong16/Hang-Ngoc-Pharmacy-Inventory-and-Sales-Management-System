@@ -28,9 +28,9 @@ public class SupplierResponse {
         return r;
     }
 
-    /** Mã nhà cung cấp suy ra trực tiếp từ khóa chính auto-increment: {@code NCC-[supplierID]}. */
+    /** Mã nhà cung cấp suy ra từ khóa chính auto-increment, zero-pad 5 chữ số: {@code NCC-00006}. */
     private static String formatCode(Integer id) {
-        if (id == null) return "NCC";
-        return "NCC-" + id;
+        if (id == null) return "NCC-00000";
+        return "NCC-" + String.format("%05d", id);
     }
 }
