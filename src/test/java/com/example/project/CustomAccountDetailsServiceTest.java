@@ -44,9 +44,11 @@ class CustomAccountDetailsServiceTest {
 
     @Test
     void selectedBranchRoleIsTheOnlyGrantedAuthority() {
-        when(branchRepository.findById(2)).thenReturn(Optional.of(branch(2)));
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(activeAccount()));
+        when(accountpermissionRepository.findProfilePermissionsByAccountId(1))
+                .thenReturn(List.of(perm(5, "PHARMACIST", 2)));
+        when(branchRepository.findById(2)).thenReturn(Optional.of(branch(2)));
         when(accountpermissionRepository.findByAccountIdAndBranchId(1, 2))
                 .thenReturn(List.of(perm(5, "PHARMACIST", 2)));
 
@@ -62,10 +64,9 @@ class CustomAccountDetailsServiceTest {
 
     @Test
     void accountWithNoValidRoleCannotSignIn() {
-        when(branchRepository.findById(1)).thenReturn(Optional.of(branch(1)));
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(activeAccount()));
-        when(accountpermissionRepository.findByAccountIdAndBranchId(1, 1))
+        when(accountpermissionRepository.findProfilePermissionsByAccountId(1))
                 .thenReturn(List.of(perm(1, "SOMETHING_UNKNOWN", 1)));
 
         assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsernameAndBranch("u", 1));
@@ -75,7 +76,6 @@ class CustomAccountDetailsServiceTest {
     void inactiveAccountIsRejected() {
         Account inactive = activeAccount();
         inactive.setStatus(false);
-        when(branchRepository.findById(1)).thenReturn(Optional.of(branch(1)));
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(inactive));
 

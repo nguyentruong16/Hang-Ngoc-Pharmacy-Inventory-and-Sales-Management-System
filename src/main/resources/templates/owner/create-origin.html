@@ -2,178 +2,114 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Tạo xuất xứ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
-  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
-  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
-  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
-  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
-  <style>
-    :root {
-      --profile-green: #059669;
-      --profile-green-dark: #047857;
-      --profile-border: #e5e7eb;
-      --profile-muted: #6b7280;
-      --profile-bg: #f6f7f9;
-    }
+    <meta charset="UTF-8"/>
+    <title>Tạo xuất xứ | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    body {
-      background: var(--profile-bg);
-    }
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
 
-    .profile-page-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #111827;
-    }
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
 
-    .profile-card {
-      background: #ffffff;
-      border: 1px solid var(--profile-border);
-      border-radius: 12px;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-    }
+    <style>
+        .owner-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
 
-    .profile-form-card {
-      max-width: 760px;
-    }
+        @media (max-width: 991.98px) {
+            .owner-page-content {
+                padding-top: 84px !important;
+            }
+        }
 
-    .profile-form-card .form-label {
-      font-size: 13px;
-      color: #111827;
-      margin-bottom: 8px;
-    }
+        .owner-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
 
-    .profile-form-card .form-control {
-      min-height: 40px;
-      border-radius: 10px;
-      border-color: var(--profile-border);
-      font-size: 13px;
-    }
+        .btn-owner-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
 
-    .profile-form-card .form-control:focus {
-      border-color: #8bd7bf;
-      box-shadow: 0 0 0 3px rgba(0, 154, 106, .12);
-    }
+        .btn-owner-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
 
-    .btn-profile-primary {
-      background: var(--profile-green);
-      border: 1px solid var(--profile-green);
-      color: #ffffff;
-      border-radius: 10px;
-      min-height: 40px;
-      font-size: 13px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-profile-primary:hover {
-      background: var(--profile-green-dark);
-      border-color: var(--profile-green-dark);
-      color: #ffffff;
-    }
-
-    .btn-profile-outline {
-      border: 1px solid var(--profile-border);
-      background: #ffffff;
-      color: #111827;
-      border-radius: 10px;
-      min-height: 40px;
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-profile-outline:hover {
-      background: #f9fafb;
-      color: #111827;
-      border-color: #d1d5db;
-    }
-
-    .origin-back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--profile-muted);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      margin-bottom: 16px;
-    }
-
-    .origin-back-link:hover {
-      color: var(--profile-green);
-    }
-  </style>
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            min-height: 42px;
+        }
+    </style>
 </head>
 
 <body>
-  <div th:replace="~{fragments/topbar :: topbar}"></div>
-  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 
-  <main id="content" class="content py-6">
+<main id="content" class="content owner-page-content">
     <div class="container-fluid">
-      <div class="row">
-        <div class="col-12">
-          <a class="origin-back-link" href="/owner/origins" th:href="@{/owner/origins}">
-            <i class="ti ti-arrow-left"></i>
-            <span>Quay lại danh sách xuất xứ</span>
-          </a>
-          <div class="mb-4">
-            <h1 class="profile-page-title mb-0">Tạo xuất xứ</h1>
-          </div>
-        </div>
-      </div>
 
-      <div class="row g-4">
-        <div class="col-12 col-lg-8 col-xl-7">
-          <div class="profile-card profile-form-card">
-            <div class="p-5">
-              <h2 class="fs-5 mb-4">Thông tin xuất xứ</h2>
-
-              <form th:action="@{/owner/origins/create-origin}" th:object="${originForm}" method="post" novalidate>
-                <div class="mb-4">
-                  <label for="originName" class="form-label">Tên xuất xứ <span class="text-danger">*</span></label>
-                  <input id="originName"
-                         type="text"
-                         class="form-control"
-                         th:field="*{name}"
-                         th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
-                         placeholder="Nhập tên xuất xứ">
-                  <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                </div>
-
-                <div class="row g-3">
-                  <div class="col-12 col-md-6">
-                    <button type="submit" class="btn btn-profile-primary w-100">
-                      <i class="ti ti-check"></i>
-                      Tạo xuất xứ
-                    </button>
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <a href="/owner/origins" th:href="@{/owner/origins}" class="btn btn-profile-outline w-100">
-                      <i class="ti ti-x"></i>
-                      Hủy
-                    </a>
-                  </div>
-                </div>
-              </form>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Tạo xuất xứ mới</h1>
+                <p class="text-secondary mb-0">Thêm xuất xứ mới vào hệ thống</p>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-</body>
 
+            <a th:href="@{/owner/origins}" class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+
+        <div class="owner-card p-4">
+            <form th:action="@{/owner/origins/create-origin}" th:object="${originForm}" method="post" novalidate>
+                <div class="row g-4">
+                    <div class="col-12 col-lg-8">
+                        <h2 class="fs-6 mb-3">Thông tin xuất xứ</h2>
+
+                        <div class="mb-3">
+                            <label for="originName" class="form-label">Tên xuất xứ <span class="text-danger">*</span></label>
+                            <input id="originName"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{name}"
+                                   placeholder="Nhập tên xuất xứ">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <h2 class="fs-6 mb-3">Thao tác</h2>
+
+                        <p class="text-secondary small mb-4">
+                            Kiểm tra kỹ thông tin trước khi tạo xuất xứ mới.
+                        </p>
+
+                        <button type="submit" class="btn btn-owner-primary w-100 mb-2">
+                            Tạo xuất xứ
+                        </button>
+
+                        <a th:href="@{/owner/origins}" class="btn btn-outline-secondary w-100">
+                            Hủy
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+</body>
 </html>

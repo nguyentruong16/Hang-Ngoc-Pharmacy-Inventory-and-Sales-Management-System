@@ -4,12 +4,17 @@ import com.example.project.dto.request.OriginCreateRequest;
 import com.example.project.dto.response.OriginResponse;
 import com.example.project.service.OriginService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -30,11 +35,28 @@ public class OriginController {
     }
 
     @GetMapping("/owner/origins")
-    public String originList(Model model) {
-        List<OriginResponse> origins = originService.getAll();
+    public String originList(@RequestParam(name = "search", required = false) String search,
+                             @RequestParam(name = "page", defaultValue = "0") int page,
+                             @RequestParam(name = "size", defaultValue = "5") int size,
+                             Model model) {
+        if (page < 0) {
+            page = 0;
+        }
 
-        model.addAttribute("origins", origins);
-        model.addAttribute("totalOrigins", origins.size());
+        if (size <= 0) {
+            size = 5;
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        Page<OriginResponse> originPage = originService.list(search, pageable);
+
+        model.addAttribute("origins", originPage.getContent());
+        model.addAttribute("totalOrigins", originService.countAll());
+        model.addAttribute("search", search);
+        model.addAttribute("currentPage", originPage.getNumber());
+        model.addAttribute("totalPages", originPage.getTotalPages());
+        model.addAttribute("pageSize", size);
+        model.addAttribute("totalItems", originPage.getTotalElements());
         model.addAttribute("pageTitle", "Danh sách xuất xứ");
         return "owner/origin-list";
     }

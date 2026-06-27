@@ -2,224 +2,138 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Tạo chi nhánh</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
-  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
-  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
-  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
-  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
-  <style>
-    :root {
-      --profile-green: #059669;
-      --profile-green-dark: #047857;
-      --profile-green-light: #dff3ec;
-      --profile-border: #e5e7eb;
-      --profile-muted: #6b7280;
-      --profile-bg: #f6f7f9;
-    }
+    <meta charset="UTF-8"/>
+    <title>Tạo chi nhánh | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    body {
-      background: var(--profile-bg);
-    }
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
 
-    .profile-page-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #111827;
-    }
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
 
-    .profile-card {
-      background: #ffffff;
-      border: 1px solid var(--profile-border);
-      border-radius: 12px;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-    }
+    <style>
+        .owner-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
 
-    .profile-muted {
-      color: var(--profile-muted);
-    }
+        @media (max-width: 991.98px) {
+            .owner-page-content {
+                padding-top: 84px !important;
+            }
+        }
 
-    .profile-form-card {
-      max-width: 760px;
-    }
+        .owner-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
 
-    .profile-form-card .form-label {
-      font-size: 13px;
-      color: #111827;
-      margin-bottom: 8px;
-    }
+        .btn-owner-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
 
-    .profile-form-card .form-control,
-    .profile-form-card .form-select {
-      min-height: 40px;
-      border-radius: 10px;
-      border-color: var(--profile-border);
-      font-size: 13px;
-    }
+        .btn-owner-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
 
-    .profile-form-card .form-control:focus,
-    .profile-form-card .form-select:focus {
-      border-color: #8bd7bf;
-      box-shadow: 0 0 0 3px rgba(0, 154, 106, .12);
-    }
-
-    .btn-profile-primary {
-      background: var(--profile-green);
-      border: 1px solid var(--profile-green);
-      color: #ffffff;
-      border-radius: 10px;
-      min-height: 40px;
-      font-size: 13px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-profile-primary:hover {
-      background: var(--profile-green-dark);
-      border-color: var(--profile-green-dark);
-      color: #ffffff;
-    }
-
-    .btn-profile-outline {
-      border: 1px solid var(--profile-border);
-      background: #ffffff;
-      color: #111827;
-      border-radius: 10px;
-      min-height: 40px;
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-profile-outline:hover {
-      background: #f9fafb;
-      color: #111827;
-      border-color: #d1d5db;
-    }
-
-    .branch-back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--profile-muted);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      margin-bottom: 16px;
-    }
-
-    .branch-back-link:hover {
-      color: var(--profile-green);
-    }
-
-    @media (max-width: 991.98px) {
-      .profile-form-card {
-        max-width: none;
-      }
-    }
-  </style>
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            min-height: 42px;
+        }
+    </style>
 </head>
 
 <body>
-  <div th:replace="~{fragments/topbar :: topbar}"></div>
-  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 
-  <main id="content" class="content py-6">
+<main id="content" class="content owner-page-content">
     <div class="container-fluid">
 
-      <div class="row">
-        <div class="col-12">
-          <a class="branch-back-link" href="/owner/branch-list" th:href="@{/owner/branch-list}">
-            <i class="ti ti-arrow-left"></i>
-            <span>Quay lại danh sách chi nhánh</span>
-          </a>
-          <div class="mb-4">
-            <h1 class="profile-page-title mb-0">Tạo chi nhánh</h1>
-          </div>
-        </div>
-      </div>
-
-      <div class="row g-4">
-        <div class="col-12 col-lg-8 col-xl-7">
-          <div class="profile-card profile-form-card">
-            <div class="p-5">
-              <h2 class="fs-5 mb-4">Thông tin chi nhánh</h2>
-
-              <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center gap-2" role="alert">
-                <i class="ti ti-alert-circle"></i><span th:text="${errorMessage}">Lỗi</span>
-              </div>
-
-              <form th:action="@{/owner/branch-list/create-branch}" th:object="${branchForm}" method="post" novalidate>
-
-                <div class="mb-3">
-                  <label for="branchName" class="form-label">Tên chi nhánh <span class="text-danger">*</span></label>
-                  <input id="branchName"
-                         type="text"
-                         class="form-control"
-                         th:field="*{name}"
-                         th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
-                         placeholder="Nhập tên chi nhánh">
-                  <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="branchAddress" class="form-label">Địa chỉ</label>
-                  <input id="branchAddress"
-                         type="text"
-                         class="form-control"
-                         th:field="*{address}"
-                         th:classappend="${#fields.hasErrors('address')} ? ' is-invalid'"
-                         placeholder="Nhập địa chỉ chi nhánh">
-                  <div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
-                </div>
-
-                <div class="mb-4">
-                  <label for="branchStatus" class="form-label">Trạng thái <span class="text-danger">*</span></label>
-                  <select id="branchStatus"
-                          class="form-select"
-                          th:field="*{statusName}"
-                          th:classappend="${#fields.hasErrors('statusName')} ? ' is-invalid'">
-                    <option value="">-- Chọn trạng thái --</option>
-                    <option value="Đang hoạt động">Đang hoạt động</option>
-                    <option value="Ngừng hoạt động">Ngừng hoạt động</option>
-                  </select>
-                  <div class="invalid-feedback" th:if="${#fields.hasErrors('statusName')}" th:errors="*{statusName}"></div>
-                </div>
-
-                <div class="row g-3">
-                  <div class="col-12 col-md-6">
-                    <button type="submit" class="btn btn-profile-primary w-100">
-                      <i class="ti ti-check"></i>
-                      Tạo chi nhánh
-                    </button>
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <a href="/owner/branch-list"
-                       th:href="@{/owner/branch-list}"
-                       class="btn btn-profile-outline w-100">
-                      <i class="ti ti-x"></i>
-                      Hủy
-                    </a>
-                  </div>
-                </div>
-              </form>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Tạo chi nhánh mới</h1>
+                <p class="text-secondary mb-0">Thêm chi nhánh mới vào hệ thống</p>
             </div>
-          </div>
+
+            <a th:href="@{/owner/branch-list}" class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
         </div>
-      </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}">
+            Có lỗi xảy ra
+        </div>
+
+        <div class="owner-card p-4">
+            <form th:action="@{/owner/branch-list/create-branch}" th:object="${branchForm}" method="post" novalidate>
+                <div class="row g-4">
+                    <div class="col-12 col-lg-8">
+                        <h2 class="fs-6 mb-3">Thông tin chi nhánh</h2>
+
+                        <div class="mb-3">
+                            <label for="branchName" class="form-label">Tên chi nhánh <span class="text-danger">*</span></label>
+                            <input id="branchName"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{name}"
+                                   placeholder="Nhập tên chi nhánh">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="branchAddress" class="form-label">Địa chỉ</label>
+                            <input id="branchAddress"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{address}"
+                                   placeholder="Nhập địa chỉ chi nhánh">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="branchStatus" class="form-label">Trạng thái <span class="text-danger">*</span></label>
+                            <select id="branchStatus" class="form-select" th:field="*{statusName}">
+                                <option value="">-- Chọn trạng thái --</option>
+                                <option value="Đang hoạt động">Đang hoạt động</option>
+                                <option value="Ngừng hoạt động">Ngừng hoạt động</option>
+                            </select>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('statusName')}" th:errors="*{statusName}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <h2 class="fs-6 mb-3">Thao tác</h2>
+
+                        <p class="text-secondary small mb-4">
+                            Kiểm tra kỹ thông tin trước khi tạo chi nhánh mới.
+                        </p>
+
+                        <button type="submit" class="btn btn-owner-primary w-100 mb-2">
+                            Tạo chi nhánh
+                        </button>
+
+                        <a th:href="@{/owner/branch-list}" class="btn btn-outline-secondary w-100">
+                            Hủy
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
 
     </div>
-  </main>
-</body>
+</main>
 
+</body>
 </html>
