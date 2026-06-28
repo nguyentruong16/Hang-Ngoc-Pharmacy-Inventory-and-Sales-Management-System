@@ -25,6 +25,15 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
     List<Object[]> sumStorageGroupedByProduct();
 
     @Query("""
+       select b.productID.productID, coalesce(sum(b.storageQuantity), 0)
+       from Batch b
+       where b.productID is not null
+         and b.branchID.id = :branchId
+       group by b.productID.productID
+       """)
+    List<Object[]> sumStorageGroupedByProductAndBranch(@Param("branchId") Integer branchId);
+
+    @Query("""
            select count(b) > 0
            from Batch b
            where b.purchaseDetailID.id = :purchaseDetailId

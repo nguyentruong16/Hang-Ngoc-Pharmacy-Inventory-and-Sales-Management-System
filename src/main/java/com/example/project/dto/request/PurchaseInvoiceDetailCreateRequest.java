@@ -15,7 +15,7 @@ import java.time.LocalDate;
 public class PurchaseInvoiceDetailCreateRequest {
 
     @NotBlank(message = "Vui lòng chọn sản phẩm")
-    private String productId;
+    private Integer productId;
 
     @NotNull(message = "Số lượng không được để trống")
     @Min(value = 1, message = "Số lượng phải lớn hơn 0")

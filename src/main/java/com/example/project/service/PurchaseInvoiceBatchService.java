@@ -252,7 +252,7 @@ public class PurchaseInvoiceBatchService {
 
         return new PurchaseInvoiceToBatchItemResponse(
                 detail.getId(),
-                product != null ? product.getProductID() : "",
+                product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
                 detail.getQuantity(),
                 unit != null ? unit.getUnitName() : "Đơn vị cơ sở",

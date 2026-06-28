@@ -23,5 +23,5 @@ public interface ProductunitRepository extends JpaRepository<Productunit, Intege
            left join fetch u.productID
            where u.productID.productID = :productId
            """)
-    List<Productunit> findByProductId(@Param("productId") String productId);
+    List<Productunit> findByProductId(@Param("productId") Integer productId);
 }
