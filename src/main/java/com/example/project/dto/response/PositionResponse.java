@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PositionResponse {
     private Integer id;
-    private String productId;
+    private Integer productId;
     private Integer branchId;
     private String name;
 
