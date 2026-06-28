@@ -4,6 +4,7 @@ import com.example.project.entity.Account;
 import com.example.project.entity.PasswordResetToken;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.PasswordResetTokenRepository;
+import com.example.project.security.AccountPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +28,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Objects;
 
 @Service
 public class PasswordResetService {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
+    private static final Duration RESET_REQUEST_COOLDOWN = Duration.ofSeconds(30);
     private static final String RESET_EMAIL_SUBJECT = "[Nhà thuốc Hằng Ngọc] Đặt lại mật khẩu tài khoản";
     private static final String RESET_EMAIL_SENDER_NAME = "Nhà thuốc Hằng Ngọc";
 
@@ -41,6 +47,7 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final AccountPasswordService accountPasswordService;
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
+    private final SessionRegistry sessionRegistry;
     private final SecureRandom secureRandom = new SecureRandom();
     private final boolean logResetLink;
     private final String smtpHost;
@@ -55,6 +62,7 @@ public class PasswordResetService {
             PasswordEncoder passwordEncoder,
             AccountPasswordService accountPasswordService,
             ObjectProvider<JavaMailSender> mailSenderProvider,
+            SessionRegistry sessionRegistry,
             @Value("${app.auth.log-reset-link:true}") boolean logResetLink,
             @Value("${spring.mail.host:}") String smtpHost,
             @Value("${spring.mail.username:}") String smtpUsername,
@@ -66,6 +74,7 @@ public class PasswordResetService {
         this.passwordEncoder = passwordEncoder;
         this.accountPasswordService = accountPasswordService;
         this.mailSenderProvider = mailSenderProvider;
+        this.sessionRegistry = sessionRegistry;
         this.logResetLink = logResetLink;
         this.smtpHost = smtpHost;
         this.smtpUsername = smtpUsername;
@@ -79,7 +88,24 @@ public class PasswordResetService {
         String normalizedEmail = email == null ? "" : email.trim();
         accountRepository.findByEmailIgnoreCase(normalizedEmail)
                 .filter(account -> Boolean.TRUE.equals(account.getStatus()))
+                .filter(this::isOutsideRequestCooldown)
                 .ifPresent(account -> createAndDeliverResetLink(account, resetBaseUrl));
+    }
+
+    /**
+     * Rate limiting: allow at most one reset request per account per 30 seconds. Prevents
+     * mail-bombing a user's inbox and brute-forcing through repeated submissions. The caller
+     * still returns a neutral message, so this never reveals whether the email exists.
+     */
+    private boolean isOutsideRequestCooldown(Account account) {
+        LocalDateTime threshold = LocalDateTime.now().minus(RESET_REQUEST_COOLDOWN);
+        boolean recentlyRequested =
+                passwordResetTokenRepository.existsByAccountIDAndCreatedAtAfter(account, threshold);
+        if (recentlyRequested) {
+            log.info("Password reset request for account {} ignored: within {}s cooldown.",
+                    account.getId(), RESET_REQUEST_COOLDOWN.toSeconds());
+        }
+        return !recentlyRequested;
     }
 
     @Transactional(readOnly = true)
@@ -108,6 +134,22 @@ public class PasswordResetService {
         token.setUsedAt(LocalDateTime.now());
         accountRepository.save(account);
         passwordResetTokenRepository.save(token);
+
+        // Password changed via the email link: force every active session of this account to
+        // re-authenticate, so a previously logged-in session (or a thief) cannot keep using it.
+        invalidateActiveSessions(account);
+    }
+
+    /** Expires all tracked sessions belonging to the given account via the SessionRegistry. */
+    private void invalidateActiveSessions(Account account) {
+        for (Object principal : sessionRegistry.getAllPrincipals()) {
+            if (principal instanceof AccountPrincipal accountPrincipal
+                    && Objects.equals(accountPrincipal.getAccountId(), account.getId())) {
+                for (SessionInformation session : sessionRegistry.getAllSessions(principal, false)) {
+                    session.expireNow();
+                }
+            }
+        }
     }
 
     private void createAndDeliverResetLink(Account account, String resetBaseUrl) {

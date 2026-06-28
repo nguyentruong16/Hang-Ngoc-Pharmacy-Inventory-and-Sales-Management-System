@@ -46,7 +46,7 @@
     <div>
       <h2 class="auth-title mb-4">Hệ thống quản lý nhà thuốc Hằng Ngọc</h2>
       <p class="auth-copy mb-4">
-        Quản lý bán hàng, tồn kho, hóa đơn và cảnh báo hạn dùng trong một hệ thống nội bộ dành cho nhân viên nhà thuốc.
+        Quản lý bán hàng, tồn kho, hóa đơn trong hệ thống nội bộ cho nhà thuốc.
       </p>
       <div class="auth-feature"><i class="ti ti-package"></i><span>Quản lý tồn kho theo lô</span></div>
       <div class="auth-feature"><i class="ti ti-cash-register"></i><span>Bán hàng nhanh tại quầy</span></div>
@@ -88,10 +88,7 @@
         </div>
 
         <div class="mb-3">
-          <label for="password" class="form-label d-flex justify-content-between">
-            <span>Mật khẩu</span>
-            <a href="/forgot-password" th:href="@{/forgot-password}" class="small link-primary">Quên mật khẩu?</a>
-          </label>
+          <label for="password" class="form-label">Mật khẩu</label>
           <input id="password" name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" required>
         </div>
 
@@ -108,9 +105,12 @@
           <div class="form-text">Chủ cửa hàng không cần chọn chi nhánh.</div>
         </div>
 
-        <div class="form-check mb-4">
-          <input id="rememberVisual" class="form-check-input" type="checkbox">
-          <label class="form-check-label small text-secondary" for="rememberVisual">Ghi nhớ phiên đăng nhập</label>
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div class="form-check mb-0">
+            <input id="rememberVisual" class="form-check-input" type="checkbox">
+            <label class="form-check-label small text-secondary" for="rememberVisual">Ghi nhớ phiên đăng nhập</label>
+          </div>
+          <a href="/forgot-password" th:href="@{/forgot-password}" class="small link-primary">Quên mật khẩu?</a>
         </div>
 
         <button class="btn btn-primary auth-submit w-100" type="submit">Đăng nhập</button>
