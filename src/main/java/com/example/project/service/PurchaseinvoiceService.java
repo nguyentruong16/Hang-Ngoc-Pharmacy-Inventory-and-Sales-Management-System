@@ -278,7 +278,7 @@ public class PurchaseinvoiceService {
         }
 
         for (PurchaseInvoiceDetailCreateRequest detail : request.getDetails()) {
-            if (detail.getProductId() == null || detail.getProductId().isBlank()) {
+            if (detail.getProductId() == null) {
                 throw new IllegalArgumentException("Vui lòng chọn sản phẩm");
             }
 
@@ -332,7 +332,7 @@ public class PurchaseinvoiceService {
                 .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity()));
 
         return new PurchaseInvoiceDetailItemResponse(
-                product != null ? product.getProductID() : "",
+                product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
                 detail.getLotNumber(),
                 detail.getProductionDate(),
@@ -363,7 +363,7 @@ public class PurchaseinvoiceService {
         return details.stream().anyMatch(detail -> {
             Product product = detail.getProductID();
             return product != null
-                    && (containsNormalized(product.getProductID(), keyword)
+                    && (containsNormalized(String.valueOf(product.getProductID()), keyword)
                     || containsNormalized(product.getName(), keyword)
                     || containsNormalized(product.getCode(), keyword)
                     || containsNormalized(product.getBarcode(), keyword));

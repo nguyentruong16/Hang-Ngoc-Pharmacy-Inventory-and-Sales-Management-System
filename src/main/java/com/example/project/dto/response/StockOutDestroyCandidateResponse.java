@@ -12,7 +12,7 @@ public class StockOutDestroyCandidateResponse {
 
     private Integer batchId;
 
-    private String productId;
+    private Integer productId;
     private String productName;
 
     private Integer branchId;

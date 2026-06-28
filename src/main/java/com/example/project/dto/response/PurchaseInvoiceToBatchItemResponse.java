@@ -12,7 +12,7 @@ public class PurchaseInvoiceToBatchItemResponse {
 
     private Integer purchaseDetailId;
 
-    private String productId;
+    private Integer productId;
     private String productName;
 
     private Integer quantity;

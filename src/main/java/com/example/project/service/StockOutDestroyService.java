@@ -251,7 +251,7 @@ public class StockOutDestroyService {
 
         return new StockOutDestroyCandidateResponse(
                 batch.getId(),
-                product != null ? product.getProductID() : "",
+                product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
                 batch.getBranchID() != null ? batch.getBranchID().getId() : null,
                 batch.getBranchID() != null ? batch.getBranchID().getName() : "Không có",
@@ -292,7 +292,7 @@ public class StockOutDestroyService {
 
         return containsNormalized(batch.getLotNumber(), keyword)
                 || product != null && (
-                containsNormalized(product.getProductID(), keyword)
+                containsNormalized(String.valueOf(product.getProductID()), keyword)
                         || containsNormalized(product.getName(), keyword)
                         || containsNormalized(product.getCode(), keyword)
                         || containsNormalized(product.getBarcode(), keyword)

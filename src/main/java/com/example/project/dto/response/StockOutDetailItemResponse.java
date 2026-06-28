@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class StockOutDetailItemResponse {
 
-    private String productId;
+    private Integer productId;
     private String productName;
     private String lotNumber;
     private LocalDate expirationDate;

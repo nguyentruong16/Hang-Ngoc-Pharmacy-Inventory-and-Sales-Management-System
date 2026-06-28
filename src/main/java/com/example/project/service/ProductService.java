@@ -86,9 +86,9 @@ public class ProductService {
                                                    Pageable pageable) {
         final String normalizedKeyword = normalize(keyword);
 
-        Map<String, Long> stockByProduct = loadStockByProduct();
+        Map<Integer, Long> stockByProduct = loadStockByProduct();
         Map<Integer, Productunit> mainUnitByProduct = loadMainUnitByProduct();
-        Map<String, String> ingredientByProduct = loadIngredientByProduct();
+        Map<Integer, String> ingredientByProduct = loadIngredientByProduct();
 
         List<ProductRowResponse> filtered = productRepository.findAllWithRelations().stream()
                 .filter(product -> matchesKeyword(product, normalizedKeyword))
@@ -110,7 +110,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductListStatsResponse getStats() {
-        Map<String, Long> stockByProduct = loadStockByProduct();
+        Map<Integer, Long> stockByProduct = loadStockByProduct();
 
         long total = 0;
         long inStock = 0;
@@ -148,11 +148,11 @@ public class ProductService {
 
     // --- helpers -------------------------------------------------------------
 
-    private Map<String, Long> loadStockByProduct() {
+    private Map<Integer, Long> loadStockByProduct() {
         return batchRepository.sumStorageGroupedByProduct().stream()
                 .filter(row -> row[0] != null)
                 .collect(Collectors.toMap(
-                        row -> (String) row[0],
+                        row -> ((Number) row[0]).intValue(),
                         row -> ((Number) row[1]).longValue()
                 ));
     }
@@ -177,7 +177,7 @@ public class ProductService {
                         .orElse(null));
     }
 
-    private Map<String, String> loadIngredientByProduct() {
+    private Map<Integer, String> loadIngredientByProduct() {
         return medicineapiRepository.findAllWithProduct().stream()
                 .filter(api -> api.getProductID() != null)
                 .collect(Collectors.groupingBy(
@@ -196,9 +196,9 @@ public class ProductService {
     }
 
     private ProductRowResponse toRow(Product product,
-                                     Map<String, Long> stockByProduct,
-                                     Map<String, Productunit> mainUnitByProduct,
-                                     Map<String, String> ingredientByProduct) {
+                                     Map<Integer, Long> stockByProduct,
+                                     Map<Integer, Productunit> mainUnitByProduct,
+                                     Map<Integer, String> ingredientByProduct) {
         Integer productId = product.getProductID();
         long stock = stockByProduct.getOrDefault(productId, 0L);
         Productunit mainUnit = mainUnitByProduct.get(productId);
@@ -254,7 +254,7 @@ public class ProductService {
         return containsNormalized(product.getCode(), normalizedKeyword)
                 || containsNormalized(product.getName(), normalizedKeyword)
                 || containsNormalized(product.getBarcode(), normalizedKeyword)
-                || containsNormalized(product.getProductID(), normalizedKeyword);
+                || containsNormalized(String.valueOf(product.getProductID()), normalizedKeyword);
     }
 
     private boolean typeMatches(Product product, Integer typeId) {
