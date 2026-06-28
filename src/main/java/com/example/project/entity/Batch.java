@@ -21,6 +21,11 @@ public class Batch {
     @Column(name = "batchID", nullable = false)
     private Integer id;
 
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "batchName", nullable = false, length = 50)
+    private String batchName;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "productID")
     private Product productID;

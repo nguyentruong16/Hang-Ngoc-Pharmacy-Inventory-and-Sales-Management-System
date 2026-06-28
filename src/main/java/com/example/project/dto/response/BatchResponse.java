@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class BatchResponse {
     private Integer id;
+    private String batchName;
     private String productId;
     private Integer purchaseDetailId;
     private Integer branchId;
@@ -33,6 +34,7 @@ public class BatchResponse {
     public static BatchResponse from(Batch batch) {
         return new BatchResponse(
                 batch.getId(),
+                batch.getBatchName(), 
                 batch.getProductID() != null ? batch.getProductID().getProductID() : null,
                 batch.getPurchaseDetailID() != null ? batch.getPurchaseDetailID().getId() : null,
                 batch.getBranchID() != null ? batch.getBranchID().getId() : null,

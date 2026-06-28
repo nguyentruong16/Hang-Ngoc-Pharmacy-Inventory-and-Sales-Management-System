@@ -71,6 +71,18 @@ public class Expense {
     private BigDecimal paidByBanking;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplierID")
+    private Supplier supplierID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customerID")
+    private Customer customerID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "accountID")
+    private Account accountID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "statusID")
     private Status statusID;
 
