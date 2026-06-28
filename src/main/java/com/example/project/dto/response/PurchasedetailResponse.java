@@ -15,7 +15,7 @@ import java.time.LocalDate;
 public class PurchasedetailResponse {
     private Integer id;
     private Integer purchaseId;
-    private String productId;
+    private Integer productId;
     private Integer quantity;
     private BigDecimal importPrice;
     private LocalDate productionDate;

@@ -15,7 +15,7 @@ public class ReturndetailResponse {
     private Integer id;
     private Integer returnId;
     private Integer invoiceDetailId;
-    private String productId;
+    private Integer productId;
     private Integer productUnitId;
     private Integer batchId;
     private Integer returnQty;

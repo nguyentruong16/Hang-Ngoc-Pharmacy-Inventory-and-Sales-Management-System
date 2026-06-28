@@ -13,7 +13,7 @@ import lombok.Setter;
 public class PurchaserequisitiondetailResponse {
     private Integer id;
     private Integer requisitionId;
-    private String productId;
+    private Integer productId;
     private Integer requestedQuantity;
     private String unit;
     private Integer currentStock;

@@ -16,7 +16,7 @@ import java.time.LocalDate;
 public class BatchResponse {
     private Integer id;
     private String batchName;
-    private String productId;
+    private Integer productId;
     private Integer purchaseDetailId;
     private Integer branchId;
     private Integer storageQuantity;

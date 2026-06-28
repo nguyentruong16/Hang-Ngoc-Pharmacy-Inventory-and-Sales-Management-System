@@ -87,7 +87,7 @@ public class ProductService {
         final String normalizedKeyword = normalize(keyword);
 
         Map<String, Long> stockByProduct = loadStockByProduct();
-        Map<String, Productunit> mainUnitByProduct = loadMainUnitByProduct();
+        Map<Integer, Productunit> mainUnitByProduct = loadMainUnitByProduct();
         Map<String, String> ingredientByProduct = loadIngredientByProduct();
 
         List<ProductRowResponse> filtered = productRepository.findAllWithRelations().stream()
@@ -157,7 +157,7 @@ public class ProductService {
                 ));
     }
 
-    private Map<String, Productunit> loadMainUnitByProduct() {
+    private Map<Integer, Productunit> loadMainUnitByProduct() {
         return productunitRepository.findAllWithProduct().stream()
                 .filter(unit -> unit.getProductID() != null)
                 .collect(Collectors.groupingBy(
@@ -199,7 +199,7 @@ public class ProductService {
                                      Map<String, Long> stockByProduct,
                                      Map<String, Productunit> mainUnitByProduct,
                                      Map<String, String> ingredientByProduct) {
-        String productId = product.getProductID();
+        Integer productId = product.getProductID();
         long stock = stockByProduct.getOrDefault(productId, 0L);
         Productunit mainUnit = mainUnitByProduct.get(productId);
 

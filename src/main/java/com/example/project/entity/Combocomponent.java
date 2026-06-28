@@ -19,7 +19,7 @@ public class Combocomponent {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comboID")
-    private Combo comboID;
+    private Product comboID;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "componentProductID")

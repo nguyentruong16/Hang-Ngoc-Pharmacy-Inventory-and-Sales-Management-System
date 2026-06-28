@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class MedicineapiResponse {
     private Integer id;
-    private String productId;
+    private Integer productId;
     private String apiName;
     private String strength;
 
