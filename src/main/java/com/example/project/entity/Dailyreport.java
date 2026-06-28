@@ -34,10 +34,6 @@ public class Dailyreport {
     private Integer totalInvoicesNumber;
 
     @ColumnDefault("0")
-    @Column(name = "totalVATInvoices")
-    private Integer totalVATInvoices;
-
-    @ColumnDefault("0")
     @Column(name = "totalPrescriptionInvoices")
     private Integer totalPrescriptionInvoices;
 
