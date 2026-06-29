@@ -337,10 +337,17 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <a class="btn btn-sm btn-outline-secondary"
+                            <a class="btn btn-sm btn-outline-secondary me-1"
                                th:href="${basePath + '/' + item.id}">
                                 <i class="ti ti-eye me-1"></i>
                                 Xem
+                            </a>
+
+                            <a th:if="${basePath == '/chief-pharmacist/purchase-invoices'}"
+                               class="btn btn-sm btn-purchase-primary"
+                               th:href="${basePath + '/' + item.id + '/to-batch'}">
+                                <i class="ti ti-package-import me-1"></i>
+                                Nhập vào lô
                             </a>
                         </td>
                     </tr>

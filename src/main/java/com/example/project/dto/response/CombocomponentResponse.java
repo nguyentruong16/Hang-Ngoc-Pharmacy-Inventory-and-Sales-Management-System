@@ -13,8 +13,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CombocomponentResponse {
     private Integer id;
-    private String comboId;
-    private String componentProductId;
+    private Integer comboId;
+    private Integer componentProductId;
     private Integer componentUnitId;
     private BigDecimal quantity;
     private String note;
@@ -22,7 +22,7 @@ public class CombocomponentResponse {
     public static CombocomponentResponse from(Combocomponent combocomponent) {
         return new CombocomponentResponse(
                 combocomponent.getId(),
-                combocomponent.getComboID() != null ? combocomponent.getComboID().getComboID() : null,
+                combocomponent.getComboID() != null ? combocomponent.getComboID().getProductID() : null,
                 combocomponent.getComponentProductID() != null ? combocomponent.getComponentProductID().getProductID() : null,
                 combocomponent.getComponentUnitID() != null ? combocomponent.getComponentUnitID().getId() : null,
                 combocomponent.getQuantity(),

@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 public class InvoicedetailResponse {
     private Integer id;
     private Integer invoiceId;
-    private String productId;
+    private Integer productId;
     private Integer productUnitId;
     private Integer batchId;
     private Integer quantity;

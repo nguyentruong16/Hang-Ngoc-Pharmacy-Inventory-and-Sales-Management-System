@@ -59,10 +59,6 @@ public class Shiftreport {
     @Column(name = "totalRevenue", precision = 15, scale = 2)
     private BigDecimal totalRevenue;
 
-    @ColumnDefault("0.00")
-    @Column(name = "totalVATCollected", precision = 15, scale = 2)
-    private BigDecimal totalVATCollected;
-
     @ColumnDefault("0")
     @Column(name = "totalReturns")
     private Integer totalReturns;

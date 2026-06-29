@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class ProductRowResponse {
     /** Primary key (varchar) – used to build the detail link. */
-    private String productId;
+    private Integer productId;
     /** Business code shown in the "Mã hàng" column. */
     private String code;
     private String name;

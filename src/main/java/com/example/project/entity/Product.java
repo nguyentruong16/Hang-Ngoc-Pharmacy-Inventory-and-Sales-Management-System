@@ -15,9 +15,9 @@ import java.math.BigDecimal;
 @Table(name = "product")
 public class Product {
     @Id
-    @Size(max = 50)
-    @Column(name = "productID", nullable = false, length = 50)
-    private String productID;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "productID", nullable = false)
+    private Integer productID;
 
     @Size(max = 255)
     @NotNull
@@ -56,10 +56,6 @@ public class Product {
     @Size(max = 100)
     @Column(name = "registrationNumber", length = 100)
     private String registrationNumber;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "baseUnitID")
-    private Productunit baseUnitID;
 
     @ColumnDefault("1")
     @Column(name = "status")

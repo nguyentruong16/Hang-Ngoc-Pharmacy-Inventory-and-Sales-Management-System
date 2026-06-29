@@ -29,7 +29,7 @@ public class Income {
     private Account applicantID;
 
     @NotNull
-    @Column(name = "incomeType", nullable = false, columnDefinition = "enum('INVOICE_SALE','DEBT_COLLECTION','OTHER','RETURN_REFUND_RECEIVE')")
+    @Column(name = "incomeType", nullable = false, columnDefinition = "enum('SUPPLIER','EMPLOYEE','CUSTOMER','OTHER')")
     private String incomeType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -63,6 +63,18 @@ public class Income {
     @NotNull
     @Column(name = "paidByBanking", nullable = false, precision = 15, scale = 2)
     private BigDecimal paidByBanking;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplierID")
+    private Supplier supplierID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customerID")
+    private Customer customerID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "accountID")
+    private Account accountID;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "statusID")

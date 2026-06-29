@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiết hàng hóa | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .product-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .stock-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-instock { background: #d1fae5; color: #059669; }
+        .status-low { background: #fef3c7; color: #d97706; }
+        .status-out { background: #fee2e2; color: #dc2626; }
+        .badge-soft { background: #f3f4f6; color: #4b5563; }
+
+        .info-label { font-size: 12px; color: #6b7280; }
+        .info-value { font-size: 14px; font-weight: 600; color: #111827; }
+
+        .section-title { font-size: 15px; font-weight: 700; }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        .table tbody td { font-size: 13px; vertical-align: middle; }
+
+        .qty-in { color: #059669; font-weight: 600; }
+        .qty-out { color: #dc2626; font-weight: 600; }
+
+        @media (max-width: 991.98px) {
+            .product-page-content { padding-top: 84px !important; }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content product-page-content">
+    <div class="container-fluid">
+
+        <!-- Header -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <a th:href="${basePath}" class="btn btn-sm btn-outline-secondary mb-2">
+                    <i class="ti ti-arrow-left me-1"></i> Quay lại danh sách
+                </a>
+                <h1 class="fs-4 mb-1" th:text="${product.name}">Tên hàng hóa</h1>
+                <div class="text-secondary">
+                    <span th:text="${product.code}">MED-001</span>
+                    <span class="status-badge ms-2" th:classappend="${' ' + product.stockStatusCss}"
+                          th:text="${product.stockStatusLabel}">Còn hàng</span>
+                    <span class="status-badge ms-1"
+                          th:classappend="${product.statusActive} ? ' status-instock' : ' status-out'"
+                          th:text="${product.statusLabel}">Đang kinh doanh</span>
+                </div>
+            </div>
+            <div class="text-md-end">
+                <div class="info-label">Tổng tồn kho</div>
+                <div class="fs-3 fw-bold" th:text="${product.totalStock}">0</div>
+            </div>
+        </div>
+
+        <!-- 1. Thông tin sản phẩm -->
+        <div class="stock-card p-4 mb-4">
+            <h2 class="section-title mb-3">Thông tin sản phẩm</h2>
+            <div class="row g-3">
+                <div class="col-6 col-md-3"><div class="info-label">Mã hàng</div><div class="info-value" th:text="${product.code}">—</div></div>
+                <div class="col-6 col-md-3"><div class="info-label">Barcode</div><div class="info-value" th:text="${product.barcode != null ? product.barcode : '—'}">—</div></div>
+                <div class="col-6 col-md-3"><div class="info-label">Loại sản phẩm</div><div class="info-value" th:text="${product.typeName}">—</div></div>
+                <div class="col-6 col-md-3"><div class="info-label">Nhà sản xuất</div><div class="info-value" th:text="${product.producerName}">—</div></div>
+                <div class="col-6 col-md-3"><div class="info-label">Xuất xứ</div><div class="info-value" th:text="${product.originName}">—</div></div>
+                <div class="col-6 col-md-3"><div class="info-label">Số đăng ký</div><div class="info-value" th:text="${product.registrationNumber != null ? product.registrationNumber : '—'}">—</div></div>
+                <div class="col-6 col-md-3"><div class="info-label">Tồn tối thiểu</div><div class="info-value" th:text="${product.minStock != null ? product.minStock : '—'}">—</div></div>
+                <div class="col-6 col-md-3"><div class="info-label">Tồn tối đa</div><div class="info-value" th:text="${product.maxStock != null ? product.maxStock : '—'}">—</div></div>
+                <div class="col-12 col-md-6">
+                    <div class="info-label">Hoạt chất</div>
+                    <div class="info-value">
+                        <span th:if="${#lists.isEmpty(product.ingredients)}">—</span>
+                        <span th:each="ing,it : ${product.ingredients}">
+                            <span th:text="${ing}">Paracetamol 500mg</span><span th:if="${!it.last}">, </span>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6"><div class="info-label">Ghi chú</div><div class="info-value" th:text="${product.note != null and !product.note.isEmpty()} ? ${product.note} : '—'">—</div></div>
+            </div>
+
+            <h3 class="section-title mt-4 mb-2 fs-6">Đơn vị quy đổi và giá bán</h3>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Đơn vị</th>
+                        <th class="text-end">Tỷ lệ quy đổi</th>
+                        <th class="text-end">Giá bán</th>
+                        <th>Phân loại</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="u : ${product.units}">
+                        <td class="fw-semibold" th:text="${u.unitName}">Hộp</td>
+                        <td class="text-end" th:text="${u.ratio != null ? #numbers.formatDecimal(u.ratio, 0, 'POINT', 0, 'COMMA') : '—'}">1</td>
+                        <td class="text-end" th:text="${u.sellPrice != null ? #numbers.formatDecimal(u.sellPrice, 0, 'POINT', 0, 'COMMA') + 'đ' : '—'}">70.000đ</td>
+                        <td>
+                            <span th:if="${u.isDefault()}" class="status-badge status-instock me-1">Mặc định</span>
+                            <span th:if="${u.isBaseUnit()}" class="status-badge badge-soft me-1">Cơ bản</span>
+                            <span th:if="${!u.isActive()}" class="status-badge status-out">Ngừng</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(product.units)}">
+                        <td colspan="4" class="text-center text-secondary py-3">Chưa cấu hình đơn vị.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. Tồn kho theo chi nhánh -->
+        <div class="stock-card p-4 mb-4">
+            <h2 class="section-title mb-3">Tồn kho theo chi nhánh</h2>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Chi nhánh</th>
+                        <th class="text-end">Tổng tồn</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="bs : ${product.branchStocks}">
+                        <td class="fw-semibold" th:text="${bs.branchName}">Chi nhánh 1</td>
+                        <td class="text-end" th:text="${bs.totalStock}">0</td>
+                        <td><span class="status-badge" th:classappend="${' ' + bs.stockStatusCss}" th:text="${bs.stockStatusLabel}">Còn hàng</span></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(product.branchStocks)}">
+                        <td colspan="3" class="text-center text-secondary py-3">Chưa có tồn kho.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. Lô hàng còn bán -->
+        <div class="stock-card p-4 mb-4">
+            <h2 class="section-title mb-3">
+                Lô hàng còn bán
+                <span class="badge bg-success-subtle text-success ms-2" th:text="${product.batches.size() + ' lô'}">0 lô</span>
+            </h2>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Số lô</th>
+                        <th>Chi nhánh</th>
+                        <th>Ngày nhập</th>
+                        <th>Ngày SX</th>
+                        <th>Hạn SD</th>
+                        <th class="text-end">Tồn kho</th>
+                        <th>Đơn vị nhập</th>
+                        <th class="text-end">Giá nhập</th>
+                        <th>Trạng thái</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="b : ${product.batches}">
+                        <td class="fw-semibold" th:text="${b.lotNumber != null ? b.lotNumber : b.batchName}">LOT-001</td>
+                        <td th:text="${b.branchName}">Chi nhánh 1</td>
+                        <td th:text="${b.importDateDisplay}">01/06/2026 09:00</td>
+                        <td th:text="${b.productionDateDisplay}">01/01/2026</td>
+                        <td th:text="${b.expirationDateDisplay}">01/01/2028</td>
+                        <td class="text-end" th:text="${b.storageQuantity}">0</td>
+                        <td th:text="${b.importUnitName}">Hộp</td>
+                        <td class="text-end" th:text="${b.importPrice != null ? #numbers.formatDecimal(b.importPrice, 0, 'POINT', 0, 'COMMA') + 'đ' : '—'}">50.000đ</td>
+                        <td><span class="status-badge badge-soft" th:text="${b.statusLabel}">Còn hiệu lực</span></td>
+                        <td th:text="${b.note != null and !b.note.isEmpty()} ? ${b.note} : '—'">—</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(product.batches)}">
+                        <td colspan="10" class="text-center text-secondary py-3">Không có lô hàng còn bán.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. Lịch sử tồn kho gần đây (chỉ Owner / Chief Pharmacist) -->
+        <div class="stock-card p-4 mb-4" th:if="${canViewRecentHistory}">
+            <h2 class="section-title mb-1">Lịch sử tồn kho gần đây</h2>
+            <p class="text-secondary small mb-3">Tối đa 10 biến động gần nhất (nhập, bán, xuất kho, trả hàng).</p>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Loại biến động</th>
+                        <th>Chi nhánh</th>
+                        <th>Mã tham chiếu</th>
+                        <th>Số lô</th>
+                        <th class="text-end">SL thay đổi</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="h : ${product.recentHistory}">
+                        <td th:text="${h.timeDisplay}">01/06/2026 09:00</td>
+                        <td th:text="${h.changeType}">Nhập kho</td>
+                        <td th:text="${h.branchName}">Chi nhánh 1</td>
+                        <td th:text="${h.reference != null ? h.reference : '—'}">SO-000001</td>
+                        <td th:text="${h.lotNumber != null ? h.lotNumber : '—'}">LOT-001</td>
+                        <td class="text-end" th:classappend="${h.quantityChange >= 0} ? ' qty-in' : ' qty-out'"
+                            th:text="${h.quantityChange > 0 ? '+' + h.quantityChange : h.quantityChange}">+30</td>
+                        <td th:text="${h.note != null and !h.note.isEmpty()} ? ${h.note} : '—'">—</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(product.recentHistory)}">
+                        <td colspan="7" class="text-center text-secondary py-3">Chưa có biến động tồn kho gần đây.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>

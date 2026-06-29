@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 public class ProcurementplandetailResponse {
     private Integer id;
     private Integer planId;
-    private String productId;
+    private Integer productId;
     private Integer quantity;
     private String unit;
     private BigDecimal estimatedPrice;

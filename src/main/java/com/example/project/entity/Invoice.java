@@ -20,6 +20,16 @@ public class Invoice {
     @Column(name = "invoiceID", nullable = false)
     private Integer id;
 
+    @Size(max = 6)
+    @NotNull
+    @Column(name = "invoiceCode", nullable = false, length = 6)
+    private String invoiceCode;
+
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "invoiceNumber", nullable = false, length = 50)
+    private String invoiceNumber;
+
     @NotNull
     @Column(name = "date", nullable = false)
     private Instant date;

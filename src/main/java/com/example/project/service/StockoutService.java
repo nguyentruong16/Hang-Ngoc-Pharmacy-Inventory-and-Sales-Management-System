@@ -295,7 +295,7 @@ public class StockoutService {
         Batch batch = detail.getBatchID();
 
         return new StockOutDetailItemResponse(
-                product != null ? product.getProductID() : "",
+                product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
                 batch != null ? batch.getLotNumber() : "",
                 batch != null ? batch.getExpirationDate() : null,
@@ -330,7 +330,7 @@ public class StockoutService {
         return details.stream().anyMatch(detail -> {
             Product product = detail.getProductID();
             return product != null
-                    && (containsNormalized(product.getProductID(), normalizedKeyword)
+                    && (containsNormalized(String.valueOf(product.getProductID()), normalizedKeyword)
                     || containsNormalized(product.getName(), normalizedKeyword)
                     || containsNormalized(product.getCode(), normalizedKeyword)
                     || containsNormalized(product.getBarcode(), normalizedKeyword));

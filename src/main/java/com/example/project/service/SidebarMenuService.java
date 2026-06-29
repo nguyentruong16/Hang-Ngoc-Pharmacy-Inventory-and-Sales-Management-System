@@ -76,9 +76,6 @@ public class SidebarMenuService {
         if (uri.startsWith("/owner/branch-list/branch-detail")) {
             uri = "/owner/branch-list";
         }
-        if (uri.startsWith("/owner/origins/create-origin")) {
-            uri = "/owner/origins";
-        }
         if (uri.startsWith("/owner/producers/create-producer")) {
             uri = "/owner/producers";
         }
@@ -113,7 +110,6 @@ public class SidebarMenuService {
                         i("Danh sách hàng hóa", "/owner/products", "ti ti-package")),
 
                 menuGroup("Danh mục hàng hóa", "ti ti-layout-grid",
-                        i("Xuất xứ", "/owner/origins", "ti ti-world"),
                         i("Loại hàng", "/owner/types", "ti ti-category"),
                         i("Nhà sản xuất", "/owner/producers", "ti ti-building-factory-2")),
 
@@ -150,7 +146,6 @@ public class SidebarMenuService {
 
                 menuGroup("Danh mục", "ti ti-layout-grid",
                         i("Danh sách vị trí", "/chief-pharmacist/positions", "ti ti-map-pin"),
-                        i("Danh sách xuất xứ", "/chief-pharmacist/origins", "ti ti-world"),
                         i("Danh sách loại hàng", "/chief-pharmacist/types", "ti ti-category"),
                         i("Danh sách nhà sản xuất", "/chief-pharmacist/producers", "ti ti-building-factory-2")),
 
@@ -164,7 +159,8 @@ public class SidebarMenuService {
                         i("Danh sách công nợ", "/chief-pharmacist/debts", "ti ti-credit-card")),
 
                 menuGroup("Kho", "ti ti-archive",
-                        i("Xuất kho", "/chief-pharmacist/stock-outs", "ti ti-archive")),
+                        i("Xuất kho", "/chief-pharmacist/stock-outs", "ti ti-archive"),
+                        i("Tạo phiếu hủy xuất kho", "/chief-pharmacist/stock-outs/destroy/create", "ti ti-trash")),
 
                 menuGroup("Giao dịch", "ti ti-file-invoice",
                         i("Danh sách hóa đơn", "/chief-pharmacist/invoices", "ti ti-file-invoice"),

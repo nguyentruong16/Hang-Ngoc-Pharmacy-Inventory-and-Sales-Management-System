@@ -24,7 +24,6 @@ public class ShiftreportResponse {
     private BigDecimal openingCash;
     private Integer totalInvoices;
     private BigDecimal totalRevenue;
-    private BigDecimal totalVATCollected;
     private Integer totalReturns;
     private BigDecimal totalReturnAmount;
     private BigDecimal totalDebtCollected;
@@ -53,7 +52,6 @@ public class ShiftreportResponse {
                 shiftreport.getOpeningCash(),
                 shiftreport.getTotalInvoices(),
                 shiftreport.getTotalRevenue(),
-                shiftreport.getTotalVATCollected(),
                 shiftreport.getTotalReturns(),
                 shiftreport.getTotalReturnAmount(),
                 shiftreport.getTotalDebtCollected(),

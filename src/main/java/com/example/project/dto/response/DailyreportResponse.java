@@ -18,7 +18,6 @@ public class DailyreportResponse {
     private Integer branchId;
     private LocalDate reportDate;
     private Integer totalInvoicesNumber;
-    private Integer totalVATInvoices;
     private Integer totalPrescriptionInvoices;
     private Integer totalNormalInvoices;
     private BigDecimal totalIncomeCash;
@@ -55,7 +54,6 @@ public class DailyreportResponse {
                 dailyreport.getBranchID() != null ? dailyreport.getBranchID().getId() : null,
                 dailyreport.getReportDate(),
                 dailyreport.getTotalInvoicesNumber(),
-                dailyreport.getTotalVATInvoices(),
                 dailyreport.getTotalPrescriptionInvoices(),
                 dailyreport.getTotalNormalInvoices(),
                 dailyreport.getTotalIncomeCash(),
