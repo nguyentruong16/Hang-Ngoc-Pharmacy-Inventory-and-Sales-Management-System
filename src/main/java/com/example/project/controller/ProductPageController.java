@@ -1,5 +1,6 @@
 package com.example.project.controller;
 
+import com.example.project.dto.response.ProductDetailResponse;
 import com.example.project.dto.response.ProductRowResponse;
 import com.example.project.service.ProductService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,7 +9,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Optional;
 
 /**
  * Thymeleaf page controller for the Product List screen. Serves the same screen under each
@@ -67,6 +72,31 @@ public class ProductPageController {
         model.addAttribute("basePath", resolveBasePath(request));
 
         return "product/list";
+    }
+
+    @GetMapping({
+            "/owner/products/{productId}",
+            "/chief-pharmacist/products/{productId}",
+            "/pharmacist/products/{productId}"
+    })
+    public String productDetail(@PathVariable Integer productId,
+                                HttpServletRequest request,
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+
+        Optional<ProductDetailResponse> detail = productService.getProductDetail(productId);
+        if (detail.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy hàng hóa");
+            return "redirect:" + basePath;
+        }
+
+        ProductDetailResponse product = detail.get();
+        model.addAttribute("product", product);
+        model.addAttribute("basePath", basePath);
+        model.addAttribute("canViewRecentHistory", product.isCanViewRecentHistory());
+
+        return "product/detail";
     }
 
     private String resolveBasePath(HttpServletRequest request) {
