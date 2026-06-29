@@ -3,6 +3,7 @@ package com.example.project.repository;
 import com.example.project.entity.Medicineapi;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -19,4 +20,13 @@ public interface MedicineapiRepository extends JpaRepository<Medicineapi, Intege
            where m.productID is not null
            """)
     List<Medicineapi> findAllWithProduct();
+
+    /** Active ingredients of a single product, for the Product Detail screen. */
+    @Query("""
+           select m
+           from Medicineapi m
+           where m.productID.productID = :productId
+           order by m.id asc
+           """)
+    List<Medicineapi> findByProductId(@Param("productId") Integer productId);
 }
