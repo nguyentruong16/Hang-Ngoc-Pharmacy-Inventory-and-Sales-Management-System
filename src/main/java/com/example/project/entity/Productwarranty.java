@@ -18,6 +18,11 @@ public class Productwarranty {
     @Column(name = "warrantyID", nullable = false)
     private Integer id;
 
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "warrantyCode", nullable = false, length = 50)
+    private String warrantyCode;
+
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoiceID")

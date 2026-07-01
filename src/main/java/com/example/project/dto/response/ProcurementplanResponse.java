@@ -13,6 +13,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ProcurementplanResponse {
     private Integer id;
+    private String procurementPlanCode;
     private Instant date;
     private Integer branchId;
     private Integer employeeId;
@@ -23,6 +24,7 @@ public class ProcurementplanResponse {
     public static ProcurementplanResponse from(Procurementplan procurementplan) {
         return new ProcurementplanResponse(
                 procurementplan.getId(),
+                procurementplan.getProcurementPlanCode(), 
                 procurementplan.getDate(),
                 procurementplan.getBranchID() != null ? procurementplan.getBranchID().getId() : null,
                 procurementplan.getEmployeeID() != null ? procurementplan.getEmployeeID().getId() : null,

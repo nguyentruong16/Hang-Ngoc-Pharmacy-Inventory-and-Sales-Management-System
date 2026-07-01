@@ -13,6 +13,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class PurchaserequisitionResponse {
     private Integer id;
+    private String purchaseRequistionCode;
     private Instant date;
     private Integer branchId;
     private Integer requestedById;
@@ -25,6 +26,7 @@ public class PurchaserequisitionResponse {
     public static PurchaserequisitionResponse from(Purchaserequisition purchaserequisition) {
         return new PurchaserequisitionResponse(
                 purchaserequisition.getId(),
+                purchaserequisition.getPurchaseRequistionCode(),
                 purchaserequisition.getDate(),
                 purchaserequisition.getBranchID() != null ? purchaserequisition.getBranchID().getId() : null,
                 purchaserequisition.getRequestedBy() != null ? purchaserequisition.getRequestedBy().getId() : null,

@@ -14,6 +14,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class PurchaseinvoiceResponse {
     private Integer id;
+    private String purchaseInvoiceCode;
     private Instant date;
     private Integer supplierId;
     private Integer branchId;
@@ -29,6 +30,7 @@ public class PurchaseinvoiceResponse {
     public static PurchaseinvoiceResponse from(Purchaseinvoice purchaseinvoice) {
         return new PurchaseinvoiceResponse(
                 purchaseinvoice.getId(),
+                purchaseinvoice.getPurchaseInvoiceCode(),
                 purchaseinvoice.getDate(),
                 purchaseinvoice.getSupplierID() != null ? purchaseinvoice.getSupplierID().getId() : null,
                 purchaseinvoice.getBranchID() != null ? purchaseinvoice.getBranchID().getId() : null,

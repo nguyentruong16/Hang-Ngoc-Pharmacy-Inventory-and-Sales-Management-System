@@ -2,6 +2,7 @@ package com.example.project.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,11 @@ public class Purchaserequisition {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "requisitionID", nullable = false)
     private Integer id;
+
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "purchaseRequistionCode", nullable = false, length = 50)
+    private String purchaseRequistionCode;
 
     @NotNull
     @Column(name = "date", nullable = false)

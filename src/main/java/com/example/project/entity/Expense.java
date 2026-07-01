@@ -20,6 +20,11 @@ public class Expense {
     @Column(name = "expenseID", nullable = false)
     private Integer id;
 
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "expenseCode", nullable = false, length = 50)
+    private String expenseCode;
+
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "branchID", nullable = false)

@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class DailyreportResponse {
     private Integer id;
+    private String dailyReportCode;
     private Integer branchId;
     private LocalDate reportDate;
     private Integer totalInvoicesNumber;
@@ -51,6 +52,7 @@ public class DailyreportResponse {
     public static DailyreportResponse from(Dailyreport dailyreport) {
         return new DailyreportResponse(
                 dailyreport.getId(),
+                dailyreport.getDailyReportCode(),
                 dailyreport.getBranchID() != null ? dailyreport.getBranchID().getId() : null,
                 dailyreport.getReportDate(),
                 dailyreport.getTotalInvoicesNumber(),
