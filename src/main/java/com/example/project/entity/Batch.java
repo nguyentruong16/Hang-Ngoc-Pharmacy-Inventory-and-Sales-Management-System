@@ -23,6 +23,11 @@ public class Batch {
 
     @Size(max = 50)
     @NotNull
+    @Column(name = "batchCode", nullable = false, length = 50)
+    private String batchCode;
+
+    @Size(max = 50)
+    @NotNull
     @Column(name = "batchName", nullable = false, length = 50)
     private String batchName;
 

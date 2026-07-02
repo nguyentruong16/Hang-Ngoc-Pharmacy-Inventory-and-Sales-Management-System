@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class ShiftreportResponse {
     private Integer id;
+    private String shiftReportCode;
     private Integer branchId;
     private Integer cashierId;
     private LocalDate shiftDate;
@@ -43,6 +44,7 @@ public class ShiftreportResponse {
     public static ShiftreportResponse from(Shiftreport shiftreport) {
         return new ShiftreportResponse(
                 shiftreport.getId(),
+                shiftreport.getShiftReportCode(), 
                 shiftreport.getBranchID() != null ? shiftreport.getBranchID().getId() : null,
                 shiftreport.getCashierID() != null ? shiftreport.getCashierID().getId() : null,
                 shiftreport.getShiftDate(),

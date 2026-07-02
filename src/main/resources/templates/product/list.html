@@ -96,6 +96,13 @@
             color: #fff;
         }
 
+        /* Theme's --bs-primary is orange; force green focus to match the app's main color. */
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 .2rem rgba(5, 150, 105, .18);
+        }
+
         @media (max-width: 991.98px) {
             .product-page-content {
                 padding-top: 84px !important;
@@ -111,9 +118,14 @@
 <main id="content" class="content product-page-content">
     <div class="container-fluid">
 
-        <div class="mb-4">
-            <h1 class="fs-4 mb-1">Danh sách hàng hóa</h1>
-            <p class="text-secondary mb-0">Quản lý thông tin và tồn kho hàng hóa của nhà thuốc</p>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Danh sách hàng hóa</h1>
+                <p class="text-secondary mb-0">Quản lý thông tin và tồn kho hàng hóa của nhà thuốc</p>
+            </div>
+            <a th:if="${basePath == '/owner/products'}" th:href="@{/owner/products/create}" class="btn btn-stock-primary">
+                <i class="ti ti-plus me-1"></i> Tạo hàng hóa
+            </a>
         </div>
 
         <div class="row g-3 mb-4">

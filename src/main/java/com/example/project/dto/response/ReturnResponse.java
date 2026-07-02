@@ -14,6 +14,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ReturnResponse {
     private Integer id;
+    private String returnCode;
     private Integer invoiceId;
     private Integer branchId;
     private Integer returnedById;
@@ -34,6 +35,7 @@ public class ReturnResponse {
     public static ReturnResponse from(Return returnEntity) {
         return new ReturnResponse(
                 returnEntity.getId(),
+                returnEntity.getReturnCode(), 
                 returnEntity.getInvoiceID() != null ? returnEntity.getInvoiceID().getId() : null,
                 returnEntity.getBranchID() != null ? returnEntity.getBranchID().getId() : null,
                 returnEntity.getReturnedBy() != null ? returnEntity.getReturnedBy().getId() : null,

@@ -2,6 +2,7 @@ package com.example.project.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -19,6 +20,11 @@ public class Dailyreport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "reportID", nullable = false)
     private Integer id;
+
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "dailyReportCode", nullable = false, length = 50)
+    private String dailyReportCode;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

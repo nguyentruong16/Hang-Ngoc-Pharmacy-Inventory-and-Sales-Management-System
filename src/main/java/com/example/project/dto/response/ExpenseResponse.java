@@ -14,6 +14,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ExpenseResponse {
     private Integer id;
+    private String expenseCode;
     private Integer branchId;
     private Integer applicantId;
     private String expenseType;
@@ -36,6 +37,7 @@ public class ExpenseResponse {
     public static ExpenseResponse from(Expense expense) {
         return new ExpenseResponse(
                 expense.getId(),
+                expense.getExpenseCode(),
                 expense.getBranchID() != null ? expense.getBranchID().getId() : null,
                 expense.getApplicantID() != null ? expense.getApplicantID().getId() : null,
                 expense.getExpenseType(),

@@ -2,6 +2,7 @@ package com.example.project.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,11 @@ public class Stockout {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "stockOutID", nullable = false)
     private Integer id;
+
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "stockOutCode", nullable = false, length = 50)
+    private String stockOutCode;
 
     @NotNull
     @Column(name = "outType", nullable = false, columnDefinition = "enum('DESTROY','INTERNAL_TRANSFER','INTERNAL_USE','SAMPLE','GIFT')")

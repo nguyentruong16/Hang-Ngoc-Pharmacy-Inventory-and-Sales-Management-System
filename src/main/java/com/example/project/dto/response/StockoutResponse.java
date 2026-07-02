@@ -13,6 +13,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class StockoutResponse {
     private Integer id;
+    private String stockOutCode;
     private String outType;
     private Integer branchId;
     private Instant date;
@@ -28,6 +29,7 @@ public class StockoutResponse {
     public static StockoutResponse from(Stockout stockout) {
         return new StockoutResponse(
                 stockout.getId(),
+                stockout.getStockOutCode(), 
                 stockout.getOutType(),
                 stockout.getBranchID() != null ? stockout.getBranchID().getId() : null,
                 stockout.getDate(),

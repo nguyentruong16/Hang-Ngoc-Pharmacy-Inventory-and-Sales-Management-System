@@ -21,6 +21,11 @@ public class Shiftreport {
     @Column(name = "shiftReportID", nullable = false)
     private Integer id;
 
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "shiftReportCode", nullable = false, length = 50)
+    private String shiftReportCode;
+
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "branchID", nullable = false)

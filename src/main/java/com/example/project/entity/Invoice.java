@@ -95,6 +95,9 @@ public class Invoice {
     @JoinColumn(name = "shiftReportID")
     private Shiftreport shiftReportID;
 
+    @Column(name = "prescriptionCode", columnDefinition = "TEXT")
+    private String prescriptionCode;
+
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 

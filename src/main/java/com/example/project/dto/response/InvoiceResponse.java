@@ -32,6 +32,7 @@ public class InvoiceResponse {
     private String returnStatus;
     private Integer statusId;
     private Integer shiftReportId;
+    private String prescriptionCode;
     private String note;
 
     public static InvoiceResponse from(Invoice invoice) {
@@ -55,6 +56,7 @@ public class InvoiceResponse {
                 invoice.getReturnStatus(),
                 invoice.getStatusID() != null ? invoice.getStatusID().getId() : null,
                 invoice.getShiftReportID() != null ? invoice.getShiftReportID().getId() : null,
+                invoice.getPrescriptionCode(),
                 invoice.getNote()
         );
     }
