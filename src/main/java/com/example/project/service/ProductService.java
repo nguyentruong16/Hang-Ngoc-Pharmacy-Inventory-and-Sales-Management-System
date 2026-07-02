@@ -2,6 +2,10 @@ package com.example.project.service;
 
 import com.example.project.constant.RoleConstants;
 import com.example.project.context.CurrentUserContext;
+import com.example.project.dto.request.ProductCreateRequest;
+import com.example.project.dto.request.ProductIngredientCreateRequest;
+import com.example.project.dto.request.ProductPositionCreateRequest;
+import com.example.project.dto.request.ProductUnitCreateRequest;
 import com.example.project.dto.response.ProductBatchDetailResponse;
 import com.example.project.dto.response.ProductBranchStockResponse;
 import com.example.project.dto.response.ProductDetailResponse;
@@ -15,6 +19,8 @@ import com.example.project.entity.Branch;
 import com.example.project.entity.Invoice;
 import com.example.project.entity.Invoicedetail;
 import com.example.project.entity.Medicineapi;
+import com.example.project.entity.Origin;
+import com.example.project.entity.Position;
 import com.example.project.entity.Producer;
 import com.example.project.entity.Product;
 import com.example.project.entity.Productunit;
@@ -23,8 +29,11 @@ import com.example.project.entity.Stockout;
 import com.example.project.entity.Stockoutdetail;
 import com.example.project.entity.Type;
 import com.example.project.repository.BatchRepository;
+import com.example.project.repository.BranchRepository;
 import com.example.project.repository.InvoicedetailRepository;
 import com.example.project.repository.MedicineapiRepository;
+import com.example.project.repository.OriginRepository;
+import com.example.project.repository.PositionRepository;
 import com.example.project.repository.ProducerRepository;
 import com.example.project.repository.ProductRepository;
 import com.example.project.repository.ProductunitRepository;
@@ -46,10 +55,12 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,6 +92,9 @@ public class ProductService {
     private final InvoicedetailRepository invoicedetailRepository;
     private final StockoutdetailRepository stockoutdetailRepository;
     private final ReturndetailRepository returndetailRepository;
+    private final OriginRepository originRepository;
+    private final BranchRepository branchRepository;
+    private final PositionRepository positionRepository;
     private final CurrentUserContext currentUserContext;
 
     public ProductService(ProductRepository productRepository,
@@ -92,6 +106,9 @@ public class ProductService {
                           InvoicedetailRepository invoicedetailRepository,
                           StockoutdetailRepository stockoutdetailRepository,
                           ReturndetailRepository returndetailRepository,
+                          OriginRepository originRepository,
+                          BranchRepository branchRepository,
+                          PositionRepository positionRepository,
                           CurrentUserContext currentUserContext) {
         this.productRepository = productRepository;
         this.batchRepository = batchRepository;
@@ -102,6 +119,9 @@ public class ProductService {
         this.invoicedetailRepository = invoicedetailRepository;
         this.stockoutdetailRepository = stockoutdetailRepository;
         this.returndetailRepository = returndetailRepository;
+        this.originRepository = originRepository;
+        this.branchRepository = branchRepository;
+        this.positionRepository = positionRepository;
         this.currentUserContext = currentUserContext;
     }
 
@@ -262,6 +282,245 @@ public class ProductService {
                 .stream()
                 .sorted(Comparator.comparing(producer -> producer.getName() == null ? "" : producer.getName()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Origin> listOrigins() {
+        return originRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparing(origin -> origin.getName() == null ? "" : origin.getName()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Branch> listBranches() {
+        return branchRepository.findAllWithStatus();
+    }
+
+    /** Existing ingredient names, for the Create Product autocomplete (reuse instead of retyping). */
+    @Transactional(readOnly = true)
+    public List<String> listIngredientNames() {
+        return medicineapiRepository.findDistinctApiNames();
+    }
+
+    /** Existing ingredient strengths, for the Create Product autocomplete. */
+    @Transactional(readOnly = true)
+    public List<String> listIngredientStrengths() {
+        return medicineapiRepository.findDistinctStrengths();
+    }
+
+    // --- Create Product ------------------------------------------------------
+
+    /**
+     * Creates a product master in one transaction: {@code Product} + its {@code ProductUnit}s,
+     * plus optional {@code MedicineAPI} ingredients and {@code Position}s. It does NOT create any
+     * stock ({@code Batch}) or purchase/invoice data — stock arises only from goods-receipt later.
+     *
+     * @return the new product id
+     * @throws ProductValidationException when validation fails; the transaction rolls back so
+     *                                    nothing is persisted.
+     */
+    @Transactional
+    public Integer createProduct(ProductCreateRequest request) {
+        List<String> errors = new ArrayList<>();
+
+        String name = trimToNull(request.getName());
+        String code = trimToNull(request.getCode());
+        String barcode = trimToNull(request.getBarcode());
+
+        if (name == null) {
+            errors.add("Tên hàng hóa không được để trống");
+        }
+        if (code == null) {
+            errors.add("Mã hàng không được để trống");
+        } else if (productRepository.existsByCode(code)) {
+            errors.add("Mã hàng '" + code + "' đã tồn tại");
+        }
+        if (barcode != null && productRepository.existsByBarcode(barcode)) {
+            errors.add("Barcode '" + barcode + "' đã tồn tại");
+        }
+        if (request.getMinStock() != null && request.getMaxStock() != null
+                && request.getMinStock() > request.getMaxStock()) {
+            errors.add("Tồn tối thiểu không được lớn hơn tồn tối đa");
+        }
+        if (request.getTypeId() != null && !typeRepository.existsById(request.getTypeId())) {
+            errors.add("Loại hàng không hợp lệ");
+        }
+        if (request.getProducerId() != null && !producerRepository.existsById(request.getProducerId())) {
+            errors.add("Nhà sản xuất không hợp lệ");
+        }
+        if (request.getOriginId() != null && !originRepository.existsById(request.getOriginId())) {
+            errors.add("Xuất xứ không hợp lệ");
+        }
+
+        List<ResolvedUnit> resolvedUnits = validateAndResolveUnits(request.getUnits(), errors);
+
+        if (!errors.isEmpty()) {
+            throw new ProductValidationException(errors);
+        }
+
+        Product product = new Product();
+        product.setName(name);
+        product.setCode(code);
+        product.setBarcode(barcode);
+        product.setRegistrationNumber(trimToNull(request.getRegistrationNumber()));
+        product.setMinStock(request.getMinStock());
+        product.setMaxStock(request.getMaxStock());
+        product.setStatus(request.getStatus() == null ? Boolean.TRUE : request.getStatus());
+        product.setNote(trimToNull(request.getNote()));
+        if (request.getTypeId() != null) {
+            product.setTypeID(typeRepository.getReferenceById(request.getTypeId()));
+        }
+        if (request.getProducerId() != null) {
+            product.setProducerID(producerRepository.getReferenceById(request.getProducerId()));
+        }
+        if (request.getOriginId() != null) {
+            product.setOriginID(originRepository.getReferenceById(request.getOriginId()));
+        }
+        Product saved = productRepository.save(product);
+
+        for (ResolvedUnit resolved : resolvedUnits) {
+            Productunit unit = new Productunit();
+            unit.setProductID(saved);
+            unit.setUnitName(resolved.name());
+            unit.setRatio(BigDecimal.valueOf(resolved.ratio()));
+            unit.setSellPrice(resolved.sellPrice());
+            unit.setIsBaseUnit(resolved.baseUnit());
+            unit.setIsDefault(resolved.defaultUnit());
+            unit.setIsActive(resolved.active());
+            productunitRepository.save(unit);
+        }
+
+        if (request.getIngredients() != null) {
+            for (ProductIngredientCreateRequest ingredient : request.getIngredients()) {
+                String apiName = trimToNull(ingredient.getApiName());
+                if (apiName == null) {
+                    continue;
+                }
+                Medicineapi api = new Medicineapi();
+                api.setProductID(saved);
+                api.setApiName(apiName);
+                api.setStrength(trimToNull(ingredient.getStrength()));
+                medicineapiRepository.save(api);
+            }
+        }
+
+        if (request.getPositions() != null) {
+            for (ProductPositionCreateRequest position : request.getPositions()) {
+                String positionName = trimToNull(position.getName());
+                if (positionName == null) {
+                    continue;
+                }
+                Position entity = new Position();
+                entity.setProductID(saved);
+                entity.setName(positionName);
+                if (position.getBranchId() != null) {
+                    entity.setBranchID(branchRepository.getReferenceById(position.getBranchId()));
+                }
+                positionRepository.save(entity);
+            }
+        }
+
+        return saved.getProductID();
+    }
+
+    /**
+     * Validates the unit rows and resolves each to a cumulative ratio (relative to the smallest
+     * unit) and a final sell price (actual if given, else base price × ratio). Any problem is added
+     * to {@code errors}; the returned list is only meaningful when {@code errors} stays empty.
+     */
+    private List<ResolvedUnit> validateAndResolveUnits(List<ProductUnitCreateRequest> units, List<String> errors) {
+        List<ResolvedUnit> resolved = new ArrayList<>();
+
+        List<ProductUnitCreateRequest> rows = units == null ? List.of()
+                : units.stream().filter(u -> trimToNull(u.getUnitName()) != null).toList();
+        if (rows.isEmpty()) {
+            errors.add("Phải có ít nhất 1 đơn vị");
+            return resolved;
+        }
+
+        long baseCount = rows.stream().filter(ProductUnitCreateRequest::isBaseUnit).count();
+        if (baseCount == 0) {
+            errors.add("Phải có đúng 1 đơn vị cơ bản (isBaseUnit)");
+        } else if (baseCount > 1) {
+            errors.add("Chỉ được có đúng 1 đơn vị cơ bản");
+        }
+
+        long defaultCount = rows.stream().filter(ProductUnitCreateRequest::isDefaultUnit).count();
+        if (defaultCount == 0) {
+            errors.add("Phải có đúng 1 đơn vị mặc định (isDefault)");
+        } else if (defaultCount > 1) {
+            errors.add("Chỉ được có đúng 1 đơn vị mặc định");
+        }
+
+        Set<String> seenNames = new HashSet<>();
+        for (ProductUnitCreateRequest row : rows) {
+            String key = normalize(row.getUnitName());
+            if (!seenNames.add(key)) {
+                errors.add("Tên đơn vị bị trùng: " + trimToNull(row.getUnitName()));
+            }
+        }
+
+        // The base unit is the smallest unit → must be the first row (ratio = 1).
+        if (baseCount == 1 && !rows.get(0).isBaseUnit()) {
+            errors.add("Đơn vị cơ bản phải là đơn vị nhỏ nhất (dòng đầu tiên)");
+        }
+
+        long[] ratios = new long[rows.size()];
+        ratios[0] = 1L;
+        for (int i = 1; i < rows.size(); i++) {
+            String unitName = trimToNull(rows.get(i).getUnitName());
+            Integer qty = rows.get(i).getQuantityRelativeToPrevious();
+            if (qty == null || qty < 1) {
+                errors.add("Số lượng quy đổi của '" + unitName + "' phải là số nguyên dương");
+                ratios[i] = ratios[i - 1];
+            } else {
+                ratios[i] = ratios[i - 1] * qty;
+                if (ratios[i] <= ratios[i - 1]) {
+                    errors.add("Đơn vị '" + unitName + "' phải có tỷ lệ quy đổi lớn hơn đơn vị trước");
+                }
+            }
+        }
+
+        BigDecimal basePrice = rows.get(0).getSellPrice();
+        if (basePrice == null || basePrice.signum() <= 0) {
+            errors.add("Giá bán đơn vị cơ bản phải lớn hơn 0");
+        }
+
+        for (int i = 0; i < rows.size(); i++) {
+            ProductUnitCreateRequest row = rows.get(i);
+            String unitName = trimToNull(row.getUnitName());
+            BigDecimal actual = row.getSellPrice();
+            BigDecimal finalPrice;
+            if (actual != null && actual.signum() > 0) {
+                finalPrice = actual;
+            } else if (basePrice != null && basePrice.signum() > 0) {
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(ratios[i]));   // suggested price
+            } else {
+                finalPrice = null;
+            }
+            if (finalPrice == null || finalPrice.signum() <= 0) {
+                errors.add("Giá bán của '" + unitName + "' phải lớn hơn 0");
+                finalPrice = BigDecimal.ZERO;
+            }
+            resolved.add(new ResolvedUnit(unitName, ratios[i], finalPrice,
+                    row.isBaseUnit(), row.isDefaultUnit(), row.isActive()));
+        }
+
+        return resolved;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** A unit row resolved to its cumulative ratio and final price, ready to persist. */
+    private record ResolvedUnit(String name, long ratio, BigDecimal sellPrice,
+                                boolean baseUnit, boolean defaultUnit, boolean active) {
     }
 
     // --- helpers -------------------------------------------------------------

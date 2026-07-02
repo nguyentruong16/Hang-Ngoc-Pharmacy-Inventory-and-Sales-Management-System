@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo hàng hóa | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .product-page-content { padding-top: 96px !important; padding-bottom: 48px; }
+        .stock-card { border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+        .btn-stock-primary { background: #059669; border-color: #059669; color: #fff; border-radius: 12px; }
+        .btn-stock-primary:hover { background: #047857; border-color: #047857; color: #fff; }
+        .section-title { font-size: 15px; font-weight: 700; }
+        .info-label { font-size: 12px; color: #6b7280; }
+        .table thead th { font-size: 12px; color: #6b7280; background: #f9fafb; font-weight: 600; }
+        .table tbody td { font-size: 13px; vertical-align: middle; }
+        .cell-readonly { background: #f9fafb; }
+
+        /* Theme's Bootstrap --bs-primary is orange (#E66239); force green focus/checked to match
+           the app's main color (#059669) for inputs, selects and checkboxes on this screen. */
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 .2rem rgba(5, 150, 105, .18);
+        }
+        .form-check-input:checked {
+            background-color: #059669;
+            border-color: #059669;
+        }
+        .form-check-input:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 .2rem rgba(5, 150, 105, .18);
+        }
+
+        /* Custom ingredient autocomplete dropdown (theme-consistent, replaces native <datalist>). */
+        .ac-menu {
+            position: absolute;
+            z-index: 2000;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(16, 24, 40, .12);
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+        }
+        .ac-item { padding: 7px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+        .ac-item:hover, .ac-item.active { background: #d1fae5; color: #059669; }
+        .ac-empty { padding: 7px 12px; font-size: 12px; color: #9ca3af; }
+
+        @media (max-width: 991.98px) { .product-page-content { padding-top: 84px !important; } }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content product-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <a th:href="${basePath}" class="btn btn-sm btn-outline-secondary mb-2">
+                    <i class="ti ti-arrow-left me-1"></i> Quay lại danh sách
+                </a>
+                <h1 class="fs-4 mb-1">Tạo hàng hóa mới</h1>
+                <p class="text-secondary mb-0">Chỉ tạo hồ sơ sản phẩm. Tồn kho/lô hàng phát sinh khi nhập hàng.</p>
+            </div>
+        </div>
+
+        <div th:if="${errorMessages}" class="alert alert-danger">
+            <div class="fw-semibold mb-1">Vui lòng kiểm tra lại:</div>
+            <ul class="mb-0">
+                <li th:each="msg : ${errorMessages}" th:text="${msg}">Lỗi</li>
+            </ul>
+        </div>
+
+        <form th:action="@{/owner/products/create}" th:object="${form}" method="post" id="createForm">
+
+            <!-- 1. Thông tin cơ bản -->
+            <div class="stock-card p-4 mb-4">
+                <h2 class="section-title mb-3">Thông tin cơ bản</h2>
+                <div class="row g-3">
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Nhóm mặt hàng</label>
+                        <select class="form-select" th:field="*{itemGroup}" id="itemGroup">
+                            <option value="">-- Chọn nhóm --</option>
+                            <option th:each="g : ${typeGroups}" th:value="${g}" th:text="${#strings.capitalize(g)}"></option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Loại hàng (Type)</label>
+                        <select class="form-select" th:field="*{typeId}" id="typeSelect">
+                            <option value="">-- Chọn loại --</option>
+                            <option th:each="t : ${types}" th:value="${t.id}" th:text="${t.name}" th:attr="data-group=${t.sortType}"></option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="info-label">Tên hàng hóa <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{name}" placeholder="Tên sản phẩm">
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Mã hàng <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{code}" placeholder="VD: MED-001">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Barcode</label>
+                        <input type="text" class="form-control" th:field="*{barcode}" placeholder="Mã vạch (nếu có)">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Nhà sản xuất</label>
+                        <input type="text" class="form-control ac-field" data-field="producer" data-target="producerId"
+                               autocomplete="off" placeholder="Gõ để tìm nhà sản xuất...">
+                        <input type="hidden" th:field="*{producerId}">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Xuất xứ</label>
+                        <input type="text" class="form-control ac-field" data-field="origin" data-target="originId"
+                               autocomplete="off" placeholder="Gõ để tìm xuất xứ...">
+                        <input type="hidden" th:field="*{originId}">
+                    </div>
+
+                    <!-- Autocomplete sources for the Producer/Origin comboboxes (value = name, data-id = id). -->
+                    <datalist id="producerOptions">
+                        <option th:each="p : ${producers}" th:value="${p.name}" th:attr="data-id=${p.id}"></option>
+                    </datalist>
+                    <datalist id="originOptions">
+                        <option th:each="o : ${origins}" th:value="${o.name}" th:attr="data-id=${o.id}"></option>
+                    </datalist>
+
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Số đăng ký</label>
+                        <input type="text" class="form-control" th:field="*{registrationNumber}">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="info-label">Tồn tối thiểu</label>
+                        <input type="number" class="form-control" th:field="*{minStock}" min="0">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="info-label">Tồn tối đa</label>
+                        <input type="number" class="form-control" th:field="*{maxStock}" min="0">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="info-label">Trạng thái</label>
+                        <select class="form-select" th:field="*{status}">
+                            <option th:value="true">Đang kinh doanh</option>
+                            <option th:value="false">Ngừng kinh doanh</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="info-label">Ghi chú / Quy cách</label>
+                        <textarea class="form-control" th:field="*{note}" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Hoạt chất / thành phần (Thuốc & TPCN) -->
+            <div class="stock-card p-4 mb-4" id="ingredientSection">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="section-title mb-0">Hoạt chất / Thành phần</h2>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addIngredient()">
+                        <i class="ti ti-plus me-1"></i> Thêm hoạt chất
+                    </button>
+                </div>
+                <p class="text-secondary small" id="ingredientHint">Bắt buộc với Thuốc; tuỳ chọn với Thực phẩm chức năng; có thể bỏ trống với hàng hóa/thiết bị.</p>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr><th style="width:60%">Tên hoạt chất</th><th>Hàm lượng</th><th style="width:60px"></th></tr>
+                        </thead>
+                        <tbody id="ingredientRows">
+                        <tr th:each="ing,stat : *{ingredients}">
+                            <td><input type="text" class="form-control form-control-sm ac-field" data-field="apiName" autocomplete="off"
+                                       th:name="'ingredients[' + ${stat.index} + '].apiName'" th:value="${ing.apiName}" placeholder="Gõ để tìm hoạt chất đã có..."></td>
+                            <td><input type="text" class="form-control form-control-sm ac-field" data-field="strength" autocomplete="off"
+                                       th:name="'ingredients[' + ${stat.index} + '].strength'" th:value="${ing.strength}"></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'ingredientRows','ingredients')"><i class="ti ti-trash"></i></button></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Autocomplete sources: existing ingredient names/strengths (reuse instead of retyping). -->
+                <datalist id="apiNameOptions">
+                    <option th:each="n : ${ingredientNames}" th:value="${n}"></option>
+                </datalist>
+                <datalist id="strengthOptions">
+                    <option th:each="s : ${ingredientStrengths}" th:value="${s}"></option>
+                </datalist>
+            </div>
+
+            <!-- 3. Đơn vị quy đổi và giá bán -->
+            <div class="stock-card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h2 class="section-title mb-0">Đơn vị quy đổi và giá bán</h2>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addUnit()">
+                        <i class="ti ti-plus me-1"></i> Thêm đơn vị
+                    </button>
+                </div>
+                <p class="text-secondary small">Nhập từ đơn vị nhỏ nhất tới lớn nhất. Dòng đầu là đơn vị cơ bản (tỷ lệ = 1). Giá đề xuất = giá cơ bản × tỷ lệ; có thể sửa giá thực tế.</p>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Đơn vị</th>
+                            <th>SL so với ĐV trước</th>
+                            <th>ĐV trước</th>
+                            <th>Tỷ lệ quy đổi</th>
+                            <th>Giá đề xuất</th>
+                            <th>Giá bán thực tế</th>
+                            <th>Cơ bản</th>
+                            <th>Mặc định</th>
+                            <th>Active</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody id="unitRows">
+                        <tr th:each="u,stat : *{units}">
+                            <td><input type="text" class="form-control form-control-sm unit-name" data-field="unitName"
+                                       th:name="'units[' + ${stat.index} + '].unitName'" th:value="${u.unitName}" placeholder="VD: Viên"></td>
+                            <td><input type="number" min="1" step="1" class="form-control form-control-sm unit-qty" data-field="quantityRelativeToPrevious"
+                                       th:name="'units[' + ${stat.index} + '].quantityRelativeToPrevious'" th:value="${u.quantityRelativeToPrevious}"></td>
+                            <td class="cell-readonly unit-prev text-secondary small">—</td>
+                            <td class="cell-readonly unit-ratio fw-semibold">1</td>
+                            <td class="cell-readonly unit-suggested text-secondary">—</td>
+                            <td><input type="number" min="0" step="0.01" class="form-control form-control-sm unit-price" data-field="sellPrice"
+                                       th:name="'units[' + ${stat.index} + '].sellPrice'" th:value="${u.sellPrice}"></td>
+                            <td class="text-center"><input type="checkbox" class="form-check-input unit-base" value="true" data-field="baseUnit"
+                                       th:name="'units[' + ${stat.index} + '].baseUnit'" th:checked="${u.baseUnit}"></td>
+                            <td class="text-center"><input type="checkbox" class="form-check-input unit-default" value="true" data-field="defaultUnit"
+                                       th:name="'units[' + ${stat.index} + '].defaultUnit'" th:checked="${u.defaultUnit}"></td>
+                            <td class="text-center"><input type="checkbox" class="form-check-input unit-active" value="true" data-field="active"
+                                       th:name="'units[' + ${stat.index} + '].active'" th:checked="${u.active}"></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'unitRows','units'); recomputeUnits();"><i class="ti ti-trash"></i></button></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. Vị trí lưu kho -->
+            <div class="stock-card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="section-title mb-0">Vị trí lưu kho <span class="text-secondary small">(tuỳ chọn)</span></h2>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addPosition()">
+                        <i class="ti ti-plus me-1"></i> Thêm vị trí
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr><th style="width:40%">Chi nhánh</th><th>Vị trí (kệ/ngăn)</th><th style="width:60px"></th></tr>
+                        </thead>
+                        <tbody id="positionRows">
+                        <tr th:each="pos,stat : *{positions}">
+                            <td>
+                                <select class="form-select form-select-sm" data-field="branchId"
+                                        th:name="'positions[' + ${stat.index} + '].branchId'">
+                                    <option value="">-- Chọn chi nhánh --</option>
+                                    <option th:each="b : ${branches}" th:value="${b.id}" th:text="${b.name}"
+                                            th:selected="${pos.branchId != null and pos.branchId == b.id}"></option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="form-control form-control-sm" data-field="name"
+                                       th:name="'positions[' + ${stat.index} + '].name'" th:value="${pos.name}" placeholder="VD: Kệ A1"></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'positionRows','positions')"><i class="ti ti-trash"></i></button></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mb-5">
+                <a th:href="${basePath}" class="btn btn-outline-secondary">Hủy</a>
+                <button type="submit" class="btn btn-stock-primary"><i class="ti ti-device-floppy me-1"></i> Lưu hàng hóa</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<!-- Row templates for JS-added rows -->
+<template id="unitTemplate">
+    <tr>
+        <td><input type="text" class="form-control form-control-sm unit-name" data-field="unitName" placeholder="VD: Vỉ"></td>
+        <td><input type="number" min="1" step="1" class="form-control form-control-sm unit-qty" data-field="quantityRelativeToPrevious" value="1"></td>
+        <td class="cell-readonly unit-prev text-secondary small">—</td>
+        <td class="cell-readonly unit-ratio fw-semibold">1</td>
+        <td class="cell-readonly unit-suggested text-secondary">—</td>
+        <td><input type="number" min="0" step="0.01" class="form-control form-control-sm unit-price" data-field="sellPrice"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input unit-base" value="true" data-field="baseUnit"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input unit-default" value="true" data-field="defaultUnit"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input unit-active" value="true" data-field="active" checked></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'unitRows','units'); recomputeUnits();"><i class="ti ti-trash"></i></button></td>
+    </tr>
+</template>
+<template id="ingredientTemplate">
+    <tr>
+        <td><input type="text" class="form-control form-control-sm ac-field" data-field="apiName" autocomplete="off" placeholder="Gõ để tìm hoạt chất đã có..."></td>
+        <td><input type="text" class="form-control form-control-sm ac-field" data-field="strength" autocomplete="off"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'ingredientRows','ingredients')"><i class="ti ti-trash"></i></button></td>
+    </tr>
+</template>
+<template id="positionTemplate">
+    <tr>
+        <td>
+            <select class="form-select form-select-sm" data-field="branchId">
+                <option value="">-- Chọn chi nhánh --</option>
+                <option th:each="b : ${branches}" th:value="${b.id}" th:text="${b.name}"></option>
+            </select>
+        </td>
+        <td><input type="text" class="form-control form-control-sm" data-field="name" placeholder="VD: Kệ A1"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'positionRows','positions')"><i class="ti ti-trash"></i></button></td>
+    </tr>
+</template>
+
+<script th:inline="none">
+    function reindex(tbodyId, prefix) {
+        const rows = document.querySelectorAll('#' + tbodyId + ' > tr');
+        rows.forEach((tr, i) => {
+            tr.querySelectorAll('[data-field]').forEach(el => {
+                el.setAttribute('name', prefix + '[' + i + '].' + el.dataset.field);
+            });
+        });
+    }
+
+    function removeRow(btn, tbodyId, prefix) {
+        const tr = btn.closest('tr');
+        tr.parentNode.removeChild(tr);
+        reindex(tbodyId, prefix);
+    }
+
+    function addFromTemplate(templateId, tbodyId, prefix) {
+        const tpl = document.getElementById(templateId);
+        const clone = tpl.content.cloneNode(true);
+        document.getElementById(tbodyId).appendChild(clone);
+        reindex(tbodyId, prefix);
+    }
+
+    function addIngredient() { addFromTemplate('ingredientTemplate', 'ingredientRows', 'ingredients'); }
+    function addPosition() { addFromTemplate('positionTemplate', 'positionRows', 'positions'); }
+    function addUnit() {
+        addFromTemplate('unitTemplate', 'unitRows', 'units');
+        wireUnitEvents();
+        recomputeUnits();
+    }
+
+    // Base/Default behave like single-select radios across unit rows.
+    function enforceSingle(cls, changed) {
+        if (!changed.checked) return;
+        document.querySelectorAll('#unitRows .' + cls).forEach(cb => { if (cb !== changed) cb.checked = false; });
+    }
+
+    function recomputeUnits() {
+        const rows = document.querySelectorAll('#unitRows > tr');
+        let basePrice = 0;
+        rows.forEach((tr, i) => {
+            const qty = parseInt(tr.querySelector('.unit-qty')?.value, 10);
+            const prevCell = tr.querySelector('.unit-prev');
+            const ratioCell = tr.querySelector('.unit-ratio');
+            const suggestedCell = tr.querySelector('.unit-suggested');
+            let ratio;
+            if (i === 0) {
+                ratio = 1;
+                if (prevCell) prevCell.textContent = '—';
+                basePrice = parseFloat(tr.querySelector('.unit-price')?.value) || 0;
+            } else {
+                const prevRow = rows[i - 1];
+                const prevRatio = parseInt(prevRow.querySelector('.unit-ratio')?.textContent, 10) || 1;
+                ratio = (Number.isFinite(qty) && qty > 0) ? prevRatio * qty : prevRatio;
+                if (prevCell) prevCell.textContent = prevRow.querySelector('.unit-name')?.value || '—';
+            }
+            tr.dataset.ratio = ratio;
+            if (ratioCell) ratioCell.textContent = ratio;
+            if (suggestedCell) suggestedCell.textContent = basePrice > 0 ? (basePrice * ratio).toLocaleString('vi-VN') + 'đ' : '—';
+        });
+    }
+
+    function wireUnitEvents() {
+        document.querySelectorAll('#unitRows .unit-base').forEach(cb => cb.onchange = () => enforceSingle('unit-base', cb));
+        document.querySelectorAll('#unitRows .unit-default').forEach(cb => cb.onchange = () => enforceSingle('unit-default', cb));
+        document.querySelectorAll('#unitRows .unit-qty, #unitRows .unit-price, #unitRows .unit-name')
+            .forEach(el => el.oninput = recomputeUnits);
+    }
+
+    // "Nhóm mặt hàng" filters "Loại hàng" to the Types whose sortType matches the chosen group,
+    // so only a type belonging to that group can be picked.
+    function filterTypesByGroup() {
+        const group = document.getElementById('itemGroup')?.value || '';
+        const typeSelect = document.getElementById('typeSelect');
+        if (!typeSelect) return;
+        Array.from(typeSelect.options).forEach(opt => {
+            if (!opt.value) { opt.hidden = false; return; }   // keep the placeholder
+            opt.hidden = group !== '' && opt.dataset.group !== group;
+        });
+        const selected = typeSelect.selectedOptions[0];
+        if (selected && selected.value && group !== '' && selected.dataset.group !== group) {
+            typeSelect.value = '';   // reset a selection that no longer belongs to the group
+        }
+    }
+
+    // --- Custom autocomplete (theme-consistent). Sources are arrays of {label, id}.
+    //     Free-text fields (ingredients) have id = null; ID-backed comboboxes (producer/origin)
+    //     carry the real id and write it into a hidden target input on selection. ---
+    const AC = { apiName: [], strength: [], producer: [], origin: [] };
+    let acMenu = null, acInput = null, acItems = [], acIndex = -1;
+
+    function optionsToItems(selector) {
+        return Array.from(document.querySelectorAll(selector + ' option'))
+            .map(o => ({ label: o.value, id: o.dataset.id ? parseInt(o.dataset.id, 10) : null }))
+            .filter(x => x.label);
+    }
+
+    function initAcSources() {
+        AC.apiName = optionsToItems('#apiNameOptions');
+        AC.strength = optionsToItems('#strengthOptions');
+        AC.producer = optionsToItems('#producerOptions');
+        AC.origin = optionsToItems('#originOptions');
+
+        // On error re-render the hidden id is preserved; show its label in the visible input.
+        document.querySelectorAll('.ac-field[data-target]').forEach(input => {
+            const hidden = document.querySelector('[name="' + input.dataset.target + '"]');
+            if (hidden && hidden.value) {
+                const item = (AC[input.dataset.field] || []).find(x => String(x.id) === String(hidden.value));
+                if (item) input.value = item.label;
+            }
+        });
+    }
+
+    function ensureAcMenu() {
+        if (!acMenu) {
+            acMenu = document.createElement('div');
+            acMenu.className = 'ac-menu';
+            document.body.appendChild(acMenu);
+        }
+        return acMenu;
+    }
+
+    function acNorm(s) {
+        return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+    }
+
+    function hiddenTargetOf(input) {
+        return input.dataset.target ? document.querySelector('[name="' + input.dataset.target + '"]') : null;
+    }
+
+    function showAc(input) {
+        const source = AC[input.dataset.field] || [];
+        const q = acNorm(input.value);
+        const matches = source.filter(x => acNorm(x.label).includes(q)).slice(0, 8);
+        const menu = ensureAcMenu();
+        acInput = input; acItems = matches; acIndex = -1;
+        if (matches.length === 0) { hideAc(); return; }
+        menu.innerHTML = matches.map((x, i) => '<div class="ac-item" data-i="' + i + '"></div>').join('');
+        menu.querySelectorAll('.ac-item').forEach((el, i) => {
+            el.textContent = matches[i].label;
+            el.onmousedown = (e) => { e.preventDefault(); selectAc(i); };
+        });
+        const r = input.getBoundingClientRect();
+        menu.style.left = (window.scrollX + r.left) + 'px';
+        menu.style.top = (window.scrollY + r.bottom + 2) + 'px';
+        menu.style.minWidth = r.width + 'px';
+        menu.style.display = 'block';
+    }
+
+    function highlightAc() {
+        if (!acMenu) return;
+        acMenu.querySelectorAll('.ac-item').forEach((el, i) => el.classList.toggle('active', i === acIndex));
+    }
+
+    function selectAc(i) {
+        const item = acItems[i];
+        if (acInput && item) {
+            acInput.value = item.label;
+            const hidden = hiddenTargetOf(acInput);
+            if (hidden) hidden.value = item.id != null ? item.id : '';
+        }
+        hideAc();
+    }
+
+    function hideAc() {
+        if (acMenu) acMenu.style.display = 'none';
+        acInput = null; acItems = []; acIndex = -1;
+    }
+
+    // On blur of an ID-backed combobox: keep the id only if the text still matches a known label.
+    function reconcileTarget(input) {
+        const hidden = hiddenTargetOf(input);
+        if (!hidden) return;
+        const typed = acNorm(input.value);
+        if (!typed) { hidden.value = ''; input.value = ''; return; }
+        const item = (AC[input.dataset.field] || []).find(x => acNorm(x.label) === typed);
+        if (item) { hidden.value = item.id; input.value = item.label; }
+        else { hidden.value = ''; }   // typed something not in the list -> treated as "not selected"
+    }
+
+    document.addEventListener('input', e => {
+        if (!e.target.classList.contains('ac-field')) return;
+        const hidden = hiddenTargetOf(e.target);
+        if (hidden) hidden.value = '';   // clear stale id while typing; re-set on select/blur-match
+        showAc(e.target);
+    });
+    document.addEventListener('focusin', e => { if (e.target.classList.contains('ac-field')) showAc(e.target); });
+    document.addEventListener('focusout', e => {
+        if (!e.target.classList.contains('ac-field')) return;
+        reconcileTarget(e.target);
+        setTimeout(hideAc, 150);
+    });
+    document.addEventListener('keydown', e => {
+        if (!e.target.classList.contains('ac-field') || !acMenu || acMenu.style.display === 'none') return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); acIndex = Math.min(acIndex + 1, acItems.length - 1); highlightAc(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); acIndex = Math.max(acIndex - 1, 0); highlightAc(); }
+        else if (e.key === 'Enter' && acIndex >= 0) { e.preventDefault(); selectAc(acIndex); }
+        else if (e.key === 'Escape') { hideAc(); }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        wireUnitEvents();
+        recomputeUnits();
+        filterTypesByGroup();
+        initAcSources();
+        document.getElementById('itemGroup')?.addEventListener('change', filterTypesByGroup);
+        document.getElementById('createForm')?.addEventListener('submit', () => {
+            reindex('unitRows', 'units');
+            reindex('ingredientRows', 'ingredients');
+            reindex('positionRows', 'positions');
+        });
+    });
+</script>
+</body>
+</html>

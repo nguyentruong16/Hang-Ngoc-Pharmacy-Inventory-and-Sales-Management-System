@@ -29,4 +29,25 @@ public interface MedicineapiRepository extends JpaRepository<Medicineapi, Intege
            order by m.id asc
            """)
     List<Medicineapi> findByProductId(@Param("productId") Integer productId);
+
+    /**
+     * Distinct ingredient names already used across products, for the Create Product autocomplete
+     * (reuse existing names instead of retyping / risking inconsistent spelling).
+     */
+    @Query("""
+           select distinct m.apiName
+           from Medicineapi m
+           where m.apiName is not null and m.apiName <> ''
+           order by m.apiName asc
+           """)
+    List<String> findDistinctApiNames();
+
+    /** Distinct strengths already used, for the Create Product autocomplete. */
+    @Query("""
+           select distinct m.strength
+           from Medicineapi m
+           where m.strength is not null and m.strength <> ''
+           order by m.strength asc
+           """)
+    List<String> findDistinctStrengths();
 }
