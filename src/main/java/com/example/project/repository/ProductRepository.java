@@ -33,4 +33,10 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
        where p.productID = :productId
        """)
     Optional<Product> findDetailById(@Param("productId") Integer productId);
+
+    /** Product code is unique; used to reject duplicates when creating a product. */
+    boolean existsByCode(String code);
+
+    /** Barcode is unique when present; used to reject duplicates when creating a product. */
+    boolean existsByBarcode(String barcode);
 }

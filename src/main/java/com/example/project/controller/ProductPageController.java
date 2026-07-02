@@ -1,18 +1,25 @@
 package com.example.project.controller;
 
+import com.example.project.dto.request.ProductCreateRequest;
+import com.example.project.dto.request.ProductUnitCreateRequest;
 import com.example.project.dto.response.ProductDetailResponse;
 import com.example.project.dto.response.ProductRowResponse;
 import com.example.project.service.ProductService;
+import com.example.project.service.ProductValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -72,6 +79,63 @@ public class ProductPageController {
         model.addAttribute("basePath", resolveBasePath(request));
 
         return "product/list";
+    }
+
+    /**
+     * Create Product form — Owner only (the {@code /owner/**} security rule blocks other roles with
+     * 403). Mapped on the literal {@code /create} path, which Spring prefers over the
+     * {@code /{productId}} detail mapping.
+     */
+    @GetMapping("/owner/products/create")
+    public String createProductForm(Model model) {
+        model.addAttribute("form", newFormWithBaseUnit());
+        addCreateFormReferenceData(model);
+        return "product/create";
+    }
+
+    @PostMapping("/owner/products/create")
+    public String createProduct(@ModelAttribute("form") ProductCreateRequest form,
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            Integer newProductId = productService.createProduct(form);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã tạo hàng hóa mới");
+            return "redirect:/owner/products/" + newProductId;
+        } catch (ProductValidationException exception) {
+            model.addAttribute("errorMessages", exception.getErrors());
+            addCreateFormReferenceData(model);
+            return "product/create";
+        }
+    }
+
+    private ProductCreateRequest newFormWithBaseUnit() {
+        ProductCreateRequest form = new ProductCreateRequest();
+        form.setStatus(Boolean.TRUE);
+        ProductUnitCreateRequest baseUnit = new ProductUnitCreateRequest();
+        baseUnit.setBaseUnit(true);
+        baseUnit.setDefaultUnit(true);
+        baseUnit.setActive(true);
+        baseUnit.setQuantityRelativeToPrevious(1);
+        form.getUnits().add(baseUnit);
+        return form;
+    }
+
+    private void addCreateFormReferenceData(Model model) {
+        model.addAttribute("types", productService.listTypes());
+        model.addAttribute("producers", productService.listProducers());
+        model.addAttribute("origins", productService.listOrigins());
+        model.addAttribute("branches", productService.listBranches());
+        model.addAttribute("itemGroups", itemGroupLabels());
+        model.addAttribute("basePath", "/owner/products");
+    }
+
+    private Map<String, String> itemGroupLabels() {
+        Map<String, String> groups = new LinkedHashMap<>();
+        groups.put("MEDICINE", "Thuốc");
+        groups.put("GOODS", "Hàng hóa thông thường");
+        groups.put("DEVICE", "Dụng cụ / Thiết bị y tế");
+        groups.put("SUPPLEMENT", "Thực phẩm chức năng");
+        return groups;
     }
 
     @GetMapping({
