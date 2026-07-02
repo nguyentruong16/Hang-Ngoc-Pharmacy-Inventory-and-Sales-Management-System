@@ -4,6 +4,7 @@ import com.example.project.dto.request.ProductCreateRequest;
 import com.example.project.dto.request.ProductUnitCreateRequest;
 import com.example.project.dto.response.ProductDetailResponse;
 import com.example.project.dto.response.ProductRowResponse;
+import com.example.project.entity.Type;
 import com.example.project.service.ProductService;
 import com.example.project.service.ProductValidationException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,8 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -121,21 +121,21 @@ public class ProductPageController {
     }
 
     private void addCreateFormReferenceData(Model model) {
-        model.addAttribute("types", productService.listTypes());
+        List<Type> types = productService.listTypes();
+        model.addAttribute("types", types);
+        // "Nhóm mặt hàng" is derived from the distinct Type.sortType values; the Type dropdown is
+        // then filtered client-side to the selected group so the two boxes stay consistent.
+        model.addAttribute("typeGroups", types.stream()
+                .map(Type::getSortType)
+                .filter(sortType -> sortType != null && !sortType.isBlank())
+                .distinct()
+                .toList());
         model.addAttribute("producers", productService.listProducers());
         model.addAttribute("origins", productService.listOrigins());
         model.addAttribute("branches", productService.listBranches());
-        model.addAttribute("itemGroups", itemGroupLabels());
+        model.addAttribute("ingredientNames", productService.listIngredientNames());
+        model.addAttribute("ingredientStrengths", productService.listIngredientStrengths());
         model.addAttribute("basePath", "/owner/products");
-    }
-
-    private Map<String, String> itemGroupLabels() {
-        Map<String, String> groups = new LinkedHashMap<>();
-        groups.put("MEDICINE", "Thuốc");
-        groups.put("GOODS", "Hàng hóa thông thường");
-        groups.put("DEVICE", "Dụng cụ / Thiết bị y tế");
-        groups.put("SUPPLEMENT", "Thực phẩm chức năng");
-        return groups;
     }
 
     @GetMapping({

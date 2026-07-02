@@ -19,6 +19,39 @@
         .table thead th { font-size: 12px; color: #6b7280; background: #f9fafb; font-weight: 600; }
         .table tbody td { font-size: 13px; vertical-align: middle; }
         .cell-readonly { background: #f9fafb; }
+
+        /* Theme's Bootstrap --bs-primary is orange (#E66239); force green focus/checked to match
+           the app's main color (#059669) for inputs, selects and checkboxes on this screen. */
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 .2rem rgba(5, 150, 105, .18);
+        }
+        .form-check-input:checked {
+            background-color: #059669;
+            border-color: #059669;
+        }
+        .form-check-input:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 .2rem rgba(5, 150, 105, .18);
+        }
+
+        /* Custom ingredient autocomplete dropdown (theme-consistent, replaces native <datalist>). */
+        .ac-menu {
+            position: absolute;
+            z-index: 2000;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(16, 24, 40, .12);
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+        }
+        .ac-item { padding: 7px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+        .ac-item:hover, .ac-item.active { background: #d1fae5; color: #059669; }
+        .ac-empty { padding: 7px 12px; font-size: 12px; color: #9ca3af; }
+
         @media (max-width: 991.98px) { .product-page-content { padding-top: 84px !important; } }
     </style>
 </head>
@@ -56,14 +89,15 @@
                     <div class="col-12 col-md-3">
                         <label class="info-label">Nhóm mặt hàng</label>
                         <select class="form-select" th:field="*{itemGroup}" id="itemGroup">
-                            <option th:each="g : ${itemGroups}" th:value="${g.key}" th:text="${g.value}"></option>
+                            <option value="">-- Chọn nhóm --</option>
+                            <option th:each="g : ${typeGroups}" th:value="${g}" th:text="${#strings.capitalize(g)}"></option>
                         </select>
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="info-label">Loại hàng (Type)</label>
-                        <select class="form-select" th:field="*{typeId}">
+                        <select class="form-select" th:field="*{typeId}" id="typeSelect">
                             <option value="">-- Chọn loại --</option>
-                            <option th:each="t : ${types}" th:value="${t.id}" th:text="${t.name}"></option>
+                            <option th:each="t : ${types}" th:value="${t.id}" th:text="${t.name}" th:attr="data-group=${t.sortType}"></option>
                         </select>
                     </div>
                     <div class="col-12 col-md-6">
@@ -81,18 +115,24 @@
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="info-label">Nhà sản xuất</label>
-                        <select class="form-select" th:field="*{producerId}">
-                            <option value="">-- Chọn NSX --</option>
-                            <option th:each="p : ${producers}" th:value="${p.id}" th:text="${p.name}"></option>
-                        </select>
+                        <input type="text" class="form-control ac-field" data-field="producer" data-target="producerId"
+                               autocomplete="off" placeholder="Gõ để tìm nhà sản xuất...">
+                        <input type="hidden" th:field="*{producerId}">
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="info-label">Xuất xứ</label>
-                        <select class="form-select" th:field="*{originId}">
-                            <option value="">-- Chọn xuất xứ --</option>
-                            <option th:each="o : ${origins}" th:value="${o.id}" th:text="${o.name}"></option>
-                        </select>
+                        <input type="text" class="form-control ac-field" data-field="origin" data-target="originId"
+                               autocomplete="off" placeholder="Gõ để tìm xuất xứ...">
+                        <input type="hidden" th:field="*{originId}">
                     </div>
+
+                    <!-- Autocomplete sources for the Producer/Origin comboboxes (value = name, data-id = id). -->
+                    <datalist id="producerOptions">
+                        <option th:each="p : ${producers}" th:value="${p.name}" th:attr="data-id=${p.id}"></option>
+                    </datalist>
+                    <datalist id="originOptions">
+                        <option th:each="o : ${origins}" th:value="${o.name}" th:attr="data-id=${o.id}"></option>
+                    </datalist>
 
                     <div class="col-12 col-md-3">
                         <label class="info-label">Số đăng ký</label>
@@ -136,15 +176,23 @@
                         </thead>
                         <tbody id="ingredientRows">
                         <tr th:each="ing,stat : *{ingredients}">
-                            <td><input type="text" class="form-control form-control-sm" data-field="apiName"
-                                       th:name="'ingredients[' + ${stat.index} + '].apiName'" th:value="${ing.apiName}"></td>
-                            <td><input type="text" class="form-control form-control-sm" data-field="strength"
+                            <td><input type="text" class="form-control form-control-sm ac-field" data-field="apiName" autocomplete="off"
+                                       th:name="'ingredients[' + ${stat.index} + '].apiName'" th:value="${ing.apiName}" placeholder="Gõ để tìm hoạt chất đã có..."></td>
+                            <td><input type="text" class="form-control form-control-sm ac-field" data-field="strength" autocomplete="off"
                                        th:name="'ingredients[' + ${stat.index} + '].strength'" th:value="${ing.strength}"></td>
                             <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'ingredientRows','ingredients')"><i class="ti ti-trash"></i></button></td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Autocomplete sources: existing ingredient names/strengths (reuse instead of retyping). -->
+                <datalist id="apiNameOptions">
+                    <option th:each="n : ${ingredientNames}" th:value="${n}"></option>
+                </datalist>
+                <datalist id="strengthOptions">
+                    <option th:each="s : ${ingredientStrengths}" th:value="${s}"></option>
+                </datalist>
             </div>
 
             <!-- 3. Đơn vị quy đổi và giá bán -->
@@ -253,8 +301,8 @@
 </template>
 <template id="ingredientTemplate">
     <tr>
-        <td><input type="text" class="form-control form-control-sm" data-field="apiName"></td>
-        <td><input type="text" class="form-control form-control-sm" data-field="strength"></td>
+        <td><input type="text" class="form-control form-control-sm ac-field" data-field="apiName" autocomplete="off" placeholder="Gõ để tìm hoạt chất đã có..."></td>
+        <td><input type="text" class="form-control form-control-sm ac-field" data-field="strength" autocomplete="off"></td>
         <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'ingredientRows','ingredients')"><i class="ti ti-trash"></i></button></td>
     </tr>
 </template>
@@ -340,19 +388,144 @@
             .forEach(el => el.oninput = recomputeUnits);
     }
 
-    // Item-group drives the ingredient section hint (Thuốc/TPCN emphasise ingredients).
-    function applyItemGroup() {
-        const group = document.getElementById('itemGroup')?.value;
-        const section = document.getElementById('ingredientSection');
-        const emphasise = (group === 'MEDICINE' || group === 'SUPPLEMENT');
-        if (section) section.style.opacity = emphasise ? '1' : '0.85';
+    // "Nhóm mặt hàng" filters "Loại hàng" to the Types whose sortType matches the chosen group,
+    // so only a type belonging to that group can be picked.
+    function filterTypesByGroup() {
+        const group = document.getElementById('itemGroup')?.value || '';
+        const typeSelect = document.getElementById('typeSelect');
+        if (!typeSelect) return;
+        Array.from(typeSelect.options).forEach(opt => {
+            if (!opt.value) { opt.hidden = false; return; }   // keep the placeholder
+            opt.hidden = group !== '' && opt.dataset.group !== group;
+        });
+        const selected = typeSelect.selectedOptions[0];
+        if (selected && selected.value && group !== '' && selected.dataset.group !== group) {
+            typeSelect.value = '';   // reset a selection that no longer belongs to the group
+        }
     }
+
+    // --- Custom autocomplete (theme-consistent). Sources are arrays of {label, id}.
+    //     Free-text fields (ingredients) have id = null; ID-backed comboboxes (producer/origin)
+    //     carry the real id and write it into a hidden target input on selection. ---
+    const AC = { apiName: [], strength: [], producer: [], origin: [] };
+    let acMenu = null, acInput = null, acItems = [], acIndex = -1;
+
+    function optionsToItems(selector) {
+        return Array.from(document.querySelectorAll(selector + ' option'))
+            .map(o => ({ label: o.value, id: o.dataset.id ? parseInt(o.dataset.id, 10) : null }))
+            .filter(x => x.label);
+    }
+
+    function initAcSources() {
+        AC.apiName = optionsToItems('#apiNameOptions');
+        AC.strength = optionsToItems('#strengthOptions');
+        AC.producer = optionsToItems('#producerOptions');
+        AC.origin = optionsToItems('#originOptions');
+
+        // On error re-render the hidden id is preserved; show its label in the visible input.
+        document.querySelectorAll('.ac-field[data-target]').forEach(input => {
+            const hidden = document.querySelector('[name="' + input.dataset.target + '"]');
+            if (hidden && hidden.value) {
+                const item = (AC[input.dataset.field] || []).find(x => String(x.id) === String(hidden.value));
+                if (item) input.value = item.label;
+            }
+        });
+    }
+
+    function ensureAcMenu() {
+        if (!acMenu) {
+            acMenu = document.createElement('div');
+            acMenu.className = 'ac-menu';
+            document.body.appendChild(acMenu);
+        }
+        return acMenu;
+    }
+
+    function acNorm(s) {
+        return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+    }
+
+    function hiddenTargetOf(input) {
+        return input.dataset.target ? document.querySelector('[name="' + input.dataset.target + '"]') : null;
+    }
+
+    function showAc(input) {
+        const source = AC[input.dataset.field] || [];
+        const q = acNorm(input.value);
+        const matches = source.filter(x => acNorm(x.label).includes(q)).slice(0, 8);
+        const menu = ensureAcMenu();
+        acInput = input; acItems = matches; acIndex = -1;
+        if (matches.length === 0) { hideAc(); return; }
+        menu.innerHTML = matches.map((x, i) => '<div class="ac-item" data-i="' + i + '"></div>').join('');
+        menu.querySelectorAll('.ac-item').forEach((el, i) => {
+            el.textContent = matches[i].label;
+            el.onmousedown = (e) => { e.preventDefault(); selectAc(i); };
+        });
+        const r = input.getBoundingClientRect();
+        menu.style.left = (window.scrollX + r.left) + 'px';
+        menu.style.top = (window.scrollY + r.bottom + 2) + 'px';
+        menu.style.minWidth = r.width + 'px';
+        menu.style.display = 'block';
+    }
+
+    function highlightAc() {
+        if (!acMenu) return;
+        acMenu.querySelectorAll('.ac-item').forEach((el, i) => el.classList.toggle('active', i === acIndex));
+    }
+
+    function selectAc(i) {
+        const item = acItems[i];
+        if (acInput && item) {
+            acInput.value = item.label;
+            const hidden = hiddenTargetOf(acInput);
+            if (hidden) hidden.value = item.id != null ? item.id : '';
+        }
+        hideAc();
+    }
+
+    function hideAc() {
+        if (acMenu) acMenu.style.display = 'none';
+        acInput = null; acItems = []; acIndex = -1;
+    }
+
+    // On blur of an ID-backed combobox: keep the id only if the text still matches a known label.
+    function reconcileTarget(input) {
+        const hidden = hiddenTargetOf(input);
+        if (!hidden) return;
+        const typed = acNorm(input.value);
+        if (!typed) { hidden.value = ''; input.value = ''; return; }
+        const item = (AC[input.dataset.field] || []).find(x => acNorm(x.label) === typed);
+        if (item) { hidden.value = item.id; input.value = item.label; }
+        else { hidden.value = ''; }   // typed something not in the list -> treated as "not selected"
+    }
+
+    document.addEventListener('input', e => {
+        if (!e.target.classList.contains('ac-field')) return;
+        const hidden = hiddenTargetOf(e.target);
+        if (hidden) hidden.value = '';   // clear stale id while typing; re-set on select/blur-match
+        showAc(e.target);
+    });
+    document.addEventListener('focusin', e => { if (e.target.classList.contains('ac-field')) showAc(e.target); });
+    document.addEventListener('focusout', e => {
+        if (!e.target.classList.contains('ac-field')) return;
+        reconcileTarget(e.target);
+        setTimeout(hideAc, 150);
+    });
+    document.addEventListener('keydown', e => {
+        if (!e.target.classList.contains('ac-field') || !acMenu || acMenu.style.display === 'none') return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); acIndex = Math.min(acIndex + 1, acItems.length - 1); highlightAc(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); acIndex = Math.max(acIndex - 1, 0); highlightAc(); }
+        else if (e.key === 'Enter' && acIndex >= 0) { e.preventDefault(); selectAc(acIndex); }
+        else if (e.key === 'Escape') { hideAc(); }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         wireUnitEvents();
         recomputeUnits();
-        applyItemGroup();
-        document.getElementById('itemGroup')?.addEventListener('change', applyItemGroup);
+        filterTypesByGroup();
+        initAcSources();
+        document.getElementById('itemGroup')?.addEventListener('change', filterTypesByGroup);
         document.getElementById('createForm')?.addEventListener('submit', () => {
             reindex('unitRows', 'units');
             reindex('ingredientRows', 'ingredients');

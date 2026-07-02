@@ -96,6 +96,13 @@
             color: #fff;
         }
 
+        /* Theme's --bs-primary is orange; force green focus to match the app's main color. */
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 .2rem rgba(5, 150, 105, .18);
+        }
+
         @media (max-width: 991.98px) {
             .product-page-content {
                 padding-top: 84px !important;

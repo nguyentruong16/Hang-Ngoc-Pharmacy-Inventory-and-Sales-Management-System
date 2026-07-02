@@ -297,6 +297,18 @@ public class ProductService {
         return branchRepository.findAllWithStatus();
     }
 
+    /** Existing ingredient names, for the Create Product autocomplete (reuse instead of retyping). */
+    @Transactional(readOnly = true)
+    public List<String> listIngredientNames() {
+        return medicineapiRepository.findDistinctApiNames();
+    }
+
+    /** Existing ingredient strengths, for the Create Product autocomplete. */
+    @Transactional(readOnly = true)
+    public List<String> listIngredientStrengths() {
+        return medicineapiRepository.findDistinctStrengths();
+    }
+
     // --- Create Product ------------------------------------------------------
 
     /**
