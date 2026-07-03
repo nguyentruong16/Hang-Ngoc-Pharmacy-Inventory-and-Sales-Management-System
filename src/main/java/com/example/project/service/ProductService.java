@@ -309,6 +309,30 @@ public class ProductService {
         return medicineapiRepository.findDistinctStrengths();
     }
 
+    /** Preview of the next auto-generated internal product code, shown read-only on the create form. */
+    @Transactional(readOnly = true)
+    public String previewNextProductCode() {
+        return formatProductCode(productRepository.findMaxProductCodeSequence() + 1);
+    }
+
+    /**
+     * Next free internal product code: "SP" + the highest existing sequence + 1, skipping any code
+     * already taken (defensive against gaps/races; the unique constraint is the final backstop).
+     */
+    private String generateNextProductCode() {
+        long seq = productRepository.findMaxProductCodeSequence();
+        String code;
+        do {
+            seq++;
+            code = formatProductCode(seq);
+        } while (productRepository.existsByCode(code));
+        return code;
+    }
+
+    private String formatProductCode(long sequence) {
+        return "SP" + String.format("%06d", sequence);
+    }
+
     // --- Create Product ------------------------------------------------------
 
     /**
@@ -325,17 +349,12 @@ public class ProductService {
         List<String> errors = new ArrayList<>();
 
         String name = trimToNull(request.getName());
-        String code = trimToNull(request.getCode());
         String barcode = trimToNull(request.getBarcode());
 
         if (name == null) {
             errors.add("Tên hàng hóa không được để trống");
         }
-        if (code == null) {
-            errors.add("Mã hàng không được để trống");
-        } else if (productRepository.existsByCode(code)) {
-            errors.add("Mã hàng '" + code + "' đã tồn tại");
-        }
+        // Mã hàng is an internal code — auto-generated ("SP" + sequence), not entered by the user.
         if (barcode != null && productRepository.existsByBarcode(barcode)) {
             errors.add("Barcode '" + barcode + "' đã tồn tại");
         }
@@ -361,7 +380,7 @@ public class ProductService {
 
         Product product = new Product();
         product.setName(name);
-        product.setCode(code);
+        product.setCode(generateNextProductCode());
         product.setBarcode(barcode);
         product.setRegistrationNumber(trimToNull(request.getRegistrationNumber()));
         product.setMinStock(request.getMinStock());

@@ -135,6 +135,7 @@ public class ProductPageController {
         model.addAttribute("branches", productService.listBranches());
         model.addAttribute("ingredientNames", productService.listIngredientNames());
         model.addAttribute("ingredientStrengths", productService.listIngredientStrengths());
+        model.addAttribute("nextCode", productService.previewNextProductCode());
         model.addAttribute("basePath", "/owner/products");
     }
 
