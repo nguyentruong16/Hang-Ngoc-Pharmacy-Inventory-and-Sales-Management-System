@@ -106,8 +106,9 @@
                     </div>
 
                     <div class="col-12 col-md-3">
-                        <label class="info-label">Mã hàng <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" th:field="*{code}" placeholder="VD: MED-001">
+                        <label class="info-label">Mã hàng</label>
+                        <input type="text" class="form-control bg-light" th:value="${nextCode}" placeholder="Tự động" readonly>
+                        <div class="form-text">Tự động tạo (SP + số thứ tự)</div>
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="info-label">Barcode</label>
@@ -238,38 +239,6 @@
                             <td class="text-center"><input type="checkbox" class="form-check-input unit-active" value="true" data-field="active"
                                        th:name="'units[' + ${stat.index} + '].active'" th:checked="${u.active}"></td>
                             <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'unitRows','units'); recomputeUnits();"><i class="ti ti-trash"></i></button></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 4. Vị trí lưu kho -->
-            <div class="stock-card p-4 mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h2 class="section-title mb-0">Vị trí lưu kho <span class="text-secondary small">(tuỳ chọn)</span></h2>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addPosition()">
-                        <i class="ti ti-plus me-1"></i> Thêm vị trí
-                    </button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead>
-                        <tr><th style="width:40%">Chi nhánh</th><th>Vị trí (kệ/ngăn)</th><th style="width:60px"></th></tr>
-                        </thead>
-                        <tbody id="positionRows">
-                        <tr th:each="pos,stat : *{positions}">
-                            <td>
-                                <select class="form-select form-select-sm" data-field="branchId"
-                                        th:name="'positions[' + ${stat.index} + '].branchId'">
-                                    <option value="">-- Chọn chi nhánh --</option>
-                                    <option th:each="b : ${branches}" th:value="${b.id}" th:text="${b.name}"
-                                            th:selected="${pos.branchId != null and pos.branchId == b.id}"></option>
-                                </select>
-                            </td>
-                            <td><input type="text" class="form-control form-control-sm" data-field="name"
-                                       th:name="'positions[' + ${stat.index} + '].name'" th:value="${pos.name}" placeholder="VD: Kệ A1"></td>
-                            <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'positionRows','positions')"><i class="ti ti-trash"></i></button></td>
                         </tr>
                         </tbody>
                     </table>

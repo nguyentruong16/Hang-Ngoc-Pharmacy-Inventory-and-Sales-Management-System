@@ -39,4 +39,12 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     /** Barcode is unique when present; used to reject duplicates when creating a product. */
     boolean existsByBarcode(String barcode);
+
+    /**
+     * Highest numeric suffix among internal codes of the form {@code SP<digits>} (0 if none).
+     * Used to auto-generate the next internal product code. MySQL-specific (REGEXP + CAST).
+     */
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(code, 3) AS UNSIGNED)), 0) "
+            + "FROM product WHERE code REGEXP '^SP[0-9]+$'", nativeQuery = true)
+    long findMaxProductCodeSequence();
 }
