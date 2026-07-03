@@ -76,8 +76,13 @@ public class SidebarMenuService {
         if (uri.startsWith("/owner/branch-list/branch-detail")) {
             uri = "/owner/branch-list";
         }
-        if (uri.startsWith("/owner/producers/create-producer")) {
+        if (uri.startsWith("/owner/producers/create-producer")
+                || uri.startsWith("/owner/producers/update-producer")) {
             uri = "/owner/producers";
+        }
+        if (uri.startsWith("/owner/types/create-type")
+                || uri.startsWith("/owner/types/update-type")) {
+            uri = "/owner/types";
         }
         String best = null;
         for (SidebarMenuGroup group : menu) {

@@ -13,6 +13,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -82,6 +83,38 @@ public class ProducerController {
 
         producerService.create(form);
         redirectAttributes.addFlashAttribute("success", "Tạo nhà sản xuất thành công");
+        return "redirect:/owner/producers";
+    }
+
+    @GetMapping("/owner/producers/update-producer/{id}")
+    public String updateProducerForm(@PathVariable Integer id, Model model) {
+        ProducerResponse producer = producerService.getById(id);
+        model.addAttribute("producer", producer);
+
+        if (!model.containsAttribute("producerForm")) {
+            ProducerCreateRequest form = new ProducerCreateRequest();
+            form.setName(producer.getName());
+            model.addAttribute("producerForm", form);
+        }
+
+        model.addAttribute("pageTitle", "Cập nhật nhà sản xuất");
+        return "owner/update-producer";
+    }
+
+    @PostMapping("/owner/producers/update-producer/{id}")
+    public String updateProducer(@PathVariable Integer id,
+                                 @Valid @ModelAttribute("producerForm") ProducerCreateRequest form,
+                                 BindingResult bindingResult,
+                                 Model model,
+                                 RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("producer", producerService.getById(id));
+            model.addAttribute("pageTitle", "Cập nhật nhà sản xuất");
+            return "owner/update-producer";
+        }
+
+        producerService.update(id, form);
+        redirectAttributes.addFlashAttribute("success", "Cập nhật nhà sản xuất thành công");
         return "redirect:/owner/producers";
     }
 }

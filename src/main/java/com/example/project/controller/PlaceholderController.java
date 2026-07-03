@@ -31,7 +31,6 @@ public class PlaceholderController {
 
     @GetMapping({
             "/owner/dashboard",
-            "/owner/types",
             "/owner/suppliers",
             "/owner/debts",
             "/owner/vat-invoices",
