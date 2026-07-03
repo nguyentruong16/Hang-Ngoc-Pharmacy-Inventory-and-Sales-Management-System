@@ -92,6 +92,10 @@ public class SidebarMenuService {
                 || uri.startsWith("/chief-pharmacist/types/update-type")) {
             uri = "/chief-pharmacist/types";
         }
+        if (uri.startsWith("/chief-pharmacist/positions/create-position")
+                || uri.startsWith("/chief-pharmacist/positions/update-position")) {
+            uri = "/chief-pharmacist/positions";
+        }
         String best = null;
         for (SidebarMenuGroup group : menu) {
             for (SidebarMenuItem item : group.getItems()) {

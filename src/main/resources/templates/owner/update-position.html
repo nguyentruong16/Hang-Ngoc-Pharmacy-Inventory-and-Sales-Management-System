@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>Cập nhật vị trí | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+    <style>
+        .owner-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        @media (max-width: 991.98px) {
+            .owner-page-content {
+                padding-top: 84px !important;
+            }
+        }
+
+        .owner-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .btn-owner-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .btn-owner-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            min-height: 42px;
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content owner-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Cập nhật vị trí</h1>
+                <p class="text-secondary mb-0">
+                    Mã vị trí:
+                    <span class="fw-semibold" th:text="|VT-${#numbers.formatInteger(position.id, 5)}|">VT-000001</span>
+                </p>
+            </div>
+
+            <a th:href="${basePath}" class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+
+        <div class="owner-card p-4">
+            <form th:action="${basePath + '/update-position/' + position.id}"
+                  th:object="${positionForm}"
+                  method="post"
+                  novalidate>
+                <div class="row g-4">
+                    <div class="col-12 col-lg-8">
+                        <h2 class="fs-6 mb-3">Thông tin vị trí</h2>
+
+                        <div class="mb-3">
+                            <label for="productId" class="form-label">Sản phẩm <span class="text-danger">*</span></label>
+                            <select id="productId"
+                                    class="form-select"
+                                    th:field="*{productId}">
+                                <option value="">-- Chọn sản phẩm --</option>
+                                <option th:each="product : ${products}"
+                                        th:value="${product.productID}"
+                                        th:text="|${product.code} - ${product.name}|">
+                                    SP001 - Paracetamol 500mg
+                                </option>
+                            </select>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('productId')}" th:errors="*{productId}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="branchId" class="form-label">Chi nhánh</label>
+                            <select id="branchId"
+                                    class="form-select"
+                                    th:field="*{branchId}">
+                                <option value="">-- Chọn chi nhánh --</option>
+                                <option th:each="branch : ${branches}"
+                                        th:value="${branch.id}"
+                                        th:text="${branch.name}">
+                                    Chi nhánh 1
+                                </option>
+                            </select>
+                            <div class="form-text">Có thể để trống nếu vị trí áp dụng chung.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="positionName" class="form-label">Tên vị trí <span class="text-danger">*</span></label>
+                            <input id="positionName"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{name}"
+                                   placeholder="VD: Kệ A1, Tủ B2">
+                            <div class="form-text">Ví dụ: Kệ A1, Tủ thuốc kê đơn, Ngăn C3</div>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <h2 class="fs-6 mb-3">Thao tác</h2>
+
+                        <p class="text-secondary small mb-4">
+                            Kiểm tra kỹ thông tin trước khi cập nhật vị trí.
+                        </p>
+
+                        <button type="submit" class="btn btn-owner-primary w-100 mb-2">
+                            Cập nhật vị trí
+                        </button>
+
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
+                            Hủy
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+</body>
+</html>
