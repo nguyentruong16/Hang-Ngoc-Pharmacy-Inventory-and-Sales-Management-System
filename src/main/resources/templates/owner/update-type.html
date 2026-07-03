@@ -70,13 +70,13 @@
                 </p>
             </div>
 
-            <a th:href="@{/owner/types}" class="btn btn-outline-secondary">
+            <a th:href="${basePath}" class="btn btn-outline-secondary">
                 Quay lại danh sách
             </a>
         </div>
 
         <div class="owner-card p-4">
-            <form th:action="@{/owner/types/update-type/{id}(id=${type.id})}"
+            <form th:action="${basePath + '/update-type/' + type.id}"
                   th:object="${typeForm}"
                   method="post"
                   novalidate>
@@ -121,7 +121,7 @@
                             Cập nhật loại hàng
                         </button>
 
-                        <a th:href="@{/owner/types}" class="btn btn-outline-secondary w-100">
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
                             Hủy
                         </a>
                     </div>

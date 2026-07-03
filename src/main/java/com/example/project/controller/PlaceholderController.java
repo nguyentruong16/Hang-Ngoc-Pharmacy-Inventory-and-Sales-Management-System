@@ -48,8 +48,6 @@ public class PlaceholderController {
             "/chief-pharmacist/selling",
             "/chief-pharmacist/positions",
             "/chief-pharmacist/origins",
-            "/chief-pharmacist/types",
-            "/chief-pharmacist/producers",
             "/chief-pharmacist/suppliers",
             "/chief-pharmacist/procurements",
             "/chief-pharmacist/purchase-requisitions",

@@ -84,6 +84,14 @@ public class SidebarMenuService {
                 || uri.startsWith("/owner/types/update-type")) {
             uri = "/owner/types";
         }
+        if (uri.startsWith("/chief-pharmacist/producers/create-producer")
+                || uri.startsWith("/chief-pharmacist/producers/update-producer")) {
+            uri = "/chief-pharmacist/producers";
+        }
+        if (uri.startsWith("/chief-pharmacist/types/create-type")
+                || uri.startsWith("/chief-pharmacist/types/update-type")) {
+            uri = "/chief-pharmacist/types";
+        }
         String best = null;
         for (SidebarMenuGroup group : menu) {
             for (SidebarMenuItem item : group.getItems()) {

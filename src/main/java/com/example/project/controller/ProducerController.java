@@ -3,6 +3,7 @@ package com.example.project.controller;
 import com.example.project.dto.request.ProducerCreateRequest;
 import com.example.project.dto.response.ProducerResponse;
 import com.example.project.service.ProducerService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,10 +36,14 @@ public class ProducerController {
         return producerService.getAll();
     }
 
-    @GetMapping("/owner/producers")
+    @GetMapping({
+            "/owner/producers",
+            "/chief-pharmacist/producers"
+    })
     public String producerList(@RequestParam(name = "search", required = false) String search,
                                @RequestParam(name = "page", defaultValue = "0") int page,
                                @RequestParam(name = "size", defaultValue = "5") int size,
+                               HttpServletRequest request,
                                Model model) {
         if (page < 0) {
             page = 0;
@@ -50,6 +55,7 @@ public class ProducerController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
         Page<ProducerResponse> producerPage = producerService.list(search, pageable);
+        String basePath = resolveBasePath(request);
 
         model.addAttribute("producers", producerPage.getContent());
         model.addAttribute("totalProducers", producerService.countAll());
@@ -59,35 +65,51 @@ public class ProducerController {
         model.addAttribute("pageSize", size);
         model.addAttribute("totalItems", producerPage.getTotalElements());
         model.addAttribute("pageTitle", "Danh sách nhà sản xuất");
+        model.addAttribute("basePath", basePath);
         return "owner/producer-list";
     }
 
-    @GetMapping("/owner/producers/create-producer")
-    public String createProducerForm(Model model) {
+    @GetMapping({
+            "/owner/producers/create-producer",
+            "/chief-pharmacist/producers/create-producer"
+    })
+    public String createProducerForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("producerForm")) {
             model.addAttribute("producerForm", new ProducerCreateRequest());
         }
         model.addAttribute("pageTitle", "Tạo nhà sản xuất");
+        model.addAttribute("basePath", resolveBasePath(request));
         return "owner/create-producer";
     }
 
-    @PostMapping("/owner/producers/create-producer")
+    @PostMapping({
+            "/owner/producers/create-producer",
+            "/chief-pharmacist/producers/create-producer"
+    })
     public String createProducer(@Valid @ModelAttribute("producerForm") ProducerCreateRequest form,
                                  BindingResult bindingResult,
+                                 HttpServletRequest request,
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", "Tạo nhà sản xuất");
+            model.addAttribute("basePath", basePath);
             return "owner/create-producer";
         }
 
         producerService.create(form);
         redirectAttributes.addFlashAttribute("success", "Tạo nhà sản xuất thành công");
-        return "redirect:/owner/producers";
+        return "redirect:" + basePath;
     }
 
-    @GetMapping("/owner/producers/update-producer/{id}")
-    public String updateProducerForm(@PathVariable Integer id, Model model) {
+    @GetMapping({
+            "/owner/producers/update-producer/{id}",
+            "/chief-pharmacist/producers/update-producer/{id}"
+    })
+    public String updateProducerForm(@PathVariable Integer id,
+                                     HttpServletRequest request,
+                                     Model model) {
         ProducerResponse producer = producerService.getById(id);
         model.addAttribute("producer", producer);
 
@@ -98,23 +120,37 @@ public class ProducerController {
         }
 
         model.addAttribute("pageTitle", "Cập nhật nhà sản xuất");
+        model.addAttribute("basePath", resolveBasePath(request));
         return "owner/update-producer";
     }
 
-    @PostMapping("/owner/producers/update-producer/{id}")
+    @PostMapping({
+            "/owner/producers/update-producer/{id}",
+            "/chief-pharmacist/producers/update-producer/{id}"
+    })
     public String updateProducer(@PathVariable Integer id,
                                  @Valid @ModelAttribute("producerForm") ProducerCreateRequest form,
                                  BindingResult bindingResult,
+                                 HttpServletRequest request,
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
         if (bindingResult.hasErrors()) {
             model.addAttribute("producer", producerService.getById(id));
             model.addAttribute("pageTitle", "Cập nhật nhà sản xuất");
+            model.addAttribute("basePath", basePath);
             return "owner/update-producer";
         }
 
         producerService.update(id, form);
         redirectAttributes.addFlashAttribute("success", "Cập nhật nhà sản xuất thành công");
-        return "redirect:/owner/producers";
+        return "redirect:" + basePath;
+    }
+
+    private String resolveBasePath(HttpServletRequest request) {
+        if (request.getRequestURI().startsWith("/chief-pharmacist/producers")) {
+            return "/chief-pharmacist/producers";
+        }
+        return "/owner/producers";
     }
 }

@@ -70,13 +70,13 @@
                 </p>
             </div>
 
-            <a th:href="@{/owner/producers}" class="btn btn-outline-secondary">
+            <a th:href="${basePath}" class="btn btn-outline-secondary">
                 Quay lại danh sách
             </a>
         </div>
 
         <div class="owner-card p-4">
-            <form th:action="@{/owner/producers/update-producer/{id}(id=${producer.id})}"
+            <form th:action="${basePath + '/update-producer/' + producer.id}"
                   th:object="${producerForm}"
                   method="post"
                   novalidate>
@@ -106,7 +106,7 @@
                             Cập nhật nhà sản xuất
                         </button>
 
-                        <a th:href="@{/owner/producers}" class="btn btn-outline-secondary w-100">
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
                             Hủy
                         </a>
                     </div>

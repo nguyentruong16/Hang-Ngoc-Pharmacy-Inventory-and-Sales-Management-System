@@ -211,12 +211,12 @@
     <div class="main-card">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách nhà sản xuất</h2>
-        <a th:href="@{/owner/producers/create-producer}" class="btn-create">
+        <a th:href="${basePath + '/create-producer'}" class="btn-create">
           <i class="ti ti-plus"></i>Tạo nhà sản xuất
         </a>
       </div>
 
-      <form th:action="@{/owner/producers}" method="get">
+      <form th:action="${basePath}" method="get">
         <input type="hidden" name="page" value="0">
         <input type="hidden" name="size" th:value="${pageSize}">
         <div class="filter-row">
@@ -228,7 +228,7 @@
           <button type="submit" class="btn-search primary">
             <i class="ti ti-search"></i>Tìm kiếm
           </button>
-          <a th:href="@{/owner/producers}" class="btn-search reset">
+          <a th:href="${basePath}" class="btn-search reset">
             <i class="ti ti-refresh"></i>Đặt lại
           </a>
         </div>
@@ -249,7 +249,7 @@
               <td class="sup-name" th:text="${producer.name}">Công ty Dược phẩm ABC</td>
               <td style="text-align:center;">
                 <a class="update-link"
-                   th:href="@{/owner/producers/update-producer/{id}(id=${producer.id})}">
+                   th:href="${basePath + '/update-producer/' + producer.id}">
                   Cập nhật
                 </a>
               </td>
@@ -275,18 +275,18 @@
           <ul class="pagination mb-0">
             <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{/owner/producers(search=${search}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
+                 th:href="@{${basePath}(search=${search}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
             </li>
             <li class="page-item"
                 th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
                 th:classappend="${p == currentPage} ? ' active'">
               <a class="page-link"
                  th:text="${p + 1}"
-                 th:href="@{/owner/producers(search=${search}, page=${p}, size=${pageSize})}">1</a>
+                 th:href="@{${basePath}(search=${search}, page=${p}, size=${pageSize})}">1</a>
             </li>
             <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{/owner/producers(search=${search}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
+                 th:href="@{${basePath}(search=${search}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
             </li>
           </ul>
         </nav>
