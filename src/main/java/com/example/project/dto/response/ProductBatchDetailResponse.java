@@ -16,7 +16,6 @@ public class ProductBatchDetailResponse {
     private Integer batchId;
     private String batchName;
     private String lotNumber;
-    private String branchName;
     private String importDateDisplay;
     private String productionDateDisplay;
     private String expirationDateDisplay;
