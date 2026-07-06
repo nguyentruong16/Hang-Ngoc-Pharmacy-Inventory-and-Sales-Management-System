@@ -24,21 +24,18 @@ public class PurchaseinvoiceService {
     private final PurchaseinvoiceRepository purchaseinvoiceRepository;
     private final PurchasedetailRepository purchasedetailRepository;
     private final SupplierRepository supplierRepository;
-    private final BranchRepository branchRepository;
     private final AccountRepository accountRepository;
     private final ProductRepository productRepository;
 
     public PurchaseinvoiceService(PurchaseinvoiceRepository purchaseinvoiceRepository,
                                   PurchasedetailRepository purchasedetailRepository,
                                   SupplierRepository supplierRepository,
-                                  BranchRepository branchRepository,
                                   AccountRepository accountRepository,
                                   ProductRepository productRepository,
                                   BatchRepository batchRepository) {
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.purchasedetailRepository = purchasedetailRepository;
         this.supplierRepository = supplierRepository;
-        this.branchRepository = branchRepository;
         this.accountRepository = accountRepository;
         this.productRepository = productRepository;
     }
@@ -77,7 +74,6 @@ public class PurchaseinvoiceService {
                 .filter(invoice -> matchesKeyword(invoice, detailMap.getOrDefault(invoice.getId(), List.of()), normalizedKeyword))
                 .filter(invoice -> matchesDate(invoice, from, to))
                 .filter(invoice -> supplierId == null || supplierMatches(invoice, supplierId))
-                .filter(invoice -> branchId == null || branchMatches(invoice, branchId))
                 .map(invoice -> toListItem(invoice, detailMap.getOrDefault(invoice.getId(), List.of())))
                 .filter(item -> paymentStatus == null || paymentStatus.isBlank()
                         || paymentStatus.equals(item.getPaymentStatus()))
@@ -165,7 +161,6 @@ public class PurchaseinvoiceService {
                 supplier != null ? supplier.getName() : "Không có",
                 supplier != null ? supplier.getPhone() : "",
                 supplier != null ? supplier.getEmail() : "",
-                invoice.getBranchID() != null ? invoice.getBranchID().getName() : "Không có",
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                 subtotal,
                 additionCost,
@@ -188,9 +183,6 @@ public class PurchaseinvoiceService {
 
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
-
-        Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh"));
 
         Account employee = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
@@ -216,9 +208,9 @@ public class PurchaseinvoiceService {
         }
 
         Purchaseinvoice invoice = new Purchaseinvoice();
+        invoice.setPurchaseInvoiceCode(generatePurchaseInvoiceCode());
         invoice.setDate(Instant.now());
         invoice.setSupplierID(supplier);
-        invoice.setBranchID(branch);
         invoice.setEmployeeID(employee);
         invoice.setAdditionCost(additionCost);
         invoice.setDiscount(discount);
@@ -256,11 +248,8 @@ public class PurchaseinvoiceService {
     }
 
     @Transactional(readOnly = true)
-    public List<Branch> listBranches() {
-        return branchRepository.findAll()
-                .stream()
-                .sorted(Comparator.comparing(branch -> branch.getName() == null ? "" : branch.getName()))
-                .toList();
+    public List<Object> listBranches() {
+        return List.of();
     }
 
     @Transactional(readOnly = true)
@@ -315,7 +304,6 @@ public class PurchaseinvoiceService {
                 invoice.getDate(),
                 formatInstant(invoice.getDate()),
                 invoice.getSupplierID() != null ? invoice.getSupplierID().getName() : "Không có",
-                invoice.getBranchID() != null ? invoice.getBranchID().getName() : "Không có",
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                 details.size(),
                 totalAmount,
@@ -354,7 +342,6 @@ public class PurchaseinvoiceService {
 
         if (containsNormalized(formatPurchaseCode(invoice.getId()), keyword)
                 || containsNormalized(invoice.getSupplierID() != null ? invoice.getSupplierID().getName() : null, keyword)
-                || containsNormalized(invoice.getBranchID() != null ? invoice.getBranchID().getName() : null, keyword)
                 || containsNormalized(invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : null, keyword)
                 || containsNormalized(invoice.getNote(), keyword)) {
             return true;
@@ -390,10 +377,6 @@ public class PurchaseinvoiceService {
 
     private boolean supplierMatches(Purchaseinvoice invoice, Integer supplierId) {
         return invoice.getSupplierID() != null && supplierId.equals(invoice.getSupplierID().getId());
-    }
-
-    private boolean branchMatches(Purchaseinvoice invoice, Integer branchId) {
-        return invoice.getBranchID() != null && branchId.equals(invoice.getBranchID().getId());
     }
 
     private BigDecimal calculateSubtotal(List<Purchasedetail> details) {
@@ -495,5 +478,15 @@ public class PurchaseinvoiceService {
         }
 
         return value.trim();
+    }
+
+    private String generatePurchaseInvoiceCode() {
+        int nextId = purchaseinvoiceRepository.findAll().stream()
+                .map(Purchaseinvoice::getId)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+
+        return "PINV-" + String.format("%06d", nextId);
     }
 }

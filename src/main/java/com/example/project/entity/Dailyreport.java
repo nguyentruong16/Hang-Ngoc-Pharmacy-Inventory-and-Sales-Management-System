@@ -27,11 +27,6 @@ public class Dailyreport {
     private String dailyReportCode;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "branchID", nullable = false)
-    private Branch branchID;
-
-    @NotNull
     @Column(name = "reportDate", nullable = false)
     private LocalDate reportDate;
 
@@ -67,10 +62,6 @@ public class Dailyreport {
     @ColumnDefault("0.00")
     @Column(name = "totalReturnAmount", precision = 15, scale = 2)
     private BigDecimal totalReturnAmount;
-
-    @ColumnDefault("0.00")
-    @Column(name = "totalVATCollected", precision = 15, scale = 2)
-    private BigDecimal totalVATCollected;
 
     @ColumnDefault("0.00")
     @Column(name = "totalSubimport", precision = 15, scale = 2)

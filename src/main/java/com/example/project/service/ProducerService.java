@@ -41,9 +41,24 @@ public class ProducerService {
         return producerRepository.count();
     }
 
+    @Transactional(readOnly = true)
+    public ProducerResponse getById(Integer id) {
+        return producerRepository.findById(id)
+                .map(ProducerResponse::from)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà sản xuất"));
+    }
+
     @Transactional
     public ProducerResponse create(ProducerCreateRequest request) {
         Producer producer = new Producer();
+        producer.setName(request.getName().trim());
+        return ProducerResponse.from(producerRepository.save(producer));
+    }
+
+    @Transactional
+    public ProducerResponse update(Integer id, ProducerCreateRequest request) {
+        Producer producer = producerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà sản xuất"));
         producer.setName(request.getName().trim());
         return ProducerResponse.from(producerRepository.save(producer));
     }

@@ -14,14 +14,12 @@ public class AccountpermissionResponse {
     private Integer id;
     private Integer accountId;
     private String role;
-    private Integer branchId;
 
     public static AccountpermissionResponse from(Accountpermission accountpermission) {
         return new AccountpermissionResponse(
                 accountpermission.getId(),
                 accountpermission.getAccountID() != null ? accountpermission.getAccountID().getId() : null,
-                accountpermission.getRole(),
-                accountpermission.getBranchID() != null ? accountpermission.getBranchID().getId() : null
+                accountpermission.getRole()
         );
     }
 }

@@ -17,7 +17,6 @@ public class PurchaseinvoiceResponse {
     private String purchaseInvoiceCode;
     private Instant date;
     private Integer supplierId;
-    private Integer branchId;
     private Integer employeeId;
     private BigDecimal additionCost;
     private BigDecimal discount;
@@ -33,7 +32,6 @@ public class PurchaseinvoiceResponse {
                 purchaseinvoice.getPurchaseInvoiceCode(),
                 purchaseinvoice.getDate(),
                 purchaseinvoice.getSupplierID() != null ? purchaseinvoice.getSupplierID().getId() : null,
-                purchaseinvoice.getBranchID() != null ? purchaseinvoice.getBranchID().getId() : null,
                 purchaseinvoice.getEmployeeID() != null ? purchaseinvoice.getEmployeeID().getId() : null,
                 purchaseinvoice.getAdditionCost(),
                 purchaseinvoice.getDiscount(),

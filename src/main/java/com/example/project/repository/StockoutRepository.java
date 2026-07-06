@@ -12,8 +12,6 @@ public interface StockoutRepository extends JpaRepository<Stockout, Integer> {
     @Query("""
            select s
            from Stockout s
-           left join fetch s.branchID
-           left join fetch s.targetBranchID
            left join fetch s.createdBy
            left join fetch s.approvedBy
            left join fetch s.expenseID
@@ -25,8 +23,6 @@ public interface StockoutRepository extends JpaRepository<Stockout, Integer> {
     @Query("""
            select s
            from Stockout s
-           left join fetch s.branchID
-           left join fetch s.targetBranchID
            left join fetch s.createdBy
            left join fetch s.approvedBy
            left join fetch s.expenseID

@@ -13,14 +13,16 @@ import lombok.Setter;
 public class PositionResponse {
     private Integer id;
     private Integer productId;
-    private Integer branchId;
+    private String productName;
+    private String productCode;
     private String name;
 
     public static PositionResponse from(Position position) {
         return new PositionResponse(
                 position.getId(),
                 position.getProductID() != null ? position.getProductID().getProductID() : null,
-                position.getBranchID() != null ? position.getBranchID().getId() : null,
+                position.getProductID() != null ? position.getProductID().getName() : null,
+                position.getProductID() != null ? position.getProductID().getCode() : null,
                 position.getName()
         );
     }

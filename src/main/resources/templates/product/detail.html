@@ -143,33 +143,7 @@
             </div>
         </div>
 
-        <!-- 2. Tồn kho theo chi nhánh -->
-        <div class="stock-card p-4 mb-4">
-            <h2 class="section-title mb-3">Tồn kho theo chi nhánh</h2>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                    <tr>
-                        <th>Chi nhánh</th>
-                        <th class="text-end">Tổng tồn</th>
-                        <th>Trạng thái</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="bs : ${product.branchStocks}">
-                        <td class="fw-semibold" th:text="${bs.branchName}">Chi nhánh 1</td>
-                        <td class="text-end" th:text="${bs.totalStock}">0</td>
-                        <td><span class="status-badge" th:classappend="${' ' + bs.stockStatusCss}" th:text="${bs.stockStatusLabel}">Còn hàng</span></td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(product.branchStocks)}">
-                        <td colspan="3" class="text-center text-secondary py-3">Chưa có tồn kho.</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 3. Lô hàng còn bán -->
+        <!-- 2. Lô hàng còn bán -->
         <div class="stock-card p-4 mb-4">
             <h2 class="section-title mb-3">
                 Lô hàng còn bán
@@ -180,7 +154,6 @@
                     <thead>
                     <tr>
                         <th>Số lô</th>
-                        <th>Chi nhánh</th>
                         <th>Ngày nhập</th>
                         <th>Ngày SX</th>
                         <th>Hạn SD</th>
@@ -194,7 +167,6 @@
                     <tbody>
                     <tr th:each="b : ${product.batches}">
                         <td class="fw-semibold" th:text="${b.lotNumber != null ? b.lotNumber : b.batchName}">LOT-001</td>
-                        <td th:text="${b.branchName}">Chi nhánh 1</td>
                         <td th:text="${b.importDateDisplay}">01/06/2026 09:00</td>
                         <td th:text="${b.productionDateDisplay}">01/01/2026</td>
                         <td th:text="${b.expirationDateDisplay}">01/01/2028</td>
@@ -205,14 +177,14 @@
                         <td th:text="${b.note != null and !b.note.isEmpty()} ? ${b.note} : '—'">—</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(product.batches)}">
-                        <td colspan="10" class="text-center text-secondary py-3">Không có lô hàng còn bán.</td>
+                        <td colspan="9" class="text-center text-secondary py-3">Không có lô hàng còn bán.</td>
                     </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 4. Lịch sử tồn kho gần đây (chỉ Owner / Chief Pharmacist) -->
+        <!-- 3. Lịch sử tồn kho gần đây (chỉ Owner / Chief Pharmacist) -->
         <div class="stock-card p-4 mb-4" th:if="${canViewRecentHistory}">
             <h2 class="section-title mb-1">Lịch sử tồn kho gần đây</h2>
             <p class="text-secondary small mb-3">Tối đa 10 biến động gần nhất (nhập, bán, xuất kho, trả hàng).</p>
@@ -222,7 +194,6 @@
                     <tr>
                         <th>Thời gian</th>
                         <th>Loại biến động</th>
-                        <th>Chi nhánh</th>
                         <th>Mã tham chiếu</th>
                         <th>Số lô</th>
                         <th class="text-end">SL thay đổi</th>
@@ -233,7 +204,6 @@
                     <tr th:each="h : ${product.recentHistory}">
                         <td th:text="${h.timeDisplay}">01/06/2026 09:00</td>
                         <td th:text="${h.changeType}">Nhập kho</td>
-                        <td th:text="${h.branchName}">Chi nhánh 1</td>
                         <td th:text="${h.reference != null ? h.reference : '—'}">SO-000001</td>
                         <td th:text="${h.lotNumber != null ? h.lotNumber : '—'}">LOT-001</td>
                         <td class="text-end" th:classappend="${h.quantityChange >= 0} ? ' qty-in' : ' qty-out'"
@@ -241,7 +211,7 @@
                         <td th:text="${h.note != null and !h.note.isEmpty()} ? ${h.note} : '—'">—</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(product.recentHistory)}">
-                        <td colspan="7" class="text-center text-secondary py-3">Chưa có biến động tồn kho gần đây.</td>
+                        <td colspan="6" class="text-center text-secondary py-3">Chưa có biến động tồn kho gần đây.</td>
                     </tr>
                     </tbody>
                 </table>

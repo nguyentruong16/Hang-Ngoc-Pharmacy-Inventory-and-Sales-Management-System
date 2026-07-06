@@ -6,8 +6,6 @@ import com.example.project.context.CurrentUserContext;
 import com.example.project.controller.DashboardController;
 import com.example.project.controller.PermissionController;
 import com.example.project.controller.PlaceholderController;
-import com.example.project.entity.Branch;
-import com.example.project.repository.BranchRepository;
 import com.example.project.security.AccountPrincipal;
 import com.example.project.security.BranchAwareAuthenticationProvider;
 import com.example.project.security.BranchWebAuthenticationDetailsSource;

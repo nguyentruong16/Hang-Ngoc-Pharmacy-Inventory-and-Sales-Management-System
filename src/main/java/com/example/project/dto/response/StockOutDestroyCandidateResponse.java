@@ -15,9 +15,6 @@ public class StockOutDestroyCandidateResponse {
     private Integer productId;
     private String productName;
 
-    private Integer branchId;
-    private String branchName;
-
     private String lotNumber;
 
     private LocalDate expirationDate;

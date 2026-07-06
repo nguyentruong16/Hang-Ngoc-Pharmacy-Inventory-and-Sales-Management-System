@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Tạo nhà sản xuất | PharmaManager</title>
+    <title>Cập nhật vị trí | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -63,8 +63,11 @@
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="fs-4 mb-1">Tạo nhà sản xuất mới</h1>
-                <p class="text-secondary mb-0">Thêm nhà sản xuất mới vào hệ thống</p>
+                <h1 class="fs-4 mb-1">Cập nhật vị trí</h1>
+                <p class="text-secondary mb-0">
+                    Mã vị trí:
+                    <span class="fw-semibold" th:text="|VT-${#numbers.formatInteger(position.id, 5)}|">VT-000001</span>
+                </p>
             </div>
 
             <a th:href="${basePath}" class="btn btn-outline-secondary">
@@ -73,18 +76,37 @@
         </div>
 
         <div class="owner-card p-4">
-            <form th:action="${basePath + '/create-producer'}" th:object="${producerForm}" method="post" novalidate>
+            <form th:action="${basePath + '/update-position/' + position.id}"
+                  th:object="${positionForm}"
+                  method="post"
+                  novalidate>
                 <div class="row g-4">
                     <div class="col-12 col-lg-8">
-                        <h2 class="fs-6 mb-3">Thông tin nhà sản xuất</h2>
+                        <h2 class="fs-6 mb-3">Thông tin vị trí</h2>
 
                         <div class="mb-3">
-                            <label for="producerName" class="form-label">Tên nhà sản xuất <span class="text-danger">*</span></label>
-                            <input id="producerName"
+                            <label for="productId" class="form-label">Sản phẩm <span class="text-danger">*</span></label>
+                            <select id="productId"
+                                    class="form-select"
+                                    th:field="*{productId}">
+                                <option value="">-- Chọn sản phẩm --</option>
+                                <option th:each="product : ${products}"
+                                        th:value="${product.productID}"
+                                        th:text="|${product.code} - ${product.name}|">
+                                    SP001 - Paracetamol 500mg
+                                </option>
+                            </select>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('productId')}" th:errors="*{productId}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="positionName" class="form-label">Tên vị trí <span class="text-danger">*</span></label>
+                            <input id="positionName"
                                    type="text"
                                    class="form-control"
                                    th:field="*{name}"
-                                   placeholder="Nhập tên nhà sản xuất">
+                                   placeholder="VD: Kệ A1, Tủ B2">
+                            <div class="form-text">Ví dụ: Kệ A1, Tủ thuốc kê đơn, Ngăn C3</div>
                             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
                         </div>
                     </div>
@@ -93,11 +115,11 @@
                         <h2 class="fs-6 mb-3">Thao tác</h2>
 
                         <p class="text-secondary small mb-4">
-                            Kiểm tra kỹ thông tin trước khi tạo nhà sản xuất mới.
+                            Kiểm tra kỹ thông tin trước khi cập nhật vị trí.
                         </p>
 
                         <button type="submit" class="btn btn-owner-primary w-100 mb-2">
-                            Tạo nhà sản xuất
+                            Cập nhật vị trí
                         </button>
 
                         <a th:href="${basePath}" class="btn btn-outline-secondary w-100">

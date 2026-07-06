@@ -28,10 +28,6 @@ public class Procurementplan {
     private Instant date;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branchID")
-    private Branch branchID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employeeID")
     private Account employeeID;
 

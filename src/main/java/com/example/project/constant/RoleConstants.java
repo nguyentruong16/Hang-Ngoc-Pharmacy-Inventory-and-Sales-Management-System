@@ -30,6 +30,14 @@ public final class RoleConstants {
     );
 
     /**
+     * Roles assignable from the single-store Permission Table ({@code /owner/permissions}), in
+     * display order. {@code CHIEF_PHARMACIST} is intentionally excluded — it has been merged into
+     * {@code OWNER} ("Chủ nhà thuốc") and is no longer a distinct assignable role; the removed
+     * {@code CASHIER} role was never part of this set either.
+     */
+    public static final List<String> PERMISSION_TABLE_ROLES = List.of(PHARMACIST, ACCOUNTANT, OWNER);
+
+    /**
      * Safe fallback used only when an <em>invalid</em> role string is supplied to a lookup
      * (e.g. an unknown {@code ?role=} value on the Permission Table, or a menu/matrix lookup
      * for an unrecognised role). It is NOT used to resolve the signed-in user's role — that
@@ -71,7 +79,7 @@ public final class RoleConstants {
             return "";
         }
         return switch (role) {
-            case OWNER -> "Chủ sở hữu";
+            case OWNER -> "Chủ nhà thuốc";
             case CHIEF_PHARMACIST -> "Dược sĩ trưởng";
             case PHARMACIST -> "Dược sĩ";
             case ACCOUNTANT -> "Kế toán";
@@ -94,6 +102,24 @@ public final class RoleConstants {
             labels.put(role, vietnameseName(role));
         }
         return labels;
+    }
+
+    /**
+     * {@code ""} ("Không quyền") plus the three roles assignable from the flat, single-store
+     * Permission Table, in dropdown order: Không quyền / Dược sĩ / Kế toán / Chủ nhà thuốc.
+     */
+    public static Map<String, String> permissionTableRoleLabels() {
+        Map<String, String> labels = new LinkedHashMap<>();
+        labels.put("", "Không quyền");
+        for (String role : PERMISSION_TABLE_ROLES) {
+            labels.put(role, vietnameseName(role));
+        }
+        return labels;
+    }
+
+    /** True for the roles an account can be assigned to from the Permission Table (blank/NONE is handled separately). */
+    public static boolean isPermissionTableRole(String role) {
+        return role != null && PERMISSION_TABLE_ROLES.contains(role);
     }
 
     /** URL slug for a role, e.g. {@code CHIEF_PHARMACIST -> "chief-pharmacist"}. */

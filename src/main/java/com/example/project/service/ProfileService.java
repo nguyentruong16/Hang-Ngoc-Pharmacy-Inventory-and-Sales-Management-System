@@ -4,7 +4,6 @@ import com.example.project.dto.request.ProfileUpdateRequest;
 import com.example.project.dto.response.ProfileViewResponse;
 import com.example.project.entity.Account;
 import com.example.project.entity.Accountpermission;
-import com.example.project.entity.Branch;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.AccountpermissionRepository;
 import org.springframework.stereotype.Service;
@@ -44,17 +43,7 @@ public class ProfileService {
             role = "Chưa phân quyền";
         }
 
-        String branchName = permissions.stream()
-                .map(Accountpermission::getBranchID)
-                .filter(branch -> branch != null)
-                .map(Branch::getName)
-                .filter(name -> name != null && !name.isBlank())
-                .distinct()
-                .collect(Collectors.joining(", "));
-
-        if (branchName.isBlank()) {
-            branchName = "Chưa có chi nhánh";
-        }
+        String branchName = "Toàn hệ thống";
 
         return new ProfileViewResponse(
                 account.getId(),

@@ -1,7 +1,6 @@
 package com.example.project.controller;
 
 import com.example.project.security.AccountPrincipal;
-import com.example.project.repository.BranchRepository;
 import com.example.project.service.AccountPasswordService;
 import com.example.project.service.PasswordResetService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,20 +19,16 @@ public class AuthController {
 
     private final AccountPasswordService accountPasswordService;
     private final PasswordResetService passwordResetService;
-    private final BranchRepository branchRepository;
 
     public AuthController(
             AccountPasswordService accountPasswordService,
-            PasswordResetService passwordResetService,
-            BranchRepository branchRepository) {
+            PasswordResetService passwordResetService) {
         this.accountPasswordService = accountPasswordService;
         this.passwordResetService = passwordResetService;
-        this.branchRepository = branchRepository;
     }
 
     @GetMapping("/signin")
-    public String signin(Model model) {
-        model.addAttribute("branches", branchRepository.findAllWithStatus());
+    public String signin() {
         return "signin";
     }
 

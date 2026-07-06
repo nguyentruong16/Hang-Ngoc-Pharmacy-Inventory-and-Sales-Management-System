@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Tạo nhà sản xuất | PharmaManager</title>
+    <title>Tạo loại hàng | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -63,8 +63,8 @@
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="fs-4 mb-1">Tạo nhà sản xuất mới</h1>
-                <p class="text-secondary mb-0">Thêm nhà sản xuất mới vào hệ thống</p>
+                <h1 class="fs-4 mb-1">Tạo loại hàng mới</h1>
+                <p class="text-secondary mb-0">Thêm loại hàng mới vào hệ thống</p>
             </div>
 
             <a th:href="${basePath}" class="btn btn-outline-secondary">
@@ -73,18 +73,33 @@
         </div>
 
         <div class="owner-card p-4">
-            <form th:action="${basePath + '/create-producer'}" th:object="${producerForm}" method="post" novalidate>
+            <form th:action="${basePath + '/create-type'}" th:object="${typeForm}" method="post" novalidate>
                 <div class="row g-4">
                     <div class="col-12 col-lg-8">
-                        <h2 class="fs-6 mb-3">Thông tin nhà sản xuất</h2>
+                        <h2 class="fs-6 mb-3">Thông tin loại hàng</h2>
 
                         <div class="mb-3">
-                            <label for="producerName" class="form-label">Tên nhà sản xuất <span class="text-danger">*</span></label>
-                            <input id="producerName"
+                            <label for="sortType" class="form-label">Nhóm mặt hàng <span class="text-danger">*</span></label>
+                            <input id="sortType"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{sortType}"
+                                   list="sortTypeOptions"
+                                   placeholder="Chọn hoặc nhập nhóm mặt hàng">
+                            <datalist id="sortTypeOptions">
+                                <option th:each="group : ${typeGroups}" th:value="${group}"></option>
+                            </datalist>
+                            <div class="form-text">Ví dụ: thuốc, hàng hóa, thiết bị y tế, combo</div>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('sortType')}" th:errors="*{sortType}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="typeName" class="form-label">Tên loại hàng <span class="text-danger">*</span></label>
+                            <input id="typeName"
                                    type="text"
                                    class="form-control"
                                    th:field="*{name}"
-                                   placeholder="Nhập tên nhà sản xuất">
+                                   placeholder="Nhập tên loại hàng">
                             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
                         </div>
                     </div>
@@ -93,11 +108,11 @@
                         <h2 class="fs-6 mb-3">Thao tác</h2>
 
                         <p class="text-secondary small mb-4">
-                            Kiểm tra kỹ thông tin trước khi tạo nhà sản xuất mới.
+                            Kiểm tra kỹ thông tin trước khi tạo loại hàng mới.
                         </p>
 
                         <button type="submit" class="btn btn-owner-primary w-100 mb-2">
-                            Tạo nhà sản xuất
+                            Tạo loại hàng
                         </button>
 
                         <a th:href="${basePath}" class="btn btn-outline-secondary w-100">

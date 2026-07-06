@@ -22,9 +22,4 @@ public class Accountpermission {
     @Column(name = "role", length = 50)
     private String role;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branchID")
-    private Branch branchID;
-
-
 }

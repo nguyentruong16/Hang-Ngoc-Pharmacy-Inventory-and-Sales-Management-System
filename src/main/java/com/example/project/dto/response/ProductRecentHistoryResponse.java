@@ -25,7 +25,6 @@ public class ProductRecentHistoryResponse {
     private String timeDisplay;
     /** Movement type label: "Nhập kho" / "Bán hàng" / "Xuất kho - ..." / "Trả hàng". */
     private String changeType;
-    private String branchName;
     /** Reference code of the source document (invoice code, stock-out code, batch name…). */
     private String reference;
     private String lotNumber;

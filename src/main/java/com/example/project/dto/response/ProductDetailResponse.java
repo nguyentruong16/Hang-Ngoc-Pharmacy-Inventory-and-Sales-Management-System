@@ -8,9 +8,8 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- * Full payload for the Product Detail screen. All values are display-ready and already
- * branch-scoped by {@link com.example.project.service.ProductService} according to the current
- * user's role (Owner = all branches; Chief Pharmacist / Pharmacist = active branch only).
+ * Full payload for the Product Detail screen. All values are display-ready; the store is single
+ * (no per-branch breakdown) so stock is a single system-wide total.
  */
 @Getter
 @Setter
@@ -36,18 +35,15 @@ public class ProductDetailResponse {
     private List<String> ingredients;
     private List<ProductUnitDetailResponse> units;
 
-    /** Total on-hand stock across the branches in scope. */
+    /** Total on-hand stock (single store — no per-branch breakdown). */
     private long totalStock;
     private String stockStatusLabel;
     private String stockStatusCss;
 
-    // --- 2. Stock by branch ---
-    private List<ProductBranchStockResponse> branchStocks;
-
-    // --- 3. In-stock batches ---
+    // --- 2. In-stock batches ---
     private List<ProductBatchDetailResponse> batches;
 
-    // --- 4. Recent stock-movement preview (only populated when the role may view it) ---
+    // --- 3. Recent stock-movement preview (only populated when the role may view it) ---
     private boolean canViewRecentHistory;
     private List<ProductRecentHistoryResponse> recentHistory;
 }

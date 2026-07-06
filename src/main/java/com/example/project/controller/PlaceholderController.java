@@ -31,7 +31,6 @@ public class PlaceholderController {
 
     @GetMapping({
             "/owner/dashboard",
-            "/owner/types",
             "/owner/suppliers",
             "/owner/debts",
             "/owner/vat-invoices",
@@ -47,10 +46,7 @@ public class PlaceholderController {
     @GetMapping({
             "/chief-pharmacist/dashboard",
             "/chief-pharmacist/selling",
-            "/chief-pharmacist/positions",
             "/chief-pharmacist/origins",
-            "/chief-pharmacist/types",
-            "/chief-pharmacist/producers",
             "/chief-pharmacist/suppliers",
             "/chief-pharmacist/procurements",
             "/chief-pharmacist/purchase-requisitions",

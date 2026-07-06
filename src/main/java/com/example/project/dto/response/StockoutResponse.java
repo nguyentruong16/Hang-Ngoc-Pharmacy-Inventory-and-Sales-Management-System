@@ -15,13 +15,11 @@ public class StockoutResponse {
     private Integer id;
     private String stockOutCode;
     private String outType;
-    private Integer branchId;
     private Instant date;
     private Integer createdById;
     private Integer approvedById;
     private Instant approvedAt;
     private String reason;
-    private Integer targetBranchId;
     private Integer expenseId;
     private Integer statusId;
     private String note;
@@ -31,13 +29,11 @@ public class StockoutResponse {
                 stockout.getId(),
                 stockout.getStockOutCode(), 
                 stockout.getOutType(),
-                stockout.getBranchID() != null ? stockout.getBranchID().getId() : null,
                 stockout.getDate(),
                 stockout.getCreatedBy() != null ? stockout.getCreatedBy().getId() : null,
                 stockout.getApprovedBy() != null ? stockout.getApprovedBy().getId() : null,
                 stockout.getApprovedAt(),
                 stockout.getReason(),
-                stockout.getTargetBranchID() != null ? stockout.getTargetBranchID().getId() : null,
                 stockout.getExpenseID() != null ? stockout.getExpenseID().getId() : null,
                 stockout.getStatusID() != null ? stockout.getStatusID().getId() : null,
                 stockout.getNote()

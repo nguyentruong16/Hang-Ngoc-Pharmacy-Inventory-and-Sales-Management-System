@@ -20,9 +20,6 @@ public class StockOutDetailPageResponse {
     private String outType;
     private String outTypeDisplay;
 
-    private String sourceBranchName;
-    private String targetBranchName;
-
     private String createdByName;
     private String approvedByName;
     private String approvedAtDisplay;

@@ -18,9 +18,6 @@ public class StockOutListItemResponse {
     private String outType;
     private String outTypeDisplay;
 
-    private String sourceBranchName;
-    private String targetBranchName;
-
     private String createdByName;
 
     private long totalItems;

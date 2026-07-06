@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8"/>
-  <title>Danh sách nhà sản xuất</title>
+  <title>Danh sách loại hàng</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
@@ -81,8 +81,8 @@
       flex-wrap: wrap;
       margin-bottom: 20px;
     }
-    .filter-input {
-      flex: 1 1 260px;
+    .filter-input,
+    .filter-select {
       height: 40px;
       border: 1px solid var(--sup-border);
       border-radius: 10px;
@@ -91,8 +91,17 @@
       color: #374151;
       outline: none;
       transition: border-color .15s;
+      background: #fff;
     }
-    .filter-input:focus {
+    .filter-input {
+      flex: 1 1 260px;
+    }
+    .filter-select {
+      flex: 0 1 220px;
+      min-width: 180px;
+    }
+    .filter-input:focus,
+    .filter-select:focus {
       border-color: #6ee7b7;
       box-shadow: 0 0 0 3px rgba(5,150,105,.1);
     }
@@ -146,14 +155,6 @@
     }
     .sup-name { font-weight: 600; color: #111827; }
 
-    .update-link {
-      color: var(--sup-green);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-    }
-    .update-link:hover { color: var(--sup-green-dark); text-decoration: underline; }
-
     .btn-create {
       height: 40px;
       padding: 0 20px;
@@ -171,6 +172,21 @@
     }
     .btn-create:hover { background: var(--sup-green-dark); color: #fff; }
 
+    .type-group {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--sup-green-dark);
+      text-transform: capitalize;
+    }
+
+    .update-link {
+      color: var(--sup-green);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .update-link:hover { color: var(--sup-green-dark); text-decoration: underline; }
+
     .pagination .page-link { color: var(--sup-green); border-color: var(--sup-border); font-size: 13px; }
     .pagination .page-item.active .page-link { background: var(--sup-green); border-color: var(--sup-green); color: #fff; }
     .pagination .page-item.disabled .page-link { color: #d1d5db; }
@@ -179,7 +195,8 @@
 
     @media (max-width: 767px) {
       .filter-row { flex-direction: column; align-items: stretch; }
-      .filter-input { width: 100%; }
+      .filter-input,
+      .filter-select { width: 100%; }
     }
   </style>
 </head>
@@ -200,19 +217,19 @@
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-4">
         <div class="kpi-card">
-          <span class="kpi-icon"><i class="ti ti-building-factory-2"></i></span>
-          <div class="kpi-label">Tổng nhà sản xuất</div>
-          <div class="kpi-number" th:text="${totalProducers}">0</div>
-          <div class="kpi-sub">Tất cả nhà sản xuất</div>
+          <span class="kpi-icon"><i class="ti ti-category"></i></span>
+          <div class="kpi-label">Tổng loại hàng</div>
+          <div class="kpi-number" th:text="${totalTypes}">0</div>
+          <div class="kpi-sub">Tất cả loại hàng</div>
         </div>
       </div>
     </div>
 
     <div class="main-card">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách nhà sản xuất</h2>
-        <a th:href="${basePath + '/create-producer'}" class="btn-create">
-          <i class="ti ti-plus"></i>Tạo nhà sản xuất
+        <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách loại hàng</h2>
+        <a th:href="${basePath + '/create-type'}" class="btn-create">
+          <i class="ti ti-plus"></i>Tạo loại hàng
         </a>
       </div>
 
@@ -224,7 +241,16 @@
                  class="filter-input"
                  name="search"
                  th:value="${search}"
-                 placeholder="Tìm theo tên nhà sản xuất">
+                 placeholder="Tìm theo tên loại hàng hoặc nhóm mặt hàng">
+          <select class="filter-select" name="sortType" aria-label="Lọc nhóm mặt hàng">
+            <option value="">Tất cả nhóm</option>
+            <option th:each="group : ${typeGroups}"
+                    th:value="${group}"
+                    th:text="${#strings.capitalize(group)}"
+                    th:selected="${filterSortType == group}">
+              Thuốc
+            </option>
+          </select>
           <button type="submit" class="btn-search primary">
             <i class="ti ti-search"></i>Tìm kiếm
           </button>
@@ -238,26 +264,30 @@
         <table class="sup-table">
           <thead>
             <tr>
-              <th>Mã NSX</th>
-              <th>Tên nhà sản xuất</th>
+              <th>Mã loại</th>
+              <th>Nhóm mặt hàng</th>
+              <th>Tên loại hàng</th>
               <th style="text-align:center;">Cập nhật</th>
             </tr>
           </thead>
           <tbody>
-            <tr th:each="producer : ${producers}">
-              <td class="sup-code" th:text="|NSX-${#numbers.formatInteger(producer.id, 5)}|">NSX-000001</td>
-              <td class="sup-name" th:text="${producer.name}">Công ty Dược phẩm ABC</td>
+            <tr th:each="type : ${types}">
+              <td class="sup-code" th:text="|LH-${#numbers.formatInteger(type.id, 5)}|">LH-000001</td>
+              <td>
+                <span class="type-group" th:text="${#strings.capitalize(type.sortType)}">Thuốc</span>
+              </td>
+              <td class="sup-name" th:text="${type.name}">Thuốc kê đơn</td>
               <td style="text-align:center;">
                 <a class="update-link"
-                   th:href="${basePath + '/update-producer/' + producer.id}">
+                   th:href="${basePath + '/update-type/' + type.id}">
                   Cập nhật
                 </a>
               </td>
             </tr>
 
-            <tr th:if="${#lists.isEmpty(producers)}" class="empty-row">
-              <td colspan="3" style="text-align:center;">
-                Không tìm thấy nhà sản xuất nào.
+            <tr th:if="${#lists.isEmpty(types)}" class="empty-row">
+              <td colspan="4" style="text-align:center;">
+                Không tìm thấy loại hàng nào.
               </td>
             </tr>
           </tbody>
@@ -268,25 +298,25 @@
            th:if="${totalItems > 0}">
         <div class="text-secondary" style="font-size:13px;">
           Hiển thị
-          <span th:text="${currentPage * pageSize + 1}">1</span>–<span th:text="${currentPage * pageSize + producers.size()}">5</span>
-          trong tổng số <span th:text="${totalItems}" class="fw-semibold">0</span> nhà sản xuất
+          <span th:text="${currentPage * pageSize + 1}">1</span>–<span th:text="${currentPage * pageSize + types.size()}">5</span>
+          trong tổng số <span th:text="${totalItems}" class="fw-semibold">0</span> loại hàng
         </div>
         <nav th:if="${totalPages > 1}">
           <ul class="pagination mb-0">
             <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
+                 th:href="@{${basePath}(search=${search}, sortType=${filterSortType}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
             </li>
             <li class="page-item"
                 th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
                 th:classappend="${p == currentPage} ? ' active'">
               <a class="page-link"
                  th:text="${p + 1}"
-                 th:href="@{${basePath}(search=${search}, page=${p}, size=${pageSize})}">1</a>
+                 th:href="@{${basePath}(search=${search}, sortType=${filterSortType}, page=${p}, size=${pageSize})}">1</a>
             </li>
             <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
+                 th:href="@{${basePath}(search=${search}, sortType=${filterSortType}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
             </li>
           </ul>
         </nav>

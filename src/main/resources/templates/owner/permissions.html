@@ -141,113 +141,13 @@
             color: var(--pm-green-dark);
         }
 
-        /* ---- Branch buttons / tabs ---- */
-        .branch-tab-bar {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding: 2px 2px 14px;
-        }
-
-        .branch-tab {
-            flex: 0 0 auto;
-            min-width: 200px;
-            max-width: 260px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding: 12px 16px;
-            border: 1px solid var(--pm-border);
-            border-radius: 12px;
-            background: #ffffff;
-            color: var(--pm-text);
-            text-decoration: none;
-            transition: border-color .15s ease, background .15s ease, color .15s ease;
-        }
-
-        .branch-tab:hover {
-            border-color: var(--pm-green);
-        }
-
-        .branch-tab .branch-tab-name {
-            font-weight: 600;
-            font-size: 14px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .branch-tab .branch-tab-status {
-            font-size: 12px;
-            color: var(--pm-muted);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .branch-tab .branch-tab-status::before {
-            content: "";
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: var(--pm-green);
-            flex: 0 0 auto;
-        }
-
-        /* Inactive (not selected): muted gray. */
-        .branch-tab.is-inactive {
-            background: #f9fafb;
-            color: var(--pm-muted);
-        }
-
-        .branch-tab.is-inactive .branch-tab-name {
-            color: var(--pm-muted);
-        }
-
-        .branch-tab.is-inactive .branch-tab-status::before {
-            background: var(--pm-muted);
-        }
-
-        /* Selected + active: green theme. */
-        .branch-tab.is-selected.is-active {
-            background: var(--pm-green);
-            border-color: var(--pm-green);
-            color: #ffffff;
-            box-shadow: 0 6px 16px rgba(5, 150, 105, .25);
-        }
-
-        .branch-tab.is-selected.is-active .branch-tab-name,
-        .branch-tab.is-selected.is-active .branch-tab-status {
-            color: #ffffff;
-        }
-
-        .branch-tab.is-selected.is-active .branch-tab-status::before {
-            background: #ffffff;
-        }
-
-        /* Selected + inactive: muted gray, never green. */
-        .branch-tab.is-selected.is-inactive {
-            background: #6b7280;
-            border-color: #6b7280;
-            color: #ffffff;
-        }
-
-        .branch-tab.is-selected.is-inactive .branch-tab-name,
-        .branch-tab.is-selected.is-inactive .branch-tab-status {
-            color: #ffffff;
-        }
-
-        .branch-tab.is-selected.is-inactive .branch-tab-status::before {
-            background: #ffffff;
-        }
-
-        /* ---- Per-branch user table ---- */
+        /* ---- Account/role table ---- */
         .permission-table-scroll {
             overflow-x: auto;
         }
 
         .permission-user-table {
-            min-width: 760px;
+            min-width: 640px;
             width: 100%;
             margin-bottom: 0;
         }
@@ -282,8 +182,8 @@
         }
 
         .permission-cell-select {
-            min-width: 200px;
-            max-width: 240px;
+            min-width: 180px;
+            max-width: 220px;
         }
 
         .status-badge {
@@ -328,8 +228,8 @@
             <div class="col-12">
                 <div class="mb-4">
                     <h1 class="permission-page-title mb-1">Bảng phân quyền</h1>
-                    <p class="permission-page-subtitle mb-0">Chọn một chi nhánh, sau đó đặt vai trò cho từng tài khoản
-                        tại chi nhánh đó. Thay đổi được lưu ngay khi bạn chọn.</p>
+                    <p class="permission-page-subtitle mb-0">Đặt vai trò cho từng tài khoản trong hệ thống. Chọn
+                        vai trò rồi nhấn "Lưu" để áp dụng.</p>
                 </div>
             </div>
         </div>
@@ -350,73 +250,26 @@
             </div>
         </div>
 
-        <!-- Branch buttons -->
+        <!-- Search + account/role table -->
         <div class="row">
-            <div class="col-12">
-                <label class="fw-semibold mb-2 d-block"
-                       style="font-size:13px;color:var(--pm-muted);">Chọn chi nhánh</label>
-
-                <div th:if="${permissionPage.emptyBranches}"
-                     class="text-secondary py-3">Chưa có chi nhánh nào.
-                </div>
-
-                <div th:unless="${permissionPage.emptyBranches}" class="branch-tab-bar">
-                    <a th:each="b : ${permissionPage.branches}"
-                       th:href="@{/owner/permissions(branchId=${b.id}, search=${search}, roleFilter=${roleFilter}, size=${permissionPage.size})}"
-                       class="branch-tab"
-                       th:classappend="${(b.selected ? 'is-selected ' : '') + (b.active ? 'is-active' : 'is-inactive')}">
-                        <span class="branch-tab-name" th:text="${b.name}">Chi nhánh</span>
-                        <span class="branch-tab-status" th:text="${b.displayStatus}">Trạng thái</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inactive-branch notice -->
-        <div class="row"
-             th:if="${permissionPage.selectedBranch != null and !permissionPage.selectedBranch.active}">
-            <div class="col-12">
-                <div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
-                    <i class="ti ti-alert-triangle"></i>
-                    <span>Chi nhánh này đã ngừng hoạt động. Không thể chỉnh sửa phân quyền.</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Search + user table for the selected branch -->
-        <div class="row" th:if="${permissionPage.selectedBranch != null}">
             <div class="col-12">
                 <div class="card permission-card">
                     <div class="card-header bg-transparent px-4 py-3">
                         <form method="get" th:action="@{/owner/permissions}" class="row g-2 align-items-end">
-                            <input type="hidden" name="branchId" th:value="${permissionPage.selectedBranchId}">
                             <input type="hidden" name="size" th:value="${permissionPage.size}">
 
-                            <div class="col-12 col-md-5">
+                            <div class="col-12 col-md-8">
                                 <label for="search" class="form-label small mb-1">Tìm kiếm tài khoản</label>
                                 <input id="search" name="search" type="text" class="form-control form-control-sm"
                                        th:value="${search}" placeholder="Tên, tên đăng nhập hoặc email">
                             </div>
 
-                            <div class="col-12 col-md-3">
-                                <label for="roleFilter" class="form-label small mb-1">Lọc theo vai trò</label>
-                                <select id="roleFilter" name="roleFilter" class="form-select form-select-sm">
-                                    <option value="">Tất cả vai trò</option>
-                                    <option th:each="entry : ${roleLabels}"
-                                            th:value="${entry.key}"
-                                            th:text="${entry.value}"
-                                            th:selected="${roleFilter != null and roleFilter == entry.key}">
-                                        Vai trò
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-12 col-md-3 d-flex gap-2">
+                            <div class="col-12 col-md-4 d-flex gap-2">
                                 <button type="submit" class="btn btn-sm btn-pm-primary flex-grow-1">
-                                    <i class="ti ti-search me-1"></i>Lọc
+                                    <i class="ti ti-search me-1"></i>Tìm
                                 </button>
-                                <a th:href="@{/owner/permissions(branchId=${permissionPage.selectedBranchId}, size=${permissionPage.size})}"
-                                   class="btn btn-sm btn-pm-light" title="Xóa bộ lọc">
+                                <a th:href="@{/owner/permissions(size=${permissionPage.size})}"
+                                   class="btn btn-sm btn-pm-light" title="Xóa tìm kiếm">
                                     <i class="ti ti-x"></i>
                                 </a>
                             </div>
@@ -430,7 +283,7 @@
                                 <tr>
                                     <th scope="col">Tài khoản</th>
                                     <th scope="col">Tên đăng nhập / Email</th>
-                                    <th scope="col">Vai trò tại chi nhánh</th>
+                                    <th scope="col">Vai trò</th>
                                     <th scope="col">Trạng thái</th>
                                 </tr>
                                 </thead>
@@ -442,59 +295,51 @@
                                 </tr>
 
                                 <tr th:each="row : ${permissionPage.rows}"
-                                    th:classappend="${row.ownerLocked} ? ' permission-owner-row' : ''">
+                                    th:classappend="${row.role == 'OWNER'} ? ' permission-owner-row' : ''">
                                     <td>
                                         <span class="fw-semibold" th:text="${row.accountName}">Tên tài khoản</span>
                                     </td>
                                     <td class="text-secondary" th:text="${row.usernameOrEmail}">username/email</td>
 
-                                    <!-- Vai trò tại chi nhánh -->
+                                    <!-- Vai trò -->
                                     <td>
-                                        <!-- Editable: active branch + non-owner → role dropdown. -->
-                                        <form th:if="${row.editable}" method="post"
-                                              th:action="@{/owner/permissions/cell}" class="mb-0">
+                                        <!-- Editable: any account except the last remaining Owner. -->
+                                        <form th:unless="${row.lastOwner}" method="post"
+                                              th:action="@{/owner/permissions/cell}"
+                                              class="d-flex gap-2 align-items-center mb-0">
                                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}"
                                                    th:value="${_csrf.token}">
                                             <input type="hidden" name="accountId" th:value="${row.accountId}">
-                                            <input type="hidden" name="branchId"
-                                                   th:value="${permissionPage.selectedBranchId}">
                                             <input type="hidden" name="search" th:value="${search}">
-                                            <input type="hidden" name="roleFilter" th:value="${roleFilter}">
                                             <input type="hidden" name="page" th:value="${permissionPage.pageIndex}">
                                             <input type="hidden" name="size" th:value="${permissionPage.size}">
                                             <select name="role"
-                                                    class="form-select form-select-sm permission-cell-select"
-                                                    onchange="this.form.submit()">
-                                                <option value="" th:selected="${row.role == null}">-- Chưa phân quyền --
-                                                </option>
+                                                    class="form-select form-select-sm permission-cell-select">
                                                 <option th:each="entry : ${assignableRoleLabels}"
                                                         th:value="${entry.key}"
                                                         th:text="${entry.value}"
-                                                        th:selected="${row.role != null and row.role == entry.key}">
+                                                        th:selected="${(entry.key == '' and !row.assigned) or (row.role != null and row.role == entry.key)}">
                                                     Vai trò
                                                 </option>
                                             </select>
+                                            <button type="submit" class="btn btn-sm btn-pm-primary">Lưu</button>
                                         </form>
 
-                                        <!-- Read-only: Owner row, or any row on an inactive branch. -->
-                                        <span th:unless="${row.editable}">
-                                            <span th:if="${row.ownerLocked}" class="role-badge">
-                                                <i class="ti ti-lock"></i>Chủ sở hữu
-                                            </span>
-                                            <span th:unless="${row.ownerLocked}" class="role-text"
-                                                  th:text="${row.roleDisplay}">Chưa phân quyền</span>
+                                        <!-- Read-only: the last remaining Owner cannot be demoted. -->
+                                        <span th:if="${row.lastOwner}" class="role-badge">
+                                            <i class="ti ti-lock"></i>Chủ nhà thuốc (duy nhất)
                                         </span>
                                     </td>
 
-                                    <!-- Trạng thái (phân quyền tại chi nhánh) -->
+                                    <!-- Trạng thái -->
                                     <td>
-                                        <span th:if="${row.ownerLocked}" class="status-badge status-owner">
-                                            <i class="ti ti-shield-check"></i>Chủ sở hữu
+                                        <span th:if="${row.role == 'OWNER'}" class="status-badge status-owner">
+                                            <i class="ti ti-shield-check"></i>Chủ nhà thuốc
                                         </span>
-                                        <span th:if="${!row.ownerLocked and row.assigned}"
+                                        <span th:if="${row.role != 'OWNER' and row.assigned}"
                                               class="status-badge status-assigned">Đã phân quyền</span>
-                                        <span th:if="${!row.ownerLocked and !row.assigned}"
-                                              class="status-badge status-unassigned">Chưa phân quyền</span>
+                                        <span th:if="${!row.assigned}"
+                                              class="status-badge status-unassigned">Không quyền</span>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -512,7 +357,7 @@
                             <div class="d-flex align-items-center gap-2">
                                 <a class="btn btn-sm btn-pm-light"
                                    th:classappend="${!permissionPage.hasPrevious} ? ' disabled' : ''"
-                                   th:href="@{/owner/permissions(branchId=${permissionPage.selectedBranchId}, page=${permissionPage.previousPage}, size=${permissionPage.size}, search=${search}, roleFilter=${roleFilter})}">
+                                   th:href="@{/owner/permissions(page=${permissionPage.previousPage}, size=${permissionPage.size}, search=${search})}">
                                     <i class="ti ti-chevron-left me-1"></i>Trước
                                 </a>
                                 <span class="small text-secondary">Trang
@@ -521,7 +366,7 @@
                                 </span>
                                 <a class="btn btn-sm btn-pm-light"
                                    th:classappend="${!permissionPage.hasNext} ? ' disabled' : ''"
-                                   th:href="@{/owner/permissions(branchId=${permissionPage.selectedBranchId}, page=${permissionPage.nextPage}, size=${permissionPage.size}, search=${search}, roleFilter=${roleFilter})}">
+                                   th:href="@{/owner/permissions(page=${permissionPage.nextPage}, size=${permissionPage.size}, search=${search})}">
                                     Sau<i class="ti ti-chevron-right ms-1"></i>
                                 </a>
                             </div>

@@ -16,7 +16,6 @@ public class ReturnResponse {
     private Integer id;
     private String returnCode;
     private Integer invoiceId;
-    private Integer branchId;
     private Integer returnedById;
     private Instant returnDate;
     private String returnType;
@@ -37,7 +36,6 @@ public class ReturnResponse {
                 returnEntity.getId(),
                 returnEntity.getReturnCode(), 
                 returnEntity.getInvoiceID() != null ? returnEntity.getInvoiceID().getId() : null,
-                returnEntity.getBranchID() != null ? returnEntity.getBranchID().getId() : null,
                 returnEntity.getReturnedBy() != null ? returnEntity.getReturnedBy().getId() : null,
                 returnEntity.getReturnDate(),
                 returnEntity.getReturnType(),

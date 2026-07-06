@@ -2,10 +2,8 @@ package com.example.project;
 
 import com.example.project.entity.Account;
 import com.example.project.entity.Accountpermission;
-import com.example.project.entity.Branch;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.AccountpermissionRepository;
-import com.example.project.repository.BranchRepository;
 import com.example.project.security.AccountPrincipal;
 import com.example.project.service.CustomAccountDetailsService;
 import org.junit.jupiter.api.Test;

@@ -7,7 +7,6 @@ import com.example.project.dto.request.ProductIngredientCreateRequest;
 import com.example.project.dto.request.ProductPositionCreateRequest;
 import com.example.project.dto.request.ProductUnitCreateRequest;
 import com.example.project.dto.response.ProductBatchDetailResponse;
-import com.example.project.dto.response.ProductBranchStockResponse;
 import com.example.project.dto.response.ProductDetailResponse;
 import com.example.project.dto.response.ProductListStatsResponse;
 import com.example.project.dto.response.ProductRecentHistoryResponse;
@@ -15,7 +14,6 @@ import com.example.project.dto.response.ProductResponse;
 import com.example.project.dto.response.ProductRowResponse;
 import com.example.project.dto.response.ProductUnitDetailResponse;
 import com.example.project.entity.Batch;
-import com.example.project.entity.Branch;
 import com.example.project.entity.Invoice;
 import com.example.project.entity.Invoicedetail;
 import com.example.project.entity.Medicineapi;
@@ -29,7 +27,6 @@ import com.example.project.entity.Stockout;
 import com.example.project.entity.Stockoutdetail;
 import com.example.project.entity.Type;
 import com.example.project.repository.BatchRepository;
-import com.example.project.repository.BranchRepository;
 import com.example.project.repository.InvoicedetailRepository;
 import com.example.project.repository.MedicineapiRepository;
 import com.example.project.repository.OriginRepository;
@@ -93,7 +90,6 @@ public class ProductService {
     private final StockoutdetailRepository stockoutdetailRepository;
     private final ReturndetailRepository returndetailRepository;
     private final OriginRepository originRepository;
-    private final BranchRepository branchRepository;
     private final PositionRepository positionRepository;
     private final CurrentUserContext currentUserContext;
 
@@ -107,7 +103,6 @@ public class ProductService {
                           StockoutdetailRepository stockoutdetailRepository,
                           ReturndetailRepository returndetailRepository,
                           OriginRepository originRepository,
-                          BranchRepository branchRepository,
                           PositionRepository positionRepository,
                           CurrentUserContext currentUserContext) {
         this.productRepository = productRepository;
@@ -120,7 +115,6 @@ public class ProductService {
         this.stockoutdetailRepository = stockoutdetailRepository;
         this.returndetailRepository = returndetailRepository;
         this.originRepository = originRepository;
-        this.branchRepository = branchRepository;
         this.positionRepository = positionRepository;
         this.currentUserContext = currentUserContext;
     }
@@ -191,9 +185,9 @@ public class ProductService {
     }
 
     /**
-     * Full Product Detail payload, branch-scoped by {@link CurrentUserContext#getBranchFilter()}
-     * (Owner = all branches; Chief Pharmacist / Pharmacist = active branch). Returns
-     * {@link Optional#empty()} when the product does not exist, so the controller can 404 / redirect.
+     * Full Product Detail payload. The store is single, so stock is one system-wide total (no
+     * per-branch breakdown). Returns {@link Optional#empty()} when the product does not exist, so
+     * the controller can 404 / redirect.
      */
     @Transactional(readOnly = true)
     public Optional<ProductDetailResponse> getProductDetail(Integer productId) {
@@ -202,7 +196,6 @@ public class ProductService {
             return Optional.empty();
         }
         Product product = productOpt.get();
-        Integer branchId = currentUserContext.getBranchFilter();
 
         List<ProductUnitDetailResponse> units = productunitRepository.findByProductId(productId).stream()
                 .sorted(Comparator.comparing(Productunit::getRatio,
@@ -214,23 +207,17 @@ public class ProductService {
                 .map(this::formatIngredient)
                 .toList();
 
-        List<ProductBranchStockResponse> branchStocks =
-                batchRepository.sumStorageByProductGroupedByBranch(productId, branchId).stream()
-                        .map(row -> toBranchStock(product, row))
-                        .toList();
-        long totalStock = branchStocks.stream()
-                .mapToLong(ProductBranchStockResponse::getTotalStock)
-                .sum();
+        long totalStock = batchRepository.sumStorageByProduct(productId);
         String totalStatus = stockStatusCode(product, totalStock);
 
         List<ProductBatchDetailResponse> batches =
-                batchRepository.findInStockBatchesByProduct(productId, branchId).stream()
+                batchRepository.findInStockBatchesByProduct(productId).stream()
                         .map(this::toBatchDetail)
                         .toList();
 
         boolean canViewHistory = canViewRecentHistory();
         List<ProductRecentHistoryResponse> recentHistory =
-                canViewHistory ? loadRecentHistory(productId, branchId) : List.of();
+                canViewHistory ? loadRecentHistory(productId) : List.of();
 
         ProductDetailResponse response = new ProductDetailResponse();
         response.setProductId(product.getProductID());
@@ -251,7 +238,6 @@ public class ProductService {
         response.setTotalStock(totalStock);
         response.setStockStatusLabel(stockStatusLabel(totalStatus));
         response.setStockStatusCss(stockStatusCss(totalStatus));
-        response.setBranchStocks(branchStocks);
         response.setBatches(batches);
         response.setCanViewRecentHistory(canViewHistory);
         response.setRecentHistory(recentHistory);
@@ -260,8 +246,7 @@ public class ProductService {
 
     /**
      * Whether the current user may see the "recent inventory history" block. Owner and Chief
-     * Pharmacist may; Pharmacist may not. (Chief Pharmacist's data is already branch-scoped via
-     * {@link CurrentUserContext#getBranchFilter()}.)
+     * Pharmacist may; Pharmacist may not.
      */
     public boolean canViewRecentHistory() {
         String role = currentUserContext.getCurrentRole();
@@ -290,11 +275,6 @@ public class ProductService {
                 .stream()
                 .sorted(Comparator.comparing(origin -> origin.getName() == null ? "" : origin.getName()))
                 .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Branch> listBranches() {
-        return branchRepository.findAllWithStatus();
     }
 
     /** Existing ingredient names, for the Create Product autocomplete (reuse instead of retyping). */
@@ -433,9 +413,6 @@ public class ProductService {
                 Position entity = new Position();
                 entity.setProductID(saved);
                 entity.setName(positionName);
-                if (position.getBranchId() != null) {
-                    entity.setBranchID(branchRepository.getReferenceById(position.getBranchId()));
-                }
                 positionRepository.save(entity);
             }
         }
@@ -544,17 +521,9 @@ public class ProductService {
 
     // --- helpers -------------------------------------------------------------
 
-    /**
-     * On-hand stock per product, scoped to the active branch via {@link CurrentUserContext#getBranchFilter()}:
-     * for Pharmacist / Chief Pharmacist this returns only their current branch's stock; for the Owner
-     * (and unauthenticated callers) {@code getBranchFilter()} is {@code null}, so stock is summed across
-     * all branches (system-wide total) — the documented Owner cross-branch behavior.
-     */
+    /** On-hand stock per product = SUM(Batch.storageQuantity) (single store — no branch scoping). */
     private Map<Integer, Long> loadStockByProduct() {
-        Integer branchId = currentUserContext.getBranchFilter();
-        List<Object[]> rows = branchId == null
-                ? batchRepository.sumStorageGroupedByProduct()
-                : batchRepository.sumStorageGroupedByProductAndBranch(branchId);
+        List<Object[]> rows = batchRepository.sumStorageGroupedByProduct();
 
         return rows.stream()
                 .filter(row -> row[0] != null)
@@ -615,21 +584,11 @@ public class ProductService {
         );
     }
 
-    private ProductBranchStockResponse toBranchStock(Product product, Object[] row) {
-        Integer branchId = row[0] != null ? ((Number) row[0]).intValue() : null;
-        String branchName = row[1] != null ? (String) row[1] : "—";
-        long stock = row[2] != null ? ((Number) row[2]).longValue() : 0L;
-        String statusCode = stockStatusCode(product, stock);
-        return new ProductBranchStockResponse(
-                branchId, branchName, stock, stockStatusLabel(statusCode), stockStatusCss(statusCode));
-    }
-
     private ProductBatchDetailResponse toBatchDetail(Batch batch) {
         return new ProductBatchDetailResponse(
                 batch.getId(),
                 batch.getBatchName(),
                 batch.getLotNumber(),
-                branchName(batch.getBranchID()),
                 formatInstant(batch.getImportDate()),
                 formatDate(batch.getProductionDate()),
                 formatDate(batch.getExpirationDate()),
@@ -643,38 +602,38 @@ public class ProductService {
 
     // --- recent stock-movement preview (union of 4 sources) ------------------
 
-    private List<ProductRecentHistoryResponse> loadRecentHistory(Integer productId, Integer branchId) {
+    private List<ProductRecentHistoryResponse> loadRecentHistory(Integer productId) {
         Pageable top = PageRequest.of(0, RECENT_HISTORY_LIMIT);
         List<ProductRecentHistoryResponse> rows = new ArrayList<>();
 
-        for (Batch batch : batchRepository.findRecentImportsByProduct(productId, branchId, top)) {
+        for (Batch batch : batchRepository.findRecentImportsByProduct(productId, top)) {
             rows.add(new ProductRecentHistoryResponse(
                     batch.getImportDate(), formatInstant(batch.getImportDate()), "Nhập kho",
-                    branchName(batch.getBranchID()), batch.getBatchName(), batch.getLotNumber(),
+                    batch.getBatchName(), batch.getLotNumber(),
                     importQuantity(batch), null));
         }
 
-        for (Invoicedetail detail : invoicedetailRepository.findRecentSalesByProduct(productId, branchId, top)) {
+        for (Invoicedetail detail : invoicedetailRepository.findRecentSalesByProduct(productId, top)) {
             Invoice invoice = detail.getInvoiceID();
             rows.add(new ProductRecentHistoryResponse(
                     invoice.getDate(), formatInstant(invoice.getDate()), "Bán hàng",
-                    branchName(invoice.getBranchID()), invoice.getInvoiceCode(),
+                    invoice.getInvoiceCode(),
                     lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), null));
         }
 
-        for (Stockoutdetail detail : stockoutdetailRepository.findRecentStockOutsByProduct(productId, branchId, top)) {
+        for (Stockoutdetail detail : stockoutdetailRepository.findRecentStockOutsByProduct(productId, top)) {
             Stockout stockOut = detail.getStockOutID();
             rows.add(new ProductRecentHistoryResponse(
                     stockOut.getDate(), formatInstant(stockOut.getDate()),
                     "Xuất kho - " + formatOutType(stockOut.getOutType()),
-                    branchName(stockOut.getBranchID()), formatCode("SO", stockOut.getId()),
+                    formatCode("SO", stockOut.getId()),
                     lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), detail.getNote()));
         }
 
-        for (Returndetail detail : returndetailRepository.findRecentReturnsByProduct(productId, branchId, top)) {
+        for (Returndetail detail : returndetailRepository.findRecentReturnsByProduct(productId, top)) {
             rows.add(new ProductRecentHistoryResponse(
                     detail.getReturnID().getReturnDate(), formatInstant(detail.getReturnID().getReturnDate()),
-                    "Trả hàng", branchName(detail.getReturnID().getBranchID()),
+                    "Trả hàng",
                     formatCode("RT", detail.getReturnID().getId()),
                     lotNumber(detail.getBatchID()), nullSafe(detail.getBaseQtyRestored()), null));
         }
@@ -699,10 +658,6 @@ public class ProductService {
 
     private String lotNumber(Batch batch) {
         return batch != null ? batch.getLotNumber() : null;
-    }
-
-    private String branchName(Branch branch) {
-        return branch != null && branch.getName() != null ? branch.getName() : "—";
     }
 
     private String formatCode(String prefix, Integer id) {

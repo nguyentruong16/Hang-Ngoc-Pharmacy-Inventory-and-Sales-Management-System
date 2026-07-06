@@ -2,14 +2,11 @@ package com.example.project.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.constraints.Pattern;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
@@ -41,9 +38,6 @@ public class OwnerUserCreateRequest {
 
     @NotBlank(message = "Vui lòng chọn vai trò")
     private String role;
-
-    @NotEmpty(message = "Vui lòng chọn ít nhất một chi nhánh")
-    private List<Integer> branchIds = new ArrayList<>();
 
     private Boolean status = true;
 }

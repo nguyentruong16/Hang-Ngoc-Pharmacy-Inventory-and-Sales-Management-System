@@ -277,12 +277,6 @@
 </template>
 <template id="positionTemplate">
     <tr>
-        <td>
-            <select class="form-select form-select-sm" data-field="branchId">
-                <option value="">-- Chọn chi nhánh --</option>
-                <option th:each="b : ${branches}" th:value="${b.id}" th:text="${b.name}"></option>
-            </select>
-        </td>
         <td><input type="text" class="form-control form-control-sm" data-field="name" placeholder="VD: Kệ A1"></td>
         <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'positionRows','positions')"><i class="ti ti-trash"></i></button></td>
     </tr>

@@ -13,9 +13,9 @@ public interface PurchaseinvoiceRepository extends JpaRepository<Purchaseinvoice
            select p
            from Purchaseinvoice p
            left join fetch p.supplierID
-           left join fetch p.branchID
            left join fetch p.employeeID
            left join fetch p.requisitionID
+           left join fetch p.statusID
            order by p.date desc
            """)
     List<Purchaseinvoice> findAllWithRelations();
@@ -24,9 +24,9 @@ public interface PurchaseinvoiceRepository extends JpaRepository<Purchaseinvoice
            select p
            from Purchaseinvoice p
            left join fetch p.supplierID
-           left join fetch p.branchID
            left join fetch p.employeeID
            left join fetch p.requisitionID
+           left join fetch p.statusID
            where p.id = :id
            """)
     Optional<Purchaseinvoice> findByIdWithRelations(Integer id);

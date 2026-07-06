@@ -39,10 +39,6 @@ public class Batch {
     @JoinColumn(name = "purchaseDetailID")
     private Purchasedetail purchaseDetailID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branchID")
-    private Branch branchID;
-
     @NotNull
     @Column(name = "storageQuantity", nullable = false)
     private Integer storageQuantity;

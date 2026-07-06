@@ -21,19 +21,15 @@ ON DUPLICATE KEY UPDATE
     phoneNumber = VALUES(phoneNumber),
     email = VALUES(email);
 
-INSERT INTO accountpermission (accountPermissionID, accountID, role, branchID)
+INSERT INTO accountpermission (accountPermissionID, accountID, role)
 VALUES
-    (1, 1, 'OWNER', 1),
-    (2, 1, 'OWNER', 2),
-    (3, 2, 'CHIEF_PHARMACIST', 1),
-    (4, 2, 'PHARMACIST', 2),
-    (5, 3, 'PHARMACIST', 1),
-    (6, 3, 'CHIEF_PHARMACIST', 2),
-    (7, 4, 'ACCOUNTANT', 1),
-    (8, 5, 'ACCOUNTANT', 2),
-    (9, 6, 'PHARMACIST', 1),
-    (10, 7, 'PHARMACIST', 2)
+    (1, 1, 'OWNER'),
+    (3, 2, 'PHARMACIST'),
+    (5, 3, 'PHARMACIST'),
+    (7, 4, 'ACCOUNTANT'),
+    (8, 5, 'ACCOUNTANT'),
+    (9, 6, 'PHARMACIST'),
+    (10, 7, 'PHARMACIST')
 ON DUPLICATE KEY UPDATE
     accountID = VALUES(accountID),
-    role = VALUES(role),
-    branchID = VALUES(branchID);
+    role = VALUES(role);

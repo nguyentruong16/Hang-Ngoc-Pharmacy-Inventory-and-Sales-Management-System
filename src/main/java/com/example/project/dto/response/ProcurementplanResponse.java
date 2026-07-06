@@ -15,7 +15,6 @@ public class ProcurementplanResponse {
     private Integer id;
     private String procurementPlanCode;
     private Instant date;
-    private Integer branchId;
     private Integer employeeId;
     private Integer statusId;
     private Instant approveAt;
@@ -26,7 +25,6 @@ public class ProcurementplanResponse {
                 procurementplan.getId(),
                 procurementplan.getProcurementPlanCode(), 
                 procurementplan.getDate(),
-                procurementplan.getBranchID() != null ? procurementplan.getBranchID().getId() : null,
                 procurementplan.getEmployeeID() != null ? procurementplan.getEmployeeID().getId() : null,
                 procurementplan.getStatusID() != null ? procurementplan.getStatusID().getId() : null,
                 procurementplan.getApproveAt(),

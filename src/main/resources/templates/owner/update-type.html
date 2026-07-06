@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Tạo chi nhánh | PharmaManager</title>
+    <title>Cập nhật loại hàng | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -63,53 +63,50 @@
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="fs-4 mb-1">Tạo chi nhánh mới</h1>
-                <p class="text-secondary mb-0">Thêm chi nhánh mới vào hệ thống</p>
+                <h1 class="fs-4 mb-1">Cập nhật loại hàng</h1>
+                <p class="text-secondary mb-0">
+                    Mã loại:
+                    <span class="fw-semibold" th:text="|LH-${#numbers.formatInteger(type.id, 5)}|">LH-000001</span>
+                </p>
             </div>
 
-            <a th:href="@{/owner/branch-list}" class="btn btn-outline-secondary">
+            <a th:href="${basePath}" class="btn btn-outline-secondary">
                 Quay lại danh sách
             </a>
         </div>
 
-        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}">
-            Có lỗi xảy ra
-        </div>
-
         <div class="owner-card p-4">
-            <form th:action="@{/owner/branch-list/create-branch}" th:object="${branchForm}" method="post" novalidate>
+            <form th:action="${basePath + '/update-type/' + type.id}"
+                  th:object="${typeForm}"
+                  method="post"
+                  novalidate>
                 <div class="row g-4">
                     <div class="col-12 col-lg-8">
-                        <h2 class="fs-6 mb-3">Thông tin chi nhánh</h2>
+                        <h2 class="fs-6 mb-3">Thông tin loại hàng</h2>
 
                         <div class="mb-3">
-                            <label for="branchName" class="form-label">Tên chi nhánh <span class="text-danger">*</span></label>
-                            <input id="branchName"
+                            <label for="sortType" class="form-label">Nhóm mặt hàng <span class="text-danger">*</span></label>
+                            <input id="sortType"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{sortType}"
+                                   list="sortTypeOptions"
+                                   placeholder="Chọn hoặc nhập nhóm mặt hàng">
+                            <datalist id="sortTypeOptions">
+                                <option th:each="group : ${typeGroups}" th:value="${group}"></option>
+                            </datalist>
+                            <div class="form-text">Ví dụ: thuốc, hàng hóa, thiết bị y tế, combo</div>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('sortType')}" th:errors="*{sortType}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="typeName" class="form-label">Tên loại hàng <span class="text-danger">*</span></label>
+                            <input id="typeName"
                                    type="text"
                                    class="form-control"
                                    th:field="*{name}"
-                                   placeholder="Nhập tên chi nhánh">
+                                   placeholder="Nhập tên loại hàng">
                             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="branchAddress" class="form-label">Địa chỉ</label>
-                            <input id="branchAddress"
-                                   type="text"
-                                   class="form-control"
-                                   th:field="*{address}"
-                                   placeholder="Nhập địa chỉ chi nhánh">
-                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="branchStatus" class="form-label">Trạng thái <span class="text-danger">*</span></label>
-                            <select id="branchStatus" class="form-select" th:field="*{statusName}">
-                                <option value="">-- Chọn trạng thái --</option>
-                                <option value="Đang hoạt động">Đang hoạt động</option>
-                                <option value="Ngừng hoạt động">Ngừng hoạt động</option>
-                            </select>
-                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('statusName')}" th:errors="*{statusName}"></div>
                         </div>
                     </div>
 
@@ -117,14 +114,14 @@
                         <h2 class="fs-6 mb-3">Thao tác</h2>
 
                         <p class="text-secondary small mb-4">
-                            Kiểm tra kỹ thông tin trước khi tạo chi nhánh mới.
+                            Kiểm tra kỹ thông tin trước khi cập nhật loại hàng.
                         </p>
 
                         <button type="submit" class="btn btn-owner-primary w-100 mb-2">
-                            Tạo chi nhánh
+                            Cập nhật loại hàng
                         </button>
 
-                        <a th:href="@{/owner/branch-list}" class="btn btn-outline-secondary w-100">
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
                             Hủy
                         </a>
                     </div>

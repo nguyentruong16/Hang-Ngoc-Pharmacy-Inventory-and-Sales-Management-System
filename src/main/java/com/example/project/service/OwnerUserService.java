@@ -6,17 +6,15 @@ import com.example.project.dto.response.OwnerUserRowResponse;
 import com.example.project.dto.response.OwnerUserStatsResponse;
 import com.example.project.entity.Account;
 import com.example.project.entity.Accountpermission;
-import com.example.project.entity.Branch;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.AccountpermissionRepository;
-import com.example.project.repository.BranchRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import java.text.Normalizer;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,16 +23,13 @@ public class OwnerUserService {
 
     private final AccountRepository accountRepository;
     private final AccountpermissionRepository accountpermissionRepository;
-    private final BranchRepository branchRepository;
     private final PasswordEncoder passwordEncoder;
 
     public OwnerUserService(AccountRepository accountRepository,
                             AccountpermissionRepository accountpermissionRepository,
-                            BranchRepository branchRepository,
                             PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.accountpermissionRepository = accountpermissionRepository;
-        this.branchRepository = branchRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -139,28 +134,12 @@ public class OwnerUserService {
 
         Account savedAccount = accountRepository.save(account);
 
-        int nextPermissionId = accountpermissionRepository.findMaxId() + 1;
+        Accountpermission permission = new Accountpermission();
+        permission.setId(accountpermissionRepository.findMaxId() + 1);
+        permission.setAccountID(savedAccount);
+        permission.setRole(request.getRole());
 
-        for (Integer branchId : request.getBranchIds()) {
-            Branch branch = branchRepository.findById(branchId)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh đã chọn"));
-
-            Accountpermission permission = new Accountpermission();
-            permission.setId(nextPermissionId++);
-            permission.setAccountID(savedAccount);
-            permission.setBranchID(branch);
-            permission.setRole(request.getRole());
-
-            accountpermissionRepository.save(permission);
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public List<Branch> listBranches() {
-        return branchRepository.findAll()
-                .stream()
-                .sorted(Comparator.comparing(branch -> branch.getName() == null ? "" : branch.getName()))
-                .toList();
+        accountpermissionRepository.save(permission);
     }
 
     private void validateCreateRequest(OwnerUserCreateRequest request) {
@@ -178,10 +157,6 @@ public class OwnerUserService {
 
         if (accountRepository.existsByEmailIgnoreCase(request.getEmail().trim())) {
             throw new IllegalArgumentException("Email đã tồn tại");
-        }
-
-        if (request.getBranchIds() == null || request.getBranchIds().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn ít nhất một chi nhánh");
         }
     }
 
@@ -215,11 +190,7 @@ public class OwnerUserService {
             return true;
         }
 
-        return permissions != null && permissions.stream()
-                .map(Accountpermission::getBranchID)
-                .filter(Objects::nonNull)
-                .map(Branch::getName)
-                .anyMatch(branchName -> containsNormalized(branchName, normalizedKeyword));
+        return false;
     }
 
     private boolean containsNormalized(String value, String normalizedKeyword) {
@@ -272,17 +243,7 @@ public class OwnerUserService {
             roleDisplay = "Chưa phân quyền";
         }
 
-        String branchNames = permissions.stream()
-                .map(Accountpermission::getBranchID)
-                .filter(Objects::nonNull)
-                .map(Branch::getName)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.joining(", "));
-
-        if (branchNames.isBlank()) {
-            branchNames = "Chưa có chi nhánh";
-        }
+        String branchNames = "Toàn hệ thống";
 
         boolean active = Boolean.TRUE.equals(account.getStatus());
 

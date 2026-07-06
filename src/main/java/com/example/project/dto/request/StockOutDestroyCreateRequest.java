@@ -10,8 +10,6 @@ import java.util.List;
 @Setter
 public class StockOutDestroyCreateRequest {
 
-    private Integer branchId;
-
     private String reason;
 
     private String note;

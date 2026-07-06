@@ -35,18 +35,15 @@ public class StockoutService {
     private final StockoutdetailRepository stockoutdetailRepository;
     private final StatusRepository statusRepository;
     private final AccountRepository accountRepository;
-    private final BranchRepository branchRepository;
 
     public StockoutService(StockoutRepository stockoutRepository,
                            StockoutdetailRepository stockoutdetailRepository,
                            StatusRepository statusRepository,
-                           AccountRepository accountRepository,
-                           BranchRepository branchRepository) {
+                           AccountRepository accountRepository) {
         this.stockoutRepository = stockoutRepository;
         this.stockoutdetailRepository = stockoutdetailRepository;
         this.statusRepository = statusRepository;
         this.accountRepository = accountRepository;
-        this.branchRepository = branchRepository;
     }
 
     @Transactional(readOnly = true)
@@ -72,7 +69,6 @@ public class StockoutService {
                 .filter(stockOut -> matchesKeyword(stockOut, detailMap.getOrDefault(stockOut.getId(), List.of()), normalizedKeyword))
                 .filter(stockOut -> matchesDate(stockOut, from, to))
                 .filter(stockOut -> outType == null || outType.isBlank() || outType.equals(stockOut.getOutType()))
-                .filter(stockOut -> branchId == null || branchMatches(stockOut, branchId))
                 .filter(stockOut -> statusId == null || statusMatches(stockOut, statusId))
                 .map(stockOut -> toListItem(stockOut, detailMap.getOrDefault(stockOut.getId(), List.of())))
                 .toList();
@@ -149,13 +145,11 @@ public class StockoutService {
             reasonChecked = true;
         } else if (isStatus(statusName, STATUS_NEED_CHECK)) {
             sourceChecked = true;
-            targetChecked = stockOut.getTargetBranchID() != null || !"INTERNAL_TRANSFER".equals(stockOut.getOutType());
-            valueChecked = false;
+            targetChecked = !"INTERNAL_TRANSFER".equals(stockOut.getOutType());            valueChecked = false;
             reasonChecked = false;
         } else {
-            sourceChecked = stockOut.getBranchID() != null;
-            targetChecked = stockOut.getTargetBranchID() != null || !"INTERNAL_TRANSFER".equals(stockOut.getOutType());
-            valueChecked = estimatedValue.compareTo(BigDecimal.ZERO) > 0;
+            sourceChecked = true;
+            targetChecked = !"INTERNAL_TRANSFER".equals(stockOut.getOutType());            valueChecked = estimatedValue.compareTo(BigDecimal.ZERO) > 0;
             reasonChecked = false;
         }
 
@@ -175,8 +169,6 @@ public class StockoutService {
                 formatInstant(stockOut.getDate()),
                 stockOut.getOutType(),
                 formatOutType(stockOut.getOutType()),
-                stockOut.getBranchID() != null ? stockOut.getBranchID().getName() : "Không có",
-                stockOut.getTargetBranchID() != null ? stockOut.getTargetBranchID().getName() : "Không áp dụng",
                 stockOut.getCreatedBy() != null ? stockOut.getCreatedBy().getName() : "Không rõ",
                 stockOut.getApprovedBy() != null ? stockOut.getApprovedBy().getName() : "Chưa có",
                 formatInstant(stockOut.getApprovedAt()),
@@ -238,11 +230,8 @@ public class StockoutService {
     }
 
     @Transactional(readOnly = true)
-    public List<Branch> listBranches() {
-        return branchRepository.findAll()
-                .stream()
-                .sorted(Comparator.comparing(branch -> branch.getName() == null ? "" : branch.getName()))
-                .toList();
+    public List<Object> listBranches() {
+        return List.of();
     }
 
     @Transactional(readOnly = true)
@@ -278,8 +267,6 @@ public class StockoutService {
                 formatInstant(stockOut.getDate()),
                 stockOut.getOutType(),
                 formatOutType(stockOut.getOutType()),
-                stockOut.getBranchID() != null ? stockOut.getBranchID().getName() : "Không có",
-                stockOut.getTargetBranchID() != null ? stockOut.getTargetBranchID().getName() : "Không áp dụng",
                 stockOut.getCreatedBy() != null ? stockOut.getCreatedBy().getName() : "Không rõ",
                 details.size(),
                 estimatedValue,
@@ -321,8 +308,6 @@ public class StockoutService {
                 || containsNormalized(stockOut.getReason(), normalizedKeyword)
                 || containsNormalized(formatOutType(stockOut.getOutType()), normalizedKeyword)
                 || containsNormalized(getStatusName(stockOut), normalizedKeyword)
-                || containsNormalized(stockOut.getBranchID() != null ? stockOut.getBranchID().getName() : null, normalizedKeyword)
-                || containsNormalized(stockOut.getTargetBranchID() != null ? stockOut.getTargetBranchID().getName() : null, normalizedKeyword)
                 || containsNormalized(stockOut.getCreatedBy() != null ? stockOut.getCreatedBy().getName() : null, normalizedKeyword)) {
             return true;
         }
@@ -353,13 +338,6 @@ public class StockoutService {
         }
 
         return to == null || !date.isAfter(to);
-    }
-
-    private boolean branchMatches(Stockout stockOut, Integer branchId) {
-        Integer sourceBranchId = stockOut.getBranchID() != null ? stockOut.getBranchID().getId() : null;
-        Integer targetBranchId = stockOut.getTargetBranchID() != null ? stockOut.getTargetBranchID().getId() : null;
-
-        return branchId.equals(sourceBranchId) || branchId.equals(targetBranchId);
     }
 
     private boolean statusMatches(Stockout stockOut, Integer statusId) {

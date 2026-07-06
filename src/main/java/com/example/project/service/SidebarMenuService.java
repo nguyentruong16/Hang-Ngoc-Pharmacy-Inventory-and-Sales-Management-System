@@ -76,8 +76,25 @@ public class SidebarMenuService {
         if (uri.startsWith("/owner/branch-list/branch-detail")) {
             uri = "/owner/branch-list";
         }
-        if (uri.startsWith("/owner/producers/create-producer")) {
+        if (uri.startsWith("/owner/producers/create-producer")
+                || uri.startsWith("/owner/producers/update-producer")) {
             uri = "/owner/producers";
+        }
+        if (uri.startsWith("/owner/types/create-type")
+                || uri.startsWith("/owner/types/update-type")) {
+            uri = "/owner/types";
+        }
+        if (uri.startsWith("/chief-pharmacist/producers/create-producer")
+                || uri.startsWith("/chief-pharmacist/producers/update-producer")) {
+            uri = "/chief-pharmacist/producers";
+        }
+        if (uri.startsWith("/chief-pharmacist/types/create-type")
+                || uri.startsWith("/chief-pharmacist/types/update-type")) {
+            uri = "/chief-pharmacist/types";
+        }
+        if (uri.startsWith("/chief-pharmacist/positions/create-position")
+                || uri.startsWith("/chief-pharmacist/positions/update-position")) {
+            uri = "/chief-pharmacist/positions";
         }
         String best = null;
         for (SidebarMenuGroup group : menu) {
@@ -103,8 +120,7 @@ public class SidebarMenuService {
 
                 menuGroup("Quản trị", "ti ti-settings",
                         i("Danh sách người dùng", "/owner/users", "ti ti-users"),
-                        i("Bảng phân quyền", "/owner/permissions", "ti ti-shield-lock"),
-                        i("Danh sách chi nhánh", "/owner/branch-list", "ti ti-building-store")),
+                        i("Bảng phân quyền", "/owner/permissions", "ti ti-shield-lock")),
 
                 menuGroup("Hàng hóa", "ti ti-package",
                         i("Danh sách hàng hóa", "/owner/products", "ti ti-package")),
