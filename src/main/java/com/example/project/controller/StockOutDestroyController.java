@@ -22,15 +22,12 @@ public class StockOutDestroyController {
     }
 
     @GetMapping("/create")
-    public String createPage(@RequestParam(name = "branchId", required = false) Integer branchId,
-                             @RequestParam(name = "keyword", required = false) String keyword,
+    public String createPage(@RequestParam(name = "keyword", required = false) String keyword,
                              Model model) {
         StockOutDestroyCreateRequest form = new StockOutDestroyCreateRequest();
-        form.setBranchId(branchId);
 
         model.addAttribute("form", form);
-        model.addAttribute("branches", stockOutDestroyService.listBranches());
-        model.addAttribute("candidates", stockOutDestroyService.listAvailableBatches(branchId, keyword));
+        model.addAttribute("candidates", stockOutDestroyService.listAvailableBatches(keyword));
         model.addAttribute("keyword", keyword);
         model.addAttribute("basePath", "/chief-pharmacist/stock-outs");
 
@@ -51,8 +48,7 @@ public class StockOutDestroyController {
             return "redirect:/chief-pharmacist/stock-outs/" + stockOutId;
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
-            model.addAttribute("branches", stockOutDestroyService.listBranches());
-            model.addAttribute("candidates", stockOutDestroyService.listAvailableBatches(form.getBranchId(), null));
+            model.addAttribute("candidates", stockOutDestroyService.listAvailableBatches(null));
             model.addAttribute("keyword", null);
             model.addAttribute("basePath", "/chief-pharmacist/stock-outs");
 

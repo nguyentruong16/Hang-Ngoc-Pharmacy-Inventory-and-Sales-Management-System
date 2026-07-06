@@ -13,8 +13,6 @@ public class PositionCreateRequest {
     @NotNull(message = "Sản phẩm không được để trống")
     private Integer productId;
 
-    private Integer branchId;
-
     @NotBlank(message = "Tên vị trí không được để trống")
     @Size(max = 100, message = "Tên vị trí không được vượt quá 100 ký tự")
     private String name;

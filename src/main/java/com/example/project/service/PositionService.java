@@ -16,14 +16,11 @@ import java.util.List;
 @Service
 public class PositionService {
     private final PositionRepository positionRepository;
-    private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
 
     public PositionService(PositionRepository positionRepository,
-                           BranchRepository branchRepository,
                            ProductRepository productRepository) {
         this.positionRepository = positionRepository;
-        this.branchRepository = branchRepository;
         this.productRepository = productRepository;
     }
 
@@ -36,21 +33,15 @@ public class PositionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PositionResponse> list(String search, Integer branchId, Pageable pageable) {
+    public Page<PositionResponse> list(String search, Pageable pageable) {
         String keyword = search == null ? "" : search.trim();
-        Integer branchFilter = branchId == null || branchId <= 0 ? null : branchId;
-        return positionRepository.findFiltered(keyword, branchFilter, pageable)
+        return positionRepository.findFiltered(keyword, pageable)
                 .map(PositionResponse::from);
     }
 
     @Transactional(readOnly = true)
     public long countAll() {
         return positionRepository.count();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Branch> listBranches() {
-        return branchRepository.findAllWithStatus();
     }
 
     @Transactional(readOnly = true)
@@ -89,10 +80,5 @@ public class PositionService {
     private void applyForm(Position entity, Product product, PositionCreateRequest request) {
         entity.setProductID(product);
         entity.setName(request.getName().trim());
-        if (request.getBranchId() != null && request.getBranchId() > 0) {
-            entity.setBranchID(branchRepository.getReferenceById(request.getBranchId()));
-        } else {
-            entity.setBranchID(null);
-        }
     }
 }

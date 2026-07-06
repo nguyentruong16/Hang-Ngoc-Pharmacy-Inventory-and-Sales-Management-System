@@ -168,17 +168,6 @@
                             </div>
 
                             <div class="col-12 col-md-6">
-                                <label class="form-label">Chi nhánh <span class="text-danger">*</span></label>
-                                <select class="form-select" th:field="*{branchId}">
-                                    <option value="">-- Chọn chi nhánh --</option>
-                                    <option th:each="branch : ${branches}"
-                                            th:value="${branch.id}"
-                                            th:text="${branch.name}">
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-12 col-md-6">
                                 <label class="form-label">Lý do hủy <span class="text-danger">*</span></label>
                                 <select class="form-select" th:field="*{reason}">
                                     <option value="">-- Chọn lý do hủy --</option>

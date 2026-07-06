@@ -18,9 +18,6 @@ public class PurchaseInvoiceCreateRequest {
     @NotNull(message = "Vui lòng chọn nhà cung cấp")
     private Integer supplierId;
 
-    @NotNull(message = "Vui lòng chọn chi nhánh nhập")
-    private Integer branchId;
-
     private Integer requisitionId;
 
     @DecimalMin(value = "0.0", message = "Chi phí phát sinh không được âm")

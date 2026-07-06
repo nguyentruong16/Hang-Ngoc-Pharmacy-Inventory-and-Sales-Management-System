@@ -220,17 +220,6 @@
                     </div>
 
                     <div class="col-12 col-xl-2">
-                        <select class="form-select" name="branchId">
-                            <option value="">Chi nhánh</option>
-                            <option th:each="branch : ${branches}"
-                                    th:value="${branch.id}"
-                                    th:text="${branch.name}"
-                                    th:selected="${filterBranchId == branch.id}">
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="col-12 col-xl-2">
                         <select class="form-select" name="statusId">
                             <option value="">Trạng thái</option>
                             <option th:each="status : ${statuses}"
@@ -292,8 +281,6 @@
                             <span class="badge bg-secondary-subtle text-secondary"
                                   th:text="${item.outTypeDisplay}">Chuyển chi nhánh</span>
                         </td>
-                        <td th:text="${item.sourceBranchName}">Nhánh 1</td>
-                        <td th:text="${item.targetBranchName}">Nhánh 2</td>
                         <td th:text="${item.createdByName}">Nguyễn Văn Minh</td>
                         <td>
                             <span class="badge bg-success-subtle text-success"

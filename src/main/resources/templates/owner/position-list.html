@@ -159,11 +159,6 @@
       color: var(--sup-muted);
       margin-top: 2px;
     }
-    .branch-name {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--sup-green-dark);
-    }
 
     .btn-create {
       height: 40px;
@@ -245,15 +240,6 @@
                  name="search"
                  th:value="${search}"
                  placeholder="Tìm theo tên vị trí, tên hoặc mã sản phẩm">
-          <select class="filter-select" name="branchId" aria-label="Lọc chi nhánh">
-            <option value="">Tất cả chi nhánh</option>
-            <option th:each="branch : ${branches}"
-                    th:value="${branch.id}"
-                    th:text="${branch.name}"
-                    th:selected="${filterBranchId != null and filterBranchId == branch.id}">
-              Chi nhánh
-            </option>
-          </select>
           <button type="submit" class="btn-search primary">
             <i class="ti ti-search"></i>Tìm kiếm
           </button>
@@ -270,7 +256,6 @@
               <th>Mã vị trí</th>
               <th>Tên vị trí</th>
               <th>Sản phẩm</th>
-              <th>Chi nhánh</th>
               <th style="text-align:center;">Cập nhật</th>
             </tr>
           </thead>
@@ -282,10 +267,6 @@
                 <div class="sup-name" th:text="${pos.productName}">Paracetamol 500mg</div>
                 <div class="product-code" th:if="${pos.productCode != null}" th:text="${pos.productCode}">SP001</div>
               </td>
-              <td>
-                <span class="branch-name"
-                      th:text="${pos.branchName != null ? pos.branchName : '—'}">Chi nhánh 1</span>
-              </td>
               <td style="text-align:center;">
                 <a class="update-link"
                    th:href="${basePath + '/update-position/' + pos.id}">
@@ -295,7 +276,7 @@
             </tr>
 
             <tr th:if="${#lists.isEmpty(positions)}" class="empty-row">
-              <td colspan="5" style="text-align:center;">
+              <td colspan="4" style="text-align:center;">
                 Không tìm thấy vị trí nào.
               </td>
             </tr>
@@ -314,18 +295,18 @@
           <ul class="pagination mb-0">
             <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, branchId=${filterBranchId}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
+                 th:href="@{${basePath}(search=${search}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
             </li>
             <li class="page-item"
                 th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
                 th:classappend="${p == currentPage} ? ' active'">
               <a class="page-link"
                  th:text="${p + 1}"
-                 th:href="@{${basePath}(search=${search}, branchId=${filterBranchId}, page=${p}, size=${pageSize})}">1</a>
+                 th:href="@{${basePath}(search=${search}, page=${p}, size=${pageSize})}">1</a>
             </li>
             <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, branchId=${filterBranchId}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
+                 th:href="@{${basePath}(search=${search}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
             </li>
           </ul>
         </nav>

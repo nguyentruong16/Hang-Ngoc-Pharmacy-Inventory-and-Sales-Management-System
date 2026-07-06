@@ -238,14 +238,6 @@
                     </div>
 
                     <div class="col-12 col-xl-2">
-                        <select class="form-select" name="branchId">
-                            <option value="">Chi nhánh</option>
-                            <option th:each="branch : ${branches}"
-                                    th:value="${branch.id}"
-                                    th:text="${branch.name}"
-                                    th:selected="${filterBranchId == branch.id}">
-                            </option>
-                        </select>
                     </div>
 
                     <div class="col-12 col-xl-2">
@@ -312,7 +304,6 @@
                         <td class="fw-semibold text-success" th:text="${item.purchaseCode}">PINV-000001</td>
                         <td th:text="${item.dateDisplay}">01/06/2026 10:15</td>
                         <td th:text="${item.supplierName}">Nhà cung cấp A</td>
-                        <td th:text="${item.branchName}">Hằng Ngọc 1</td>
                         <td th:text="${item.employeeName}">Nguyễn Thị Lan</td>
                         <td>
                             <span class="badge bg-success-subtle text-success"
