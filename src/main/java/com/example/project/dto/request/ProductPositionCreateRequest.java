@@ -4,11 +4,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** One storage-location row of the Create Product form (persisted as a Position, per branch). */
+/** One storage-location row of the Create Product form (persisted as a Position). */
 @Getter
 @Setter
 @NoArgsConstructor
 public class ProductPositionCreateRequest {
-    private Integer branchId;
     private String name;
 }

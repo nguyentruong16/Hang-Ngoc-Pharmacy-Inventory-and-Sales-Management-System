@@ -22,16 +22,6 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
            """)
     List<Object[]> sumStorageGroupedByProduct();
 
-    /** Same as {@link #sumStorageGroupedByProduct()} but scoped to a single branch. */
-    @Query("""
-       select b.productID.productID, coalesce(sum(b.storageQuantity), 0)
-       from Batch b
-       where b.productID is not null
-         and b.branchID.id = :branchId
-       group by b.productID.productID
-       """)
-    List<Object[]> sumStorageGroupedByProductAndBranch(@Param("branchId") Integer branchId);
-
     @Query("""
            select count(b) > 0
            from Batch b
@@ -59,47 +49,33 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
        """)
     List<Batch> findAvailableBatchesForDestroy();
 
-    /**
-     * On-hand stock of one product grouped by branch, scoped to {@code branchId} when given
-     * ({@code null} = all branches, for the Owner). Each row is
-     * {@code [branchID (Integer), branchName (String), totalStock (Long)]}.
-     */
+    /** Total on-hand stock of one product across all its batches (single store — no branch breakdown). */
     @Query("""
-       select b.branchID.id, b.branchID.name, coalesce(sum(b.storageQuantity), 0)
+       select coalesce(sum(b.storageQuantity), 0)
        from Batch b
        where b.productID.productID = :productId
-         and (:branchId is null or b.branchID.id = :branchId)
-       group by b.branchID.id, b.branchID.name
-       order by b.branchID.name asc
        """)
-    List<Object[]> sumStorageByProductGroupedByBranch(@Param("productId") Integer productId,
-                                                       @Param("branchId") Integer branchId);
+    long sumStorageByProduct(@Param("productId") Integer productId);
 
-    /** In-stock (storageQuantity &gt; 0, active) batches of one product, branch-scoped, soonest-expiry first. */
+    /** In-stock (storageQuantity &gt; 0, active) batches of one product, soonest-expiry first. */
     @Query("""
        select b
        from Batch b
-       left join fetch b.branchID
        left join fetch b.importUnitID
        where b.productID.productID = :productId
          and b.storageQuantity > 0
          and b.status = true
-         and (:branchId is null or b.branchID.id = :branchId)
        order by b.expirationDate asc
        """)
-    List<Batch> findInStockBatchesByProduct(@Param("productId") Integer productId,
-                                            @Param("branchId") Integer branchId);
+    List<Batch> findInStockBatchesByProduct(@Param("productId") Integer productId);
 
-    /** Most recent import (batch) events of one product, branch-scoped, for the history preview. */
+    /** Most recent import (batch) events of one product, for the history preview. */
     @Query("""
        select b
        from Batch b
-       left join fetch b.branchID
        where b.productID.productID = :productId
-         and (:branchId is null or b.branchID.id = :branchId)
        order by b.importDate desc
        """)
     List<Batch> findRecentImportsByProduct(@Param("productId") Integer productId,
-                                          @Param("branchId") Integer branchId,
                                           Pageable pageable);
 }
