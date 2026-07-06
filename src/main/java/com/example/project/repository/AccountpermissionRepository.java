@@ -41,6 +41,19 @@ public interface AccountpermissionRepository extends JpaRepository<Accountpermis
            """)
     List<Accountpermission> findAllWithAccountAndBranch();
 
+    /**
+     * All assignments with account eagerly fetched, for the single-store (flat account-role)
+     * Permission Table. Unlike {@link #findAllWithAccountAndBranch()} this does not touch
+     * {@code branchID} at all.
+     */
+    @Query("""
+           select ap
+           from Accountpermission ap
+           left join fetch ap.accountID
+           order by ap.id
+           """)
+    List<Accountpermission> findAllWithAccount();
+
     /** True if the account already has any role assignment at the branch. */
     @Query("""
            select count(ap) > 0 from Accountpermission ap
@@ -93,4 +106,16 @@ public interface AccountpermissionRepository extends JpaRepository<Accountpermis
     default Optional<Accountpermission> findFirstOwnerPermission() {
         return findOwnerAssignments().stream().findFirst();
     }
+
+    /**
+     * Every assignment whose role is {@code OWNER} or the legacy {@code CHIEF_PHARMACIST} (merged
+     * into {@code OWNER} under the single-store role model). Used by the Permission Table to make
+     * sure a save never leaves the system with zero owners.
+     */
+    @Query("""
+           select ap
+           from Accountpermission ap
+           where upper(ap.role) = 'OWNER' or upper(ap.role) = 'CHIEF_PHARMACIST'
+           """)
+    List<Accountpermission> findOwnerLikeAssignments();
 }
