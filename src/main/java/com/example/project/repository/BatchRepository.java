@@ -22,14 +22,6 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
            """)
     List<Object[]> sumStorageGroupedByProduct();
 
-    /** Same as {@link #sumStorageGroupedByProduct()} but scoped to a single branch. */
-    @Query("""
-   select b.productID.productID, coalesce(sum(b.storageQuantity), 0)
-   from Batch b
-   where b.productID is not null
-   group by b.productID.productID
-   """)
-    List<Object[]> sumStorageGroupedByProductAndBranch(@Param("branchId") Integer branchId);
     @Query("""
            select count(b) > 0
            from Batch b
@@ -55,20 +47,15 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
    order by b.expirationDate asc
    """)
     List<Batch> findAvailableBatchesForDestroy();
-    /**
-     * On-hand stock of one product grouped by branch, scoped to {@code branchId} when given
-     * ({@code null} = all branches, for the Owner). Each row is
-     * {@code [branchID (Integer), branchName (String), totalStock (Long)]}.
-     */
+    /** Total on-hand stock of one product across all its batches (single store — no branch breakdown). */
     @Query("""
-   select 0, 'Toàn hệ thống', coalesce(sum(b.storageQuantity), 0)
+   select coalesce(sum(b.storageQuantity), 0)
    from Batch b
    where b.productID.productID = :productId
    """)
-    List<Object[]> sumStorageByProductGroupedByBranch(@Param("productId") Integer productId,
-                                                      @Param("branchId") Integer branchId);
+    long sumStorageByProduct(@Param("productId") Integer productId);
 
-    /** In-stock (storageQuantity &gt; 0, active) batches of one product, branch-scoped, soonest-expiry first. */
+    /** In-stock (storageQuantity &gt; 0, active) batches of one product, soonest-expiry first. */
     @Query("""
    select b
    from Batch b
@@ -78,9 +65,9 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
      and b.status = true
    order by b.expirationDate asc
    """)
-    List<Batch> findInStockBatchesByProduct(@Param("productId") Integer productId,
-                                            @Param("branchId") Integer branchId);
-    /** Most recent import (batch) events of one product, branch-scoped, for the history preview. */
+    List<Batch> findInStockBatchesByProduct(@Param("productId") Integer productId);
+
+    /** Most recent import (batch) events of one product, for the history preview. */
     @Query("""
    select b
    from Batch b
@@ -88,6 +75,5 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
    order by b.importDate desc
    """)
     List<Batch> findRecentImportsByProduct(@Param("productId") Integer productId,
-                                           @Param("branchId") Integer branchId,
                                            Pageable pageable);
 }

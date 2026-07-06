@@ -120,8 +120,7 @@ public class SidebarMenuService {
 
                 menuGroup("Quản trị", "ti ti-settings",
                         i("Danh sách người dùng", "/owner/users", "ti ti-users"),
-                        i("Bảng phân quyền", "/owner/permissions", "ti ti-shield-lock"),
-                        i("Danh sách chi nhánh", "/owner/branch-list", "ti ti-building-store")),
+                        i("Bảng phân quyền", "/owner/permissions", "ti ti-shield-lock")),
 
                 menuGroup("Hàng hóa", "ti ti-package",
                         i("Danh sách hàng hóa", "/owner/products", "ti ti-package")),
