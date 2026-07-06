@@ -83,7 +83,6 @@ public class PurchaseInvoiceBatchService {
                 formatPurchaseCode(invoice.getId()),
                 formatInstant(invoice),
                 invoice.getSupplierID() != null ? invoice.getSupplierID().getName() : "Không có",
-                invoice.getBranchID() != null ? invoice.getBranchID().getName() : "Không có",
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                 safe(invoice.getTotalAmount()),
                 productCount,
@@ -143,10 +142,6 @@ public class PurchaseInvoiceBatchService {
         Purchaseinvoice invoice = purchaseinvoiceRepository.findByIdWithRelations(purchaseId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập"));
 
-        if (invoice.getBranchID() == null) {
-            throw new IllegalArgumentException("Phiếu nhập chưa có chi nhánh nhận");
-        }
-
         saveDraft(purchaseId, form);
 
         List<Purchasedetail> details = purchasedetailRepository.findByPurchaseIdWithProduct(purchaseId);
@@ -173,9 +168,10 @@ public class PurchaseInvoiceBatchService {
             int storageQuantity = calculateBaseQuantity(detail.getQuantity(), importUnit);
 
             Batch batch = new Batch();
+            batch.setBatchCode(generateBatchCode(invoice.getId(), detail.getId()));
+            batch.setBatchName(generateBatchName(product, detail));
             batch.setProductID(product);
             batch.setPurchaseDetailID(detail);
-            batch.setBranchID(invoice.getBranchID());
             batch.setStorageQuantity(storageQuantity);
             batch.setImportUnitID(importUnit);
             batch.setImportQtyInUnit(detail.getQuantity());
@@ -372,5 +368,24 @@ public class PurchaseInvoiceBatchService {
                 .multiply(ratio)
                 .setScale(0, RoundingMode.HALF_UP)
                 .intValue();
+    }
+
+    private String generateBatchCode(Integer purchaseId, Integer purchaseDetailId) {
+        return "BATCH-" + String.format("%06d", purchaseId == null ? 0 : purchaseId)
+                + "-" + String.format("%03d", purchaseDetailId == null ? 0 : purchaseDetailId);
+    }
+
+    private String generateBatchName(Product product, Purchasedetail detail) {
+        String productName = product != null && product.getName() != null
+                ? product.getName()
+                : "Sản phẩm";
+
+        String lot = detail.getLotNumber() != null && !detail.getLotNumber().isBlank()
+                ? detail.getLotNumber()
+                : "Không số lô";
+
+        String name = productName + " - " + lot;
+
+        return name.length() > 50 ? name.substring(0, 50) : name;
     }
 }

@@ -50,13 +50,6 @@
             border-radius: 10px;
             min-height: 42px;
         }
-
-        .branch-option {
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-        }
     </style>
 </head>
 
@@ -145,23 +138,6 @@
 
                         <div class="mb-3">
                             <label class="form-label">Chi nhánh được truy cập</label>
-
-                            <div th:each="branch : ${branches}" class="branch-option">
-                                <div class="form-check mb-0">
-                                    <input class="form-check-input"
-                                           type="checkbox"
-                                           th:field="*{branchIds}"
-                                           th:value="${branch.id}"
-                                           th:id="${'branch-' + branch.id}">
-                                    <label class="form-check-label"
-                                           th:for="${'branch-' + branch.id}"
-                                           th:text="${branch.name}">
-                                        Tên chi nhánh
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('branchIds')}" th:errors="*{branchIds}"></div>
                         </div>
 
                         <div class="mb-4">

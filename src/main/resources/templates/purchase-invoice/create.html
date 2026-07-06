@@ -116,21 +116,6 @@
                                 </div>
                             </div>
 
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Chi nhánh nhập <span class="text-danger">*</span></label>
-                                <select class="form-select" th:field="*{branchId}">
-                                    <option value="">-- Chọn chi nhánh --</option>
-                                    <option th:each="branch : ${branches}"
-                                            th:value="${branch.id}"
-                                            th:text="${branch.name}">
-                                    </option>
-                                </select>
-                                <div class="text-danger small mt-1"
-                                     th:if="${#fields.hasErrors('branchId')}"
-                                     th:errors="*{branchId}">
-                                </div>
-                            </div>
-
                             <div class="col-12 col-md-4">
                                 <label class="form-label">Chi phí phát sinh</label>
                                 <input type="number"
