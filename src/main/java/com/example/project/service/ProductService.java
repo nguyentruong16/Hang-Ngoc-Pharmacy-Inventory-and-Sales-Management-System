@@ -431,9 +431,6 @@ public class ProductService {
                 Position entity = new Position();
                 entity.setProductID(saved);
                 entity.setName(positionName);
-                if (position.getBranchId() != null) {
-                    entity.setBranchID(branchRepository.getReferenceById(position.getBranchId()));
-                }
                 positionRepository.save(entity);
             }
         }

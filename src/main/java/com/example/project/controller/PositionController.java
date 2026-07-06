@@ -38,7 +38,6 @@ public class PositionController {
 
     @GetMapping("/chief-pharmacist/positions")
     public String positionList(@RequestParam(name = "search", required = false) String search,
-                               @RequestParam(name = "branchId", required = false) Integer branchId,
                                @RequestParam(name = "page", defaultValue = "0") int page,
                                @RequestParam(name = "size", defaultValue = "5") int size,
                                HttpServletRequest request,
@@ -52,14 +51,12 @@ public class PositionController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
-        Page<PositionResponse> positionPage = positionService.list(search, branchId, pageable);
+        Page<PositionResponse> positionPage = positionService.list(search, pageable);
         String basePath = resolveBasePath(request);
 
         model.addAttribute("positions", positionPage.getContent());
         model.addAttribute("totalPositions", positionService.countAll());
-        model.addAttribute("branches", positionService.listBranches());
         model.addAttribute("search", search);
-        model.addAttribute("filterBranchId", branchId);
         model.addAttribute("currentPage", positionPage.getNumber());
         model.addAttribute("totalPages", positionPage.getTotalPages());
         model.addAttribute("pageSize", size);
@@ -105,7 +102,6 @@ public class PositionController {
         if (!model.containsAttribute("positionForm")) {
             PositionCreateRequest form = new PositionCreateRequest();
             form.setProductId(position.getProductId());
-            form.setBranchId(position.getBranchId());
             form.setName(position.getName());
             model.addAttribute("positionForm", form);
         }
@@ -139,7 +135,6 @@ public class PositionController {
 
     private void populateForm(Model model, HttpServletRequest request, String pageTitle) {
         model.addAttribute("products", positionService.listProducts());
-        model.addAttribute("branches", positionService.listBranches());
         model.addAttribute("pageTitle", pageTitle);
         model.addAttribute("basePath", resolveBasePath(request));
     }

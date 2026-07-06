@@ -94,21 +94,6 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="branchId" class="form-label">Chi nhánh</label>
-                            <select id="branchId"
-                                    class="form-select"
-                                    th:field="*{branchId}">
-                                <option value="">-- Chọn chi nhánh --</option>
-                                <option th:each="branch : ${branches}"
-                                        th:value="${branch.id}"
-                                        th:text="${branch.name}">
-                                    Chi nhánh 1
-                                </option>
-                            </select>
-                            <div class="form-text">Có thể để trống nếu vị trí áp dụng chung.</div>
-                        </div>
-
-                        <div class="mb-3">
                             <label for="positionName" class="form-label">Tên vị trí <span class="text-danger">*</span></label>
                             <input id="positionName"
                                    type="text"
