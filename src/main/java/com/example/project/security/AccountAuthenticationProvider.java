@@ -10,11 +10,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BranchAwareAuthenticationProvider implements AuthenticationProvider {
+public class AccountAuthenticationProvider implements AuthenticationProvider {
     private final CustomAccountDetailsService accountDetailsService;
     private final PasswordEncoder passwordEncoder;
 
-    public BranchAwareAuthenticationProvider(
+    public AccountAuthenticationProvider(
             CustomAccountDetailsService accountDetailsService,
             PasswordEncoder passwordEncoder) {
         this.accountDetailsService = accountDetailsService;
@@ -27,17 +27,14 @@ public class BranchAwareAuthenticationProvider implements AuthenticationProvider
         String password = authentication.getCredentials() == null
                 ? ""
                 : authentication.getCredentials().toString();
-        Integer branchId = extractBranchId(authentication.getDetails());
 
-        // branchId may be null here: the details service decides whether a branch is required
-        // (Owner is cross-branch and logs in without one; other roles still need a valid branch).
         if (loginId == null || loginId.isBlank() || password.isBlank()) {
             throw new BadCredentialsException("Invalid credentials");
         }
 
         AccountPrincipal principal;
         try {
-            principal = accountDetailsService.loadUserByUsernameAndBranch(loginId, branchId);
+            principal = accountDetailsService.loadUserByLoginId(loginId);
         } catch (AuthenticationException exception) {
             throw new BadCredentialsException("Invalid credentials", exception);
         }
@@ -58,12 +55,5 @@ public class BranchAwareAuthenticationProvider implements AuthenticationProvider
     @Override
     public boolean supports(Class<?> authentication) {
         return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
-    }
-
-    private Integer extractBranchId(Object details) {
-        if (details instanceof BranchWebAuthenticationDetails branchDetails) {
-            return branchDetails.getBranchId();
-        }
-        return null;
     }
 }

@@ -20,25 +20,21 @@ import java.util.Locale;
 public class CustomAccountDetailsService {
     private final AccountRepository accountRepository;
     private final AccountpermissionRepository accountpermissionRepository;
-    private final BranchRepository branchRepository;
 
     public CustomAccountDetailsService(
             AccountRepository accountRepository,
-            AccountpermissionRepository accountpermissionRepository,
-            BranchRepository branchRepository) {
+            AccountpermissionRepository accountpermissionRepository) {
         this.accountRepository = accountRepository;
         this.accountpermissionRepository = accountpermissionRepository;
-        this.branchRepository = branchRepository;
     }
 
     @Transactional(readOnly = true)
-    public AccountPrincipal loadUserByUsernameAndBranch(String loginId, Integer branchId) throws UsernameNotFoundException {
+    public AccountPrincipal loadUserByLoginId(String loginId) throws UsernameNotFoundException {
         String normalizedLoginId = loginId == null ? "" : loginId.trim();
         if (normalizedLoginId.isBlank()) {
             throw new UsernameNotFoundException("Invalid credentials");
         }
 
-        // Credential check first — branch is NOT needed to identify/authenticate the account.
         Account account = accountRepository
                 .findByUsernameIgnoreCaseOrEmailIgnoreCase(normalizedLoginId, normalizedLoginId)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
@@ -50,46 +46,26 @@ public class CustomAccountDetailsService {
             throw new UsernameNotFoundException("Invalid credentials");
         }
 
-        // All valid role rows for the account (across every branch).
-        List<Accountpermission> validRows = accountpermissionRepository.findProfilePermissionsByAccountId(account.getId())
+        // Only the three remaining roles (OWNER, PHARMACIST, ACCOUNTANT) may sign in.
+        List<String> validRoles = accountpermissionRepository.findByAccountId(account.getId())
                 .stream()
-                .filter(permission -> RoleConstants.isValid(canonicalRole(permission.getRole())))
+                .map(permission -> canonicalRole(permission.getRole()))
+                .filter(role -> RoleConstants.isValid(role)
+                        && !RoleConstants.CHIEF_PHARMACIST.equals(role))
                 .toList();
-        if (validRows.isEmpty()) {
+        if (validRoles.isEmpty()) {
             throw new UsernameNotFoundException("Invalid credentials");
         }
 
-        // Owner is cross-branch: no branch selection required; branchId stays null = all branches.
-        boolean isOwner = validRows.stream()
-                .anyMatch(permission -> RoleConstants.OWNER.equals(canonicalRole(permission.getRole())));
-        if (isOwner) {
-            return buildPrincipal(account, RoleConstants.OWNER, null);
-        }
-
-        // Non-owner roles are branch-scoped: a valid branch must be chosen and matched.
-        if (branchId == null) {
-            throw new UsernameNotFoundException("Invalid credentials");
-        }
-        branchRepository.findById(branchId)
-                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
-
-        List<Accountpermission> branchRows = accountpermissionRepository.findByAccountIdAndBranchId(account.getId(), branchId)
-                .stream()
-                .filter(permission -> RoleConstants.isValid(canonicalRole(permission.getRole())))
-                .toList();
-        if (branchRows.isEmpty()) {
-            throw new UsernameNotFoundException("Invalid credentials");
-        }
-
-        Accountpermission selectedPermission = branchRows.get(0);
-        String selectedRole = canonicalRole(selectedPermission.getRole());
-        Integer selectedBranchId = selectedPermission.getBranchID() == null
-                ? branchId
-                : selectedPermission.getBranchID().getId();
-        return buildPrincipal(account, selectedRole, selectedBranchId);
+        // Owner wins when an account somehow holds several role rows.
+        String selectedRole = validRoles.stream()
+                .filter(RoleConstants.OWNER::equals)
+                .findFirst()
+                .orElse(validRoles.get(0));
+        return buildPrincipal(account, selectedRole);
     }
 
-    private AccountPrincipal buildPrincipal(Account account, String role, Integer branchId) {
+    private AccountPrincipal buildPrincipal(Account account, String role) {
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
         return new AccountPrincipal(
                 account.getId(),
@@ -100,7 +76,7 @@ public class CustomAccountDetailsService {
                 true,
                 authorities,
                 role,
-                branchId
+                null
         );
     }
 
