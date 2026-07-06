@@ -268,8 +268,6 @@
 
                         <h2 class="fs-5 mb-1" th:text="${profile.name}">Nguyễn Thị Lan</h2>
                         <p class="profile-muted mb-1" th:text="${profile.role}">Kế toán</p>
-                        <p class="profile-muted small mb-3" th:text="${profile.branchName}">Hang Ngoc Pharmacy</p>
-
                         <span class="profile-status-badge"
                               th:classappend="${profile.status} ? '' : ' inactive'"
                               th:text="${profile.status} ? 'Đang hoạt động' : 'Đã khóa'">

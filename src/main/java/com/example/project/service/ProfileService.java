@@ -43,17 +43,7 @@ public class ProfileService {
             role = "Chưa phân quyền";
         }
 
-        String branchName = permissions.stream()
-                .map(Accountpermission::getBranchID)
-                .filter(branch -> branch != null)
-                .map(Branch::getName)
-                .filter(name -> name != null && !name.isBlank())
-                .distinct()
-                .collect(Collectors.joining(", "));
-
-        if (branchName.isBlank()) {
-            branchName = "Chưa có chi nhánh";
-        }
+        String branchName = "Toàn hệ thống";
 
         return new ProfileViewResponse(
                 account.getId(),

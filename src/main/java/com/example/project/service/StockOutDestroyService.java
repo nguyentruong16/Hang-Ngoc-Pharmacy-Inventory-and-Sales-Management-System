@@ -25,7 +25,6 @@ public class StockOutDestroyService {
     private final StockoutRepository stockoutRepository;
     private final StockoutdetailRepository stockoutdetailRepository;
     private final BatchRepository batchRepository;
-    private final BranchRepository branchRepository;
     private final AccountRepository accountRepository;
     private final StatusRepository statusRepository;
     private final ProductunitRepository productunitRepository;
@@ -33,25 +32,22 @@ public class StockOutDestroyService {
     public StockOutDestroyService(StockoutRepository stockoutRepository,
                                   StockoutdetailRepository stockoutdetailRepository,
                                   BatchRepository batchRepository,
-                                  BranchRepository branchRepository,
                                   AccountRepository accountRepository,
                                   StatusRepository statusRepository, ProductunitRepository productunitRepository) {
         this.stockoutRepository = stockoutRepository;
         this.stockoutdetailRepository = stockoutdetailRepository;
         this.batchRepository = batchRepository;
-        this.branchRepository = branchRepository;
         this.accountRepository = accountRepository;
         this.statusRepository = statusRepository;
         this.productunitRepository = productunitRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<StockOutDestroyCandidateResponse> listAvailableBatches(Integer branchId, String keyword) {
+    public List<StockOutDestroyCandidateResponse> listAvailableBatches(String keyword) {
         String normalizedKeyword = normalize(keyword);
 
         return batchRepository.findAvailableBatchesForDestroy()
                 .stream()
-                .filter(batch -> branchId == null || branchMatches(batch, branchId))
                 .filter(batch -> matchesKeyword(batch, normalizedKeyword))
                 .map(this::toCandidateResponse)
                 .toList();
@@ -60,9 +56,6 @@ public class StockOutDestroyService {
     @Transactional
     public Integer createDestroyStockOut(StockOutDestroyCreateRequest request, Integer currentAccountId) {
         validateRequest(request);
-
-        Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh"));
 
         Account creator = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
@@ -94,15 +87,14 @@ public class StockOutDestroyService {
             throw new IllegalArgumentException("Một số lô hàng không tồn tại");
         }
 
-        validateSelectedBatches(branch, selectedBatches, itemMap);
+        validateSelectedBatches(selectedBatches, itemMap);
 
         Stockout stockOut = new Stockout();
+        stockOut.setStockOutCode(generateStockOutCode());
         stockOut.setOutType(OUT_TYPE_DESTROY);
-        stockOut.setBranchID(branch);
         stockOut.setDate(Instant.now());
         stockOut.setCreatedBy(creator);
         stockOut.setReason(request.getReason().trim());
-        stockOut.setTargetBranchID(null);
         stockOut.setExpenseID(null);
         stockOut.setStatusID(pendingStatus);
         stockOut.setNote(trimToNull(request.getNote()));
@@ -136,18 +128,11 @@ public class StockOutDestroyService {
     }
 
     @Transactional(readOnly = true)
-    public List<Branch> listBranches() {
-        return branchRepository.findAll()
-                .stream()
-                .sorted(Comparator.comparing(branch -> branch.getName() == null ? "" : branch.getName()))
-                .toList();
+    public List<Object> listBranches() {
+        return List.of();
     }
 
     private void validateRequest(StockOutDestroyCreateRequest request) {
-        if (request.getBranchId() == null) {
-            throw new IllegalArgumentException("Vui lòng chọn chi nhánh");
-        }
-
         if (request.getReason() == null || request.getReason().isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập lý do hủy");
         }
@@ -167,15 +152,10 @@ public class StockOutDestroyService {
         }
     }
 
-    private void validateSelectedBatches(Branch branch,
-                                         List<Batch> selectedBatches,
+    private void validateSelectedBatches(List<Batch> selectedBatches,
                                          Map<Integer, StockOutDestroyItemRequest> itemMap) {
         for (Batch batch : selectedBatches) {
             StockOutDestroyItemRequest item = itemMap.get(batch.getId());
-
-            if (batch.getBranchID() == null || !Objects.equals(batch.getBranchID().getId(), branch.getId())) {
-                throw new IllegalArgumentException("Lô hàng " + displayBatch(batch) + " không thuộc chi nhánh đã chọn");
-            }
 
             if (!Boolean.TRUE.equals(batch.getStatus())) {
                 throw new IllegalArgumentException("Lô hàng " + displayBatch(batch) + " không còn hoạt động");
@@ -253,8 +233,6 @@ public class StockOutDestroyService {
                 batch.getId(),
                 product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
-                batch.getBranchID() != null ? batch.getBranchID().getId() : null,
-                batch.getBranchID() != null ? batch.getBranchID().getName() : "Không có",
                 batch.getLotNumber(),
                 batch.getExpirationDate(),
                 formatLocalDate(batch.getExpirationDate()),
@@ -277,10 +255,6 @@ public class StockOutDestroyService {
         }
 
         return findPreferredUnit(product).orElse(null);
-    }
-
-    private boolean branchMatches(Batch batch, Integer branchId) {
-        return batch.getBranchID() != null && Objects.equals(batch.getBranchID().getId(), branchId);
     }
 
     private boolean matchesKeyword(Batch batch, String keyword) {
@@ -376,5 +350,15 @@ public class StockOutDestroyService {
         }
 
         return 2;
+    }
+
+    private String generateStockOutCode() {
+        int nextId = stockoutRepository.findAll().stream()
+                .map(Stockout::getId)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+
+        return "SO-" + String.format("%06d", nextId);
     }
 }

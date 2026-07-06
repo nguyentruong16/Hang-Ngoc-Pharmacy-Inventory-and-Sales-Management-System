@@ -12,14 +12,13 @@ public interface InvoicedetailRepository extends JpaRepository<Invoicedetail, In
 
     /** Most recent sale lines of one product, branch-scoped, for the Product Detail history preview. */
     @Query("""
-           select d
-           from Invoicedetail d
-           left join fetch d.invoiceID
-           left join fetch d.batchID
-           where d.productID.productID = :productId
-             and (:branchId is null or d.invoiceID.branchID.id = :branchId)
-           order by d.invoiceID.date desc
-           """)
+       select d
+       from Invoicedetail d
+       left join fetch d.invoiceID
+       left join fetch d.batchID
+       where d.productID.productID = :productId
+       order by d.invoiceID.date desc
+       """)
     List<Invoicedetail> findRecentSalesByProduct(@Param("productId") Integer productId,
                                                  @Param("branchId") Integer branchId,
                                                  Pageable pageable);

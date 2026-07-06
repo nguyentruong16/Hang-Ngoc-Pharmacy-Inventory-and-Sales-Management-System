@@ -126,6 +126,5 @@ public class OwnerUserController {
 
     private void addCreatePageData(Model model) {
         model.addAttribute("roleLabels", RoleConstants.nonOwnerVietnameseLabels());
-        model.addAttribute("branches", ownerUserService.listBranches());
     }
 }
