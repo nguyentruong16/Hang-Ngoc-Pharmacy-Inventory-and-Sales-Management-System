@@ -33,10 +33,6 @@ public class Purchaseinvoice {
     private Supplier supplierID;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branchID")
-    private Branch branchID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employeeID")
     private Account employeeID;
 

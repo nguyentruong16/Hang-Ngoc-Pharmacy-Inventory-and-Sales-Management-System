@@ -15,7 +15,6 @@ import java.time.Instant;
 public class ExpenseResponse {
     private Integer id;
     private String expenseCode;
-    private Integer branchId;
     private Integer applicantId;
     private String expenseType;
     private Integer returnId;
@@ -38,7 +37,6 @@ public class ExpenseResponse {
         return new ExpenseResponse(
                 expense.getId(),
                 expense.getExpenseCode(),
-                expense.getBranchID() != null ? expense.getBranchID().getId() : null,
                 expense.getApplicantID() != null ? expense.getApplicantID().getId() : null,
                 expense.getExpenseType(),
                 expense.getReturnID() != null ? expense.getReturnID().getId() : null,

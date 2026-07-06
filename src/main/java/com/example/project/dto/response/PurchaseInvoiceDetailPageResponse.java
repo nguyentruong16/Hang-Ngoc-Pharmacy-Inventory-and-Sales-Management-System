@@ -21,7 +21,6 @@ public class PurchaseInvoiceDetailPageResponse {
     private String supplierPhone;
     private String supplierEmail;
 
-    private String branchName;
     private String employeeName;
 
     private BigDecimal subtotal;

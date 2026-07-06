@@ -2,10 +2,8 @@ package com.example.project.service;
 
 import com.example.project.dto.request.PositionCreateRequest;
 import com.example.project.dto.response.PositionResponse;
-import com.example.project.entity.Branch;
 import com.example.project.entity.Position;
 import com.example.project.entity.Product;
-import com.example.project.repository.BranchRepository;
 import com.example.project.repository.PositionRepository;
 import com.example.project.repository.ProductRepository;
 import org.springframework.data.domain.Page;

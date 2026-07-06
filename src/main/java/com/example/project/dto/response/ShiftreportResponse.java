@@ -16,7 +16,6 @@ import java.time.LocalDate;
 public class ShiftreportResponse {
     private Integer id;
     private String shiftReportCode;
-    private Integer branchId;
     private Integer cashierId;
     private LocalDate shiftDate;
     private String shiftType;
@@ -45,7 +44,6 @@ public class ShiftreportResponse {
         return new ShiftreportResponse(
                 shiftreport.getId(),
                 shiftreport.getShiftReportCode(), 
-                shiftreport.getBranchID() != null ? shiftreport.getBranchID().getId() : null,
                 shiftreport.getCashierID() != null ? shiftreport.getCashierID().getId() : null,
                 shiftreport.getShiftDate(),
                 shiftreport.getShiftType(),

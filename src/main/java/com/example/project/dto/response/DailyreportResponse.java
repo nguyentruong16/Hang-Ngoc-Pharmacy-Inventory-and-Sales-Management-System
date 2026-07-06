@@ -16,7 +16,6 @@ import java.time.LocalDate;
 public class DailyreportResponse {
     private Integer id;
     private String dailyReportCode;
-    private Integer branchId;
     private LocalDate reportDate;
     private Integer totalInvoicesNumber;
     private Integer totalPrescriptionInvoices;
@@ -27,7 +26,6 @@ public class DailyreportResponse {
     private BigDecimal totalOtherIncome;
     private Integer totalReturnCount;
     private BigDecimal totalReturnAmount;
-    private BigDecimal totalVATCollected;
     private BigDecimal totalSubimport;
     private BigDecimal totalRevenue;
     private BigDecimal grossProfit;
@@ -53,7 +51,6 @@ public class DailyreportResponse {
         return new DailyreportResponse(
                 dailyreport.getId(),
                 dailyreport.getDailyReportCode(),
-                dailyreport.getBranchID() != null ? dailyreport.getBranchID().getId() : null,
                 dailyreport.getReportDate(),
                 dailyreport.getTotalInvoicesNumber(),
                 dailyreport.getTotalPrescriptionInvoices(),
@@ -64,7 +61,6 @@ public class DailyreportResponse {
                 dailyreport.getTotalOtherIncome(),
                 dailyreport.getTotalReturnCount(),
                 dailyreport.getTotalReturnAmount(),
-                dailyreport.getTotalVATCollected(),
                 dailyreport.getTotalSubimport(),
                 dailyreport.getTotalRevenue(),
                 dailyreport.getGrossProfit(),

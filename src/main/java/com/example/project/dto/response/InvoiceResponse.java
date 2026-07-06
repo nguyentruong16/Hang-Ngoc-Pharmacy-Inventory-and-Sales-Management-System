@@ -17,7 +17,6 @@ public class InvoiceResponse {
     private String invoiceCode;
     private String invoiceNumber;
     private Instant date;
-    private Integer branchId;
     private Integer employeeId;
     private Integer customerId;
     private BigDecimal subtotal;
@@ -41,7 +40,6 @@ public class InvoiceResponse {
                 invoice.getInvoiceCode(),
                 invoice.getInvoiceNumber(), 
                 invoice.getDate(),
-                invoice.getBranchID() != null ? invoice.getBranchID().getId() : null,
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getId() : null,
                 invoice.getCustomerID() != null ? invoice.getCustomerID().getId() : null,
                 invoice.getSubtotal(),

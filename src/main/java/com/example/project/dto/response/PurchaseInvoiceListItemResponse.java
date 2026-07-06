@@ -17,7 +17,6 @@ public class PurchaseInvoiceListItemResponse {
     private String dateDisplay;
 
     private String supplierName;
-    private String branchName;
     private String employeeName;
 
     private long totalItems;

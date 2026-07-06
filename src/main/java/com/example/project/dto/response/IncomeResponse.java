@@ -15,7 +15,6 @@ import java.time.Instant;
 public class IncomeResponse {
     private Integer id;
     private String incomeCode;
-    private Integer branchId;
     private Integer applicantId;
     private String incomeType;
     private Integer invoiceId;
@@ -36,7 +35,6 @@ public class IncomeResponse {
         return new IncomeResponse(
                 income.getId(),
                 income.getIncomeCode(), 
-                income.getBranchID() != null ? income.getBranchID().getId() : null,
                 income.getApplicantID() != null ? income.getApplicantID().getId() : null,
                 income.getIncomeType(),
                 income.getInvoiceID() != null ? income.getInvoiceID().getId() : null,

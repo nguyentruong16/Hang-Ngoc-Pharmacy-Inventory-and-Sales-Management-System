@@ -34,11 +34,6 @@ public class Invoice {
     @Column(name = "date", nullable = false)
     private Instant date;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "branchID", nullable = false)
-    private Branch branchID;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employeeID")
     private Account employeeID;

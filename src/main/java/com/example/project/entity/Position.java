@@ -21,10 +21,6 @@ public class Position {
     @JoinColumn(name = "productID", nullable = false)
     private Product productID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branchID")
-    private Branch branchID;
-
     @Size(max = 100)
     @NotNull
     @Column(name = "name", nullable = false, length = 100)

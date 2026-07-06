@@ -28,11 +28,6 @@ public class Stockout {
     private String outType;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "branchID", nullable = false)
-    private Branch branchID;
-
-    @NotNull
     @Column(name = "date", nullable = false)
     private Instant date;
 
@@ -51,10 +46,6 @@ public class Stockout {
     @NotNull
     @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "targetBranchID")
-    private Branch targetBranchID;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "expenseID")

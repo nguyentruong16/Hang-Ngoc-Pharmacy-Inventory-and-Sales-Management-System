@@ -6,17 +6,15 @@ import com.example.project.dto.response.OwnerUserRowResponse;
 import com.example.project.dto.response.OwnerUserStatsResponse;
 import com.example.project.entity.Account;
 import com.example.project.entity.Accountpermission;
-import com.example.project.entity.Branch;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.AccountpermissionRepository;
-import com.example.project.repository.BranchRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import java.text.Normalizer;
+
 import java.util.*;
 import java.util.stream.Collectors;
 

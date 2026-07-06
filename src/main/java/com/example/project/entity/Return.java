@@ -32,11 +32,6 @@ public class Return {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "branchID", nullable = false)
-    private Branch branchID;
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "returnedBy", nullable = false)
     private Account returnedBy;
 
