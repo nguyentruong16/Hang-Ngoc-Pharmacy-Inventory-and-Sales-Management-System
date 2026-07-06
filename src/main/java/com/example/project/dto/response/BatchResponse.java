@@ -19,7 +19,6 @@ public class BatchResponse {
     private String batchName;
     private Integer productId;
     private Integer purchaseDetailId;
-    private Integer branchId;
     private Integer storageQuantity;
     private Integer importUnitId;
     private Integer importQtyInUnit;
@@ -39,7 +38,6 @@ public class BatchResponse {
                 batch.getBatchName(), 
                 batch.getProductID() != null ? batch.getProductID().getProductID() : null,
                 batch.getPurchaseDetailID() != null ? batch.getPurchaseDetailID().getId() : null,
-                batch.getBranchID() != null ? batch.getBranchID().getId() : null,
                 batch.getStorageQuantity(),
                 batch.getImportUnitID() != null ? batch.getImportUnitID().getId() : null,
                 batch.getImportQtyInUnit(),
