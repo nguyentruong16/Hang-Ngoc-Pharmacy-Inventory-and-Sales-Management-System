@@ -19,20 +19,16 @@ public class AuthController {
 
     private final AccountPasswordService accountPasswordService;
     private final PasswordResetService passwordResetService;
-    private final BranchRepository branchRepository;
 
     public AuthController(
             AccountPasswordService accountPasswordService,
-            PasswordResetService passwordResetService,
-            BranchRepository branchRepository) {
+            PasswordResetService passwordResetService) {
         this.accountPasswordService = accountPasswordService;
         this.passwordResetService = passwordResetService;
-        this.branchRepository = branchRepository;
     }
 
     @GetMapping("/signin")
-    public String signin(Model model) {
-        model.addAttribute("branches", branchRepository.findAllWithStatus());
+    public String signin() {
         return "signin";
     }
 

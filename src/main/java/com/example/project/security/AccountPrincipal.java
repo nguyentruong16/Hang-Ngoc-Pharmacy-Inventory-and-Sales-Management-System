@@ -11,9 +11,8 @@ import java.util.Objects;
  *
  * <p>In addition to the standard {@link UserDetails} contract it exposes the navigation
  * data the UI needs: {@link #getPrimaryRole() primaryRole} (a bare role such as
- * {@code "OWNER"} from {@code Accountpermission.role}) and {@link #getBranchId() branchId}
- * (from {@code Accountpermission.branchID}). These come from the user's primary
- * AccountPermission row, chosen in {@code CustomAccountDetailsService}.</p>
+ * {@code "OWNER"} from {@code Accountpermission.role}), chosen in
+ * {@code CustomAccountDetailsService}.</p>
  */
 public class AccountPrincipal implements UserDetails {
     private final Integer accountId;
@@ -64,7 +63,7 @@ public class AccountPrincipal implements UserDetails {
         return primaryRole;
     }
 
-    /** Branch of the user's primary AccountPermission row, or {@code null} if unset. */
+    /** Always {@code null}; kept only for compile compatibility. */
     public Integer getBranchId() {
         return branchId;
     }

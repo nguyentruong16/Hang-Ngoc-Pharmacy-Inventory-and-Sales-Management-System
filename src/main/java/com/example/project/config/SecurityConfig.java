@@ -1,8 +1,7 @@
 package com.example.project.config;
 
 import com.example.project.constant.RoleConstants;
-import com.example.project.security.BranchAwareAuthenticationProvider;
-import com.example.project.security.BranchWebAuthenticationDetailsSource;
+import com.example.project.security.AccountAuthenticationProvider;
 import com.example.project.security.RoleBasedAuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,10 +27,9 @@ public class SecurityConfig {
             SessionRegistry sessionRegistry,
             AuthenticationSuccessHandler authenticationSuccessHandler,
             AuthenticationFailureHandler authenticationFailureHandler,
-            BranchAwareAuthenticationProvider branchAwareAuthenticationProvider,
-            BranchWebAuthenticationDetailsSource branchWebAuthenticationDetailsSource) throws Exception {
+            AccountAuthenticationProvider accountAuthenticationProvider) throws Exception {
         http
-                .authenticationProvider(branchAwareAuthenticationProvider)
+                .authenticationProvider(accountAuthenticationProvider)
                 .authorizeHttpRequests(authorize -> authorize
                         // Public (no login required)
                         .requestMatchers(
@@ -48,15 +46,13 @@ public class SecurityConfig {
                         // Role areas: each role tree is reachable only by that role. Hiding the
                         // sidebar item is not enough — this blocks direct URL access too.
                         .requestMatchers("/owner/**").hasRole(RoleConstants.OWNER)
-                        .requestMatchers("/chief-pharmacist/**").hasRole(RoleConstants.CHIEF_PHARMACIST)
                         .requestMatchers("/pharmacist/**").hasRole(RoleConstants.PHARMACIST)
                         .requestMatchers("/accountant/**").hasRole(RoleConstants.ACCOUNTANT)
-                        // Shared Customer module (UC-048): reachable by Owner, Pharmacist and
-                        // Chief Pharmacist — not Accountant. Lives outside the role-prefixed trees.
+                        // Shared Customer module: reachable by Owner and Pharmacist —
+                        // not Accountant. Lives outside the role-prefixed trees.
                         .requestMatchers("/customer/**").hasAnyRole(
                                 RoleConstants.OWNER,
-                                RoleConstants.PHARMACIST,
-                                RoleConstants.CHIEF_PHARMACIST)
+                                RoleConstants.PHARMACIST)
                         // Everything else (/, /dashboard, /profile, /change-password, /403, REST APIs)
                         // requires only that the user is signed in.
                         .anyRequest().authenticated()
@@ -66,7 +62,6 @@ public class SecurityConfig {
                         .loginProcessingUrl("/signin")
                         .usernameParameter("loginId")
                         .passwordParameter("password")
-                        .authenticationDetailsSource(branchWebAuthenticationDetailsSource)
                         // Land on the user's own role dashboard, not a single shared page.
                         .successHandler(authenticationSuccessHandler)
                         .failureHandler(authenticationFailureHandler)
