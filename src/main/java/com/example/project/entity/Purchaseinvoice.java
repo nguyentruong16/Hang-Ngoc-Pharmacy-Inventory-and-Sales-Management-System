@@ -52,9 +52,10 @@ public class Purchaseinvoice {
     @Column(name = "paid", precision = 15, scale = 2)
     private BigDecimal paid;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statusID")
-    private Status statusID;
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;

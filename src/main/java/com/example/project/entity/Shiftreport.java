@@ -95,10 +95,10 @@ public class Shiftreport {
     @Column(name = "noteDiscrepancy", columnDefinition = "TEXT")
     private String noteDiscrepancy;
 
+    @Size(max = 50)
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "statusID", nullable = false)
-    private Status statusID;
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approvedBy")

@@ -27,7 +27,7 @@ public class ReturnResponse {
     private Integer expenseId;
     private Integer shiftReportId;
     private String reason;
-    private Integer statusId;
+    private String status;
     private Instant approvedAt;
     private String note;
 
@@ -47,7 +47,7 @@ public class ReturnResponse {
                 returnEntity.getExpenseID() != null ? returnEntity.getExpenseID().getId() : null,
                 returnEntity.getShiftReportID() != null ? returnEntity.getShiftReportID().getId() : null,
                 returnEntity.getReason(),
-                returnEntity.getStatusID() != null ? returnEntity.getStatusID().getId() : null,
+                returnEntity.getStatus(),
                 returnEntity.getApprovedAt(),
                 returnEntity.getNote()
         );

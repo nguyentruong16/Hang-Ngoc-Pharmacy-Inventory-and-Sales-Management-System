@@ -16,7 +16,7 @@ public class PurchaserequisitionResponse {
     private String purchaseRequistionCode;
     private Instant date;
     private Integer requestedById;
-    private Integer statusId;
+    private String status;
     private Instant approvedAt;
     private Integer supplierId;
     private String note;
@@ -28,7 +28,7 @@ public class PurchaserequisitionResponse {
                 purchaserequisition.getPurchaseRequistionCode(),
                 purchaserequisition.getDate(),
                 purchaserequisition.getRequestedBy() != null ? purchaserequisition.getRequestedBy().getId() : null,
-                purchaserequisition.getStatusID() != null ? purchaserequisition.getStatusID().getId() : null,
+                purchaserequisition.getStatus(),
                 purchaserequisition.getApprovedAt(),
                 purchaserequisition.getSupplierID() != null ? purchaserequisition.getSupplierID().getId() : null,
                 purchaserequisition.getNote(),

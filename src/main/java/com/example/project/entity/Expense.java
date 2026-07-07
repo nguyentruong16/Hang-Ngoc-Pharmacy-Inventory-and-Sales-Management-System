@@ -30,8 +30,9 @@ public class Expense {
     @JoinColumn(name = "applicantID", nullable = false)
     private Account applicantID;
 
+    @Size(max = 50)
     @NotNull
-    @Column(name = "expenseType", nullable = false, columnDefinition = "enum('OPERATIONAL','DEBT_PAYMENT','RETURN_REFUND_PAYOUT','OTHER')")
+    @Column(name = "expenseType", nullable = false, length = 50)
     private String expenseType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -82,9 +83,10 @@ public class Expense {
     @JoinColumn(name = "accountID")
     private Account accountID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statusID")
-    private Status statusID;
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @Column(name = "approvedAt")
     private Instant approvedAt;
