@@ -196,7 +196,7 @@
           <div class="summary-row">
             <span class="summary-key">Tổng công nợ</span>
             <span class="summary-val debt"
-                  th:text="${#numbers.formatInteger(totalDebt != null ? totalDebt : 0, 1, 'COMMA') + ' ₫'}">0 ₫</span>
+                  th:text="${#numbers.formatInteger((totalDebt != null ? totalDebt : 0), 1, 'COMMA') + ' ₫'}">0 ₫</span>
           </div>
         </div>
       </div>

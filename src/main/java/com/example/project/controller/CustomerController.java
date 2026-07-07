@@ -52,7 +52,7 @@ public class CustomerController {
         model.addAttribute("withDebtCustomers", stats.withDebt());
 
         model.addAttribute("pageTitle", "Danh sách khách hàng");
-        return "customer-list";
+        return "customer/list";
     }
 
     // ------------------------------------------------------------------ create
@@ -63,7 +63,7 @@ public class CustomerController {
             model.addAttribute("form", new CustomerRequest());
         }
         model.addAttribute("pageTitle", "Tạo khách hàng");
-        return "customer-create";
+        return "customer/create";
     }
 
     @PostMapping("/create")
@@ -74,7 +74,7 @@ public class CustomerController {
                          RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", "Tạo khách hàng");
-            return "customer-create";
+            return "customer/create";
         }
 
         Integer newId;
@@ -83,7 +83,7 @@ public class CustomerController {
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("pageTitle", "Tạo khách hàng");
-            return "customer-create";
+            return "customer/create";
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Tạo khách hàng thành công");
@@ -108,7 +108,7 @@ public class CustomerController {
         model.addAttribute("recentInvoices", customerService.getRecentInvoices(id));
         model.addAttribute("totalDebt", customerService.getTotalDebt(id));
         model.addAttribute("pageTitle", "Chi tiết khách hàng");
-        return "customer-detail";
+        return "customer/detail";
     }
 
     @PostMapping("/{id}")
@@ -120,7 +120,7 @@ public class CustomerController {
         if (bindingResult.hasErrors()) {
             populateDetail(model, id);
             model.addAttribute("showEditForm", true);
-            return "customer-detail";
+            return "customer/detail";
         }
 
         try {
@@ -129,7 +129,7 @@ public class CustomerController {
             model.addAttribute("errorMessage", ex.getMessage());
             populateDetail(model, id);
             model.addAttribute("showEditForm", true);
-            return "customer-detail";
+            return "customer/detail";
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật khách hàng thành công");
