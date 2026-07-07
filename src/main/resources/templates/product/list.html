@@ -304,6 +304,11 @@
                                 <i class="ti ti-eye me-1"></i>
                                 Xem
                             </a>
+                            <a th:if="${basePath == '/owner/products'}" class="btn btn-sm btn-outline-secondary"
+                               th:href="@{/owner/products/{id}/edit(id=${item.productId})}">
+                                <i class="ti ti-edit me-1"></i>
+                                Sửa
+                            </a>
                         </td>
                     </tr>
 

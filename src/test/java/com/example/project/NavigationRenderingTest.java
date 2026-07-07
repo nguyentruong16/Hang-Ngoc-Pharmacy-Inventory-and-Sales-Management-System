@@ -6,14 +6,12 @@ import com.example.project.context.CurrentUserContext;
 import com.example.project.controller.DashboardController;
 import com.example.project.controller.PermissionController;
 import com.example.project.controller.PlaceholderController;
+import com.example.project.security.AccountAuthenticationProvider;
 import com.example.project.security.AccountPrincipal;
-import com.example.project.security.BranchAwareAuthenticationProvider;
-import com.example.project.security.BranchWebAuthenticationDetailsSource;
 import com.example.project.service.CustomAccountDetailsService;
 import com.example.project.service.OwnerPermissionService;
 import com.example.project.service.SidebarMenuService;
-import com.example.project.view.BranchPermissionRow;
-import com.example.project.view.PermissionBranchOption;
+import com.example.project.view.PermissionAccountRow;
 import com.example.project.view.PermissionPageView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +25,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -48,14 +45,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * authenticated {@link AccountPrincipal} injected per request — verifying both rendering and
  * URL-level role authorization. The DB-backed {@link OwnerPermissionService} is mocked; by
  * default it returns an empty {@link PermissionPageView} so the page renders without a database.
+ *
+ * <p>Single-store: there is no {@code Branch} concept anywhere in this test. Detailed Permission
+ * Table behavior (dropdown options, last-owner lock, save/redirect flow) is covered by the
+ * dedicated {@code PermissionControllerTest}; this file only proves the screen renders correctly
+ * through the real security + sidebar chrome.</p>
  */
 @WebMvcTest(controllers = {PermissionController.class, PlaceholderController.class, DashboardController.class})
 @Import({
         SecurityConfig.class,
         WebConfig.class,
         SidebarMenuService.class,
-        CurrentUserContext.class,
-        BranchWebAuthenticationDetailsSource.class
+        CurrentUserContext.class
 })
 class NavigationRenderingTest {
 
@@ -66,10 +67,7 @@ class NavigationRenderingTest {
     CustomAccountDetailsService customAccountDetailsService;
 
     @MockitoBean
-    BranchAwareAuthenticationProvider branchAwareAuthenticationProvider;
-
-    @MockitoBean
-    BranchRepository branchRepository;
+    AccountAuthenticationProvider accountAuthenticationProvider;
 
     // PermissionController depends on this DB-backed service; mock returns an empty page by default.
     @MockitoBean
@@ -77,22 +75,13 @@ class NavigationRenderingTest {
 
     @BeforeEach
     void setUp() {
-        when(branchRepository.findById(any())).thenAnswer(invocation -> {
-            Integer id = invocation.getArgument(0);
-            Branch branch = new Branch();
-            branch.setId(id);
-            branch.setName("Branch " + id);
-            return Optional.of(branch);
-        });
-        when(branchRepository.findAllWithStatus()).thenReturn(List.of());
-
         // Default: a valid empty page so the Thymeleaf template renders without NPEs.
-        when(ownerPermissionService.getPermissionPage(any(), any(), any(), anyInt(), anyInt()))
+        when(ownerPermissionService.getPermissionPage(any(), anyInt(), anyInt()))
                 .thenReturn(emptyPage());
     }
 
     private static PermissionPageView emptyPage() {
-        return new PermissionPageView(List.of(), null, List.of(), 0, 10, 0L, 0, null, null);
+        return new PermissionPageView(List.of(), 0, 10, 0L, 0, null);
     }
 
     private static RequestPostProcessor as(String role, String displayName, Integer branchId) {
@@ -104,59 +93,47 @@ class NavigationRenderingTest {
     }
 
     @Test
-    void ownerSeesRoleByBranchPageWithRealChrome() throws Exception {
-        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", 1)))
+    void ownerSeesPermissionsPageWithRealChrome() throws Exception {
+        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", null)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("owner/permissions"))
                 .andExpect(content().string(containsString("Bảng phân quyền")))           // title + sidebar link
-                .andExpect(content().string(containsString("Chọn chi nhánh")))            // branch button area
-                .andExpect(content().string(containsString("Chưa có chi nhánh nào.")))    // empty branch state
+                .andExpect(content().string(containsString("Không tìm thấy tài khoản nào."))) // empty state
                 .andExpect(content().string(containsString("Olivia Owner")))             // topbar shows real user
                 .andExpect(content().string(not(containsString("Thêm phân quyền"))))      // add form removed
                 .andExpect(content().string(not(containsString("Demo: act as role"))));   // demo switcher gone
     }
 
     @Test
-    void ownerPageRendersBranchTableAndDropdownOptions() throws Exception {
-        PermissionBranchOption branch =
-                new PermissionBranchOption(2, "Hằng Ngọc 2", "Đang hoạt động", true, true, "Đang hoạt động");
-        BranchPermissionRow row = new BranchPermissionRow(
-                1, "Nguyễn Văn A", "pharmacist01", "PHARMACIST", "Dược sĩ", false, true);
-        PermissionPageView pageView = new PermissionPageView(
-                List.of(branch), branch, List.of(row), 0, 10, 1L, 1, null, null);
+    void ownerPageRendersAccountRowsWithRealChrome() throws Exception {
+        PermissionAccountRow row = new PermissionAccountRow(
+                1, "Nguyễn Văn A", "pharmacist01", "PHARMACIST", "Dược sĩ", false);
+        PermissionPageView pageView = new PermissionPageView(List.of(row), 0, 10, 1L, 1, null);
 
-        when(ownerPermissionService.getPermissionPage(any(), any(), any(), anyInt(), anyInt()))
+        when(ownerPermissionService.getPermissionPage(any(), anyInt(), anyInt()))
                 .thenReturn(pageView);
 
-        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", 1)))
+        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", null)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Nguyễn Văn A")))    // account row
                 .andExpect(content().string(containsString("pharmacist01")))    // username/email column
-                .andExpect(content().string(containsString("Hằng Ngọc 2")))     // branch button label
-                .andExpect(content().string(containsString("Dược sĩ")))         // role dropdown option
-                .andExpect(content().string(containsString("-- Chưa phân quyền --"))); // empty option on editable row
+                .andExpect(content().string(containsString("Dược sĩ")));        // role dropdown option
     }
 
     @Test
-    void inactiveBranchShowsReadOnlyNotice() throws Exception {
-        PermissionBranchOption inactive =
-                new PermissionBranchOption(3, "Hằng Ngọc 3", "Ngừng hoạt động", false, true, "Đã ngừng hoạt động");
-        BranchPermissionRow row = new BranchPermissionRow(
-                4, "Trần Thị B", "pharma04", "PHARMACIST", "Dược sĩ", false, false); // not editable
-        PermissionPageView pageView = new PermissionPageView(
-                List.of(inactive), inactive, List.of(row), 0, 10, 1L, 1, null, null);
+    void lastOwnerRowIsReadOnlyWithRealChrome() throws Exception {
+        PermissionAccountRow lastOwner = new PermissionAccountRow(
+                1, "Olivia Owner", "owner01", "OWNER", "Chủ nhà thuốc", true); // lastOwner = true
+        PermissionPageView pageView = new PermissionPageView(List.of(lastOwner), 0, 10, 1L, 1, null);
 
-        when(ownerPermissionService.getPermissionPage(any(), any(), any(), anyInt(), anyInt()))
+        when(ownerPermissionService.getPermissionPage(any(), anyInt(), anyInt()))
                 .thenReturn(pageView);
 
-        mvc.perform(get("/owner/permissions").param("branchId", "3").with(as("OWNER", "Olivia Owner", 1)))
+        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", null)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Đã ngừng hoạt động")))   // inactive branch badge
-                .andExpect(content().string(containsString(
-                        "Chi nhánh này đã ngừng hoạt động. Không thể chỉnh sửa phân quyền.")))  // notice
-                .andExpect(content().string(containsString("Dược sĩ")))              // read-only role text
-                // A non-editable row must NOT render the auto-submitting dropdown.
-                .andExpect(content().string(not(containsString("this.form.submit()"))));
+                .andExpect(content().string(containsString("Chủ nhà thuốc (duy nhất)"))) // locked badge
+                // A locked row must NOT render an editable role dropdown/save form.
+                .andExpect(content().string(not(containsString("name=\"role\""))));
     }
 
     @Test
@@ -175,7 +152,7 @@ class NavigationRenderingTest {
 
     @Test
     void permissionPageEchoesSearch() throws Exception {
-        mvc.perform(get("/owner/permissions").param("search", "pharmacist01").with(as("OWNER", "Olivia Owner", 1)))
+        mvc.perform(get("/owner/permissions").param("search", "pharmacist01").with(as("OWNER", "Olivia Owner", null)))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("search", "pharmacist01"));
     }

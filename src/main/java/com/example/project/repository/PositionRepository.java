@@ -7,7 +7,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface PositionRepository extends JpaRepository<Position, Integer> {
+
+    /** Storage-location rows of a single product, for the Product Detail/Edit screens. */
+    @Query("""
+            SELECT p FROM Position p
+            WHERE p.productID.productID = :productId
+            ORDER BY p.id ASC
+            """)
+    List<Position> findByProductId(@Param("productId") Integer productId);
 
     @Query("""
             SELECT p FROM Position p

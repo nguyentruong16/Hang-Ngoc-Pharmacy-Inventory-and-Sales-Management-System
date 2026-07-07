@@ -43,7 +43,7 @@ class ProfileServiceTest {
                 true
         );
 
-        Accountpermission  permission = createPermission("accountant", "Hang Ngoc Pharmacy - Nhánh 1");
+        Accountpermission  permission = createPermission("accountant");
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
         when(accountpermissionRepository.findProfilePermissionsByAccountId(accountId))
@@ -58,7 +58,7 @@ class ProfileServiceTest {
         assertEquals("lan.nguyen@pharmamanager.vn", result.getEmail());
         assertEquals("0987654321", result.getPhoneNumber());
         assertEquals("Kế toán", result.getRole());
-        assertEquals("Hang Ngoc Pharmacy - Nhánh 1", result.getBranchName());
+        assertEquals("Toàn hệ thống", result.getBranchName()); // single store — no per-branch name any more
         assertTrue(result.getStatus());
 
         verify(accountRepository).findById(accountId);
@@ -102,11 +102,11 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Chưa phân quyền", result.getRole());
-        assertEquals("Chưa có chi nhánh", result.getBranchName());
+        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
-    void getProfile_multiplePermissions_shouldJoinDistinctRolesAndBranches() {
+    void getProfile_multiplePermissions_shouldJoinDistinctRoles() {
         Integer accountId = 3;
 
         Account account = createAccount(
@@ -119,8 +119,8 @@ class ProfileServiceTest {
         );
 
         List<Accountpermission> permissions = List.of(
-                createPermission("pharmacist", "Hằng Ngọc 1"),
-                createPermission("chief_pharmacist", "Hằng Ngọc 2")
+                createPermission("pharmacist"),
+                createPermission("chief_pharmacist")
         );
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
@@ -130,11 +130,11 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Dược sĩ, Dược sĩ trưởng", result.getRole());
-        assertEquals("Hằng Ngọc 1, Hằng Ngọc 2", result.getBranchName());
+        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
-    void getProfile_duplicateRolesAndBranches_shouldRemoveDuplicates() {
+    void getProfile_duplicateRoles_shouldRemoveDuplicates() {
         Integer accountId = 4;
 
         Account account = createAccount(
@@ -147,9 +147,9 @@ class ProfileServiceTest {
         );
 
         List<Accountpermission> permissions = List.of(
-                createPermission("pharmacist", "Hằng Ngọc 1"),
-                createPermission("pharmacist", "Hằng Ngọc 1"),
-                createPermission("pharmacist", "Hằng Ngọc 2")
+                createPermission("pharmacist"),
+                createPermission("pharmacist"),
+                createPermission("pharmacist")
         );
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
@@ -159,11 +159,11 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Dược sĩ", result.getRole());
-        assertEquals("Hằng Ngọc 1, Hằng Ngọc 2", result.getBranchName());
+        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
-    void getProfile_blankRoleAndBlankBranch_shouldReturnDefaultRoleAndBranch() {
+    void getProfile_blankRole_shouldReturnDefaultRole() {
         Integer accountId = 5;
 
         Account account = createAccount(
@@ -176,9 +176,9 @@ class ProfileServiceTest {
         );
 
         List<Accountpermission> permissions = List.of(
-                createPermission(null, null),
-                createPermission("", ""),
-                createPermission("   ", "   ")
+                createPermission(null),
+                createPermission(""),
+                createPermission("   ")
         );
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
@@ -188,11 +188,13 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Chưa phân quyền", result.getRole());
-        assertEquals("Chưa có chi nhánh", result.getBranchName());
+        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
     void getProfile_roleIsCashier_shouldDisplayVietnameseRoleName() {
+        // KNOWN STALE (see CLAUDE.md): CASHIER was removed project-wide, so formatRole() no longer
+        // maps it to "Thu ngân" and this assertion fails. Left as-is intentionally — not fixed here.
         Integer accountId = 6;
 
         Account account = createAccount(
@@ -204,7 +206,7 @@ class ProfileServiceTest {
                 true
         );
 
-        Accountpermission permission = createPermission("cashier", "Hằng Ngọc 1");
+        Accountpermission permission = createPermission("cashier");
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
         when(accountpermissionRepository.findProfilePermissionsByAccountId(accountId))
@@ -213,7 +215,7 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Thu ngân", result.getRole());
-        assertEquals("Hằng Ngọc 1", result.getBranchName());
+        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
@@ -229,7 +231,7 @@ class ProfileServiceTest {
                 true
         );
 
-        Accountpermission permission = createPermission("owner", "Hằng Ngọc 1");
+        Accountpermission permission = createPermission("owner");
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
         when(accountpermissionRepository.findProfilePermissionsByAccountId(accountId))
@@ -253,7 +255,7 @@ class ProfileServiceTest {
                 true
         );
 
-        Accountpermission permission = createPermission("3", "Hằng Ngọc 1");
+        Accountpermission permission = createPermission("3");
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
         when(accountpermissionRepository.findProfilePermissionsByAccountId(accountId))
@@ -277,7 +279,7 @@ class ProfileServiceTest {
                 true
         );
 
-        Accountpermission permission = createPermission("inventory_staff", "Hằng Ngọc 1");
+        Accountpermission permission = createPermission("inventory_staff");
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
         when(accountpermissionRepository.findProfilePermissionsByAccountId(accountId))
@@ -385,16 +387,9 @@ class ProfileServiceTest {
         return account;
     }
 
-    private Accountpermission createPermission(String role, String branchName) {
+    private Accountpermission createPermission(String role) {
         Accountpermission permission = new Accountpermission();
         permission.setRole(role);
-
-        if (branchName != null) {
-            Branch branch = new Branch();
-            branch.setName(branchName);
-            permission.setBranchID(branch);
-        }
-
         return permission;
     }
 }
