@@ -29,7 +29,7 @@ public class InvoiceResponse {
     private BigDecimal debtAmount;
     private Boolean prescriptionRequired;
     private String returnStatus;
-    private Integer statusId;
+    private String status;
     private Integer shiftReportId;
     private String prescriptionCode;
     private String note;
@@ -52,7 +52,7 @@ public class InvoiceResponse {
                 invoice.getDebtAmount(),
                 invoice.getPrescriptionRequired(),
                 invoice.getReturnStatus(),
-                invoice.getStatusID() != null ? invoice.getStatusID().getId() : null,
+                invoice.getStatus(),
                 invoice.getShiftReportID() != null ? invoice.getShiftReportID().getId() : null,
                 invoice.getPrescriptionCode(),
                 invoice.getNote()

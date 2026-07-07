@@ -23,8 +23,9 @@ public class Stockout {
     @Column(name = "stockOutCode", nullable = false, length = 50)
     private String stockOutCode;
 
+    @Size(max = 50)
     @NotNull
-    @Column(name = "outType", nullable = false, columnDefinition = "enum('DESTROY','INTERNAL_TRANSFER','INTERNAL_USE','SAMPLE','GIFT')")
+    @Column(name = "outType", nullable = false, length = 50)
     private String outType;
 
     @NotNull
@@ -51,10 +52,10 @@ public class Stockout {
     @JoinColumn(name = "expenseID")
     private Expense expenseID;
 
+    @Size(max = 50)
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "statusID", nullable = false)
-    private Status statusID;
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;

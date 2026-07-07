@@ -16,7 +16,7 @@ public class ProcurementplanResponse {
     private String procurementPlanCode;
     private Instant date;
     private Integer employeeId;
-    private Integer statusId;
+    private String status;
     private Instant approveAt;
     private String note;
 
@@ -26,7 +26,7 @@ public class ProcurementplanResponse {
                 procurementplan.getProcurementPlanCode(), 
                 procurementplan.getDate(),
                 procurementplan.getEmployeeID() != null ? procurementplan.getEmployeeID().getId() : null,
-                procurementplan.getStatusID() != null ? procurementplan.getStatusID().getId() : null,
+                procurementplan.getStatus(),
                 procurementplan.getApproveAt(),
                 procurementplan.getNote()
         );

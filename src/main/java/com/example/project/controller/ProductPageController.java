@@ -89,7 +89,7 @@ public class ProductPageController {
     @GetMapping("/owner/products/create")
     public String createProductForm(Model model) {
         model.addAttribute("form", newFormWithBaseUnit());
-        addCreateFormReferenceData(model);
+        addCreateFormReferenceData(model, false, null);
         return "product/create";
     }
 
@@ -103,7 +103,7 @@ public class ProductPageController {
             return "redirect:/owner/products/" + newProductId;
         } catch (ProductValidationException exception) {
             model.addAttribute("errorMessages", exception.getErrors());
-            addCreateFormReferenceData(model);
+            addCreateFormReferenceData(model, false, null);
             return "product/create";
         }
     }
@@ -120,7 +120,7 @@ public class ProductPageController {
         return form;
     }
 
-    private void addCreateFormReferenceData(Model model) {
+    private void addCreateFormReferenceData(Model model, boolean isEdit, Integer productId) {
         List<Type> types = productService.listTypes();
         model.addAttribute("types", types);
         // "Nhóm mặt hàng" is derived from the distinct Type.sortType values; the Type dropdown is
@@ -134,8 +134,50 @@ public class ProductPageController {
         model.addAttribute("origins", productService.listOrigins());
         model.addAttribute("ingredientNames", productService.listIngredientNames());
         model.addAttribute("ingredientStrengths", productService.listIngredientStrengths());
-        model.addAttribute("nextCode", productService.previewNextProductCode());
+        // Only meaningful on Create — Edit shows the product's real, immutable code instead.
+        model.addAttribute("nextCode", isEdit ? null : productService.previewNextProductCode());
         model.addAttribute("basePath", "/owner/products");
+        model.addAttribute("isEdit", isEdit);
+        model.addAttribute("productId", productId);
+    }
+
+    /**
+     * Edit Product form — Owner only, same access rule as Create. Reuses {@code create.html} in
+     * edit mode: the model carries {@code isEdit=true} and {@code productId} so the template posts
+     * to the edit route and shows the real (immutable) product code instead of a generated preview.
+     */
+    @GetMapping("/owner/products/{productId}/edit")
+    public String editProductForm(@PathVariable Integer productId,
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
+        Optional<ProductCreateRequest> form = productService.getEditForm(productId);
+        if (form.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy hàng hóa");
+            return "redirect:/owner/products";
+        }
+
+        model.addAttribute("form", form.get());
+        addCreateFormReferenceData(model, true, productId);
+        return "product/create";
+    }
+
+    @PostMapping("/owner/products/{productId}/edit")
+    public String updateProduct(@PathVariable Integer productId,
+                                @ModelAttribute("form") ProductCreateRequest form,
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            productService.updateProduct(productId, form);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật hàng hóa");
+            return "redirect:/owner/products/" + productId;
+        } catch (ProductValidationException exception) {
+            model.addAttribute("errorMessages", exception.getErrors());
+            addCreateFormReferenceData(model, true, productId);
+            return "product/create";
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            return "redirect:/owner/products";
+        }
     }
 
     @GetMapping({

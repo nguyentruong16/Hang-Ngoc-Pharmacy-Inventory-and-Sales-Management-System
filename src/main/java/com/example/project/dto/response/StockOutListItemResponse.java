@@ -23,7 +23,6 @@ public class StockOutListItemResponse {
     private long totalItems;
     private BigDecimal estimatedValue;
 
-    private Integer statusId;
     private String statusName;
     private String statusCssClass;
 }

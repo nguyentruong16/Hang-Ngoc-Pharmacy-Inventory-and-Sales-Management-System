@@ -28,7 +28,7 @@ public class IncomeResponse {
     private Integer supplierId;
     private Integer customerId;
     private Integer accountId;
-    private Integer statusId;
+    private String status;
     private String note;
 
     public static IncomeResponse from(Income income) {
@@ -48,7 +48,7 @@ public class IncomeResponse {
                 income.getSupplierID() != null ? income.getSupplierID().getId() : null,
                 income.getCustomerID() != null ? income.getCustomerID().getId() : null,
                 income.getAccountID() != null ? income.getAccountID().getId() : null,
-                income.getStatusID() != null ? income.getStatusID().getId() : null,
+                income.getStatus(),
                 income.getNote()
         );
     }

@@ -40,6 +40,10 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     /** Barcode is unique when present; used to reject duplicates when creating a product. */
     boolean existsByBarcode(String barcode);
 
+    /** Barcode uniqueness check for editing: true if some OTHER product already has this barcode. */
+    @Query("select count(p) > 0 from Product p where p.barcode = :barcode and p.productID <> :productId")
+    boolean existsByBarcodeExcludingProduct(@Param("barcode") String barcode, @Param("productId") Integer productId);
+
     /**
      * Highest numeric suffix among internal codes of the form {@code SP<digits>} (0 if none).
      * Used to auto-generate the next internal product code. MySQL-specific (REGEXP + CAST).

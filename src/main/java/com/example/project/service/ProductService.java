@@ -45,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -418,6 +419,184 @@ public class ProductService {
         }
 
         return saved.getProductID();
+    }
+
+    // --- Edit Product ----------------------------------------------------------
+
+    /**
+     * Builds the Edit Product form, prefilled from the existing {@code Product} + its units,
+     * ingredients and storage positions. Units are listed smallest-to-largest (matching the Create
+     * form's convention) so {@code quantityRelativeToPrevious} can be reconstructed from the stored
+     * cumulative ratios. Returns {@link Optional#empty()} when the product does not exist.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ProductCreateRequest> getEditForm(Integer productId) {
+        Optional<Product> productOpt = productRepository.findDetailById(productId);
+        if (productOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        Product product = productOpt.get();
+
+        ProductCreateRequest form = new ProductCreateRequest();
+        form.setName(product.getName());
+        form.setCode(product.getCode());
+        form.setBarcode(product.getBarcode());
+        form.setTypeId(product.getTypeID() != null ? product.getTypeID().getId() : null);
+        form.setProducerId(product.getProducerID() != null ? product.getProducerID().getId() : null);
+        form.setOriginId(product.getOriginID() != null ? product.getOriginID().getId() : null);
+        form.setRegistrationNumber(product.getRegistrationNumber());
+        form.setMinStock(product.getMinStock());
+        form.setMaxStock(product.getMaxStock());
+        form.setStatus(product.getStatus());
+        form.setNote(product.getNote());
+
+        List<Productunit> units = productunitRepository.findByProductId(productId).stream()
+                .sorted(Comparator.comparing(Productunit::getRatio, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+        BigDecimal previousRatio = null;
+        for (Productunit unit : units) {
+            ProductUnitCreateRequest row = new ProductUnitCreateRequest();
+            row.setUnitName(unit.getUnitName());
+            row.setSellPrice(unit.getSellPrice());
+            row.setBaseUnit(Boolean.TRUE.equals(unit.getIsBaseUnit()));
+            row.setDefaultUnit(Boolean.TRUE.equals(unit.getIsDefault()));
+            row.setActive(!Boolean.FALSE.equals(unit.getIsActive()));
+            row.setQuantityRelativeToPrevious(previousRatio == null || previousRatio.signum() == 0
+                    ? null
+                    : unit.getRatio().divide(previousRatio, 0, RoundingMode.HALF_UP).intValue());
+            previousRatio = unit.getRatio();
+            form.getUnits().add(row);
+        }
+
+        for (Medicineapi api : medicineapiRepository.findByProductId(productId)) {
+            ProductIngredientCreateRequest row = new ProductIngredientCreateRequest();
+            row.setApiName(api.getApiName());
+            row.setStrength(api.getStrength());
+            form.getIngredients().add(row);
+        }
+
+        for (Position position : positionRepository.findByProductId(productId)) {
+            ProductPositionCreateRequest row = new ProductPositionCreateRequest();
+            row.setName(position.getName());
+            form.getPositions().add(row);
+        }
+
+        return Optional.of(form);
+    }
+
+    /**
+     * Saves edits to an existing product. Scope is deliberately narrower than
+     * {@link #createProduct}: existing {@code ProductUnit} rows can only be edited in place (name /
+     * ratio / sell price / flags) — units can never be added or removed here, because
+     * {@code Batch}, {@code InvoiceDetail}, {@code StockOutDetail} and {@code ReturnDetail} all hold
+     * FK references to a specific {@code ProductUnit} row, so changing the row count would risk
+     * orphaning that history. Ingredients and storage positions carry no such references, so both
+     * lists are simply replaced wholesale (delete-all-then-recreate), same as on create.
+     *
+     * @throws ProductValidationException when validation fails (including a unit count mismatch);
+     *                                    the transaction rolls back so nothing is persisted.
+     * @throws IllegalArgumentException   when {@code productId} does not refer to an existing product
+     */
+    @Transactional
+    public void updateProduct(Integer productId, ProductCreateRequest request) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hàng hóa"));
+
+        List<String> errors = new ArrayList<>();
+
+        String name = trimToNull(request.getName());
+        String barcode = trimToNull(request.getBarcode());
+
+        if (name == null) {
+            errors.add("Tên hàng hóa không được để trống");
+        }
+        if (barcode != null && productRepository.existsByBarcodeExcludingProduct(barcode, productId)) {
+            errors.add("Barcode '" + barcode + "' đã tồn tại");
+        }
+        if (request.getMinStock() != null && request.getMaxStock() != null
+                && request.getMinStock() > request.getMaxStock()) {
+            errors.add("Tồn tối thiểu không được lớn hơn tồn tối đa");
+        }
+        if (request.getTypeId() != null && !typeRepository.existsById(request.getTypeId())) {
+            errors.add("Loại hàng không hợp lệ");
+        }
+        if (request.getProducerId() != null && !producerRepository.existsById(request.getProducerId())) {
+            errors.add("Nhà sản xuất không hợp lệ");
+        }
+        if (request.getOriginId() != null && !originRepository.existsById(request.getOriginId())) {
+            errors.add("Xuất xứ không hợp lệ");
+        }
+
+        List<Productunit> existingUnits = productunitRepository.findByProductId(productId).stream()
+                .sorted(Comparator.comparing(Productunit::getRatio, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+        List<ProductUnitCreateRequest> requestedUnitRows = request.getUnits() == null ? List.of()
+                : request.getUnits().stream().filter(u -> trimToNull(u.getUnitName()) != null).toList();
+        if (requestedUnitRows.size() != existingUnits.size()) {
+            errors.add("Không thể thêm hoặc bớt đơn vị tính khi sửa hàng hóa");
+        }
+
+        List<ResolvedUnit> resolvedUnits = validateAndResolveUnits(request.getUnits(), errors);
+
+        if (!errors.isEmpty()) {
+            throw new ProductValidationException(errors);
+        }
+
+        product.setName(name);
+        product.setBarcode(barcode);
+        product.setRegistrationNumber(trimToNull(request.getRegistrationNumber()));
+        product.setMinStock(request.getMinStock());
+        product.setMaxStock(request.getMaxStock());
+        product.setStatus(request.getStatus() == null ? Boolean.TRUE : request.getStatus());
+        product.setNote(trimToNull(request.getNote()));
+        product.setTypeID(request.getTypeId() != null ? typeRepository.getReferenceById(request.getTypeId()) : null);
+        product.setProducerID(request.getProducerId() != null
+                ? producerRepository.getReferenceById(request.getProducerId()) : null);
+        product.setOriginID(request.getOriginId() != null
+                ? originRepository.getReferenceById(request.getOriginId()) : null);
+        productRepository.save(product);
+
+        for (int i = 0; i < existingUnits.size(); i++) {
+            Productunit unit = existingUnits.get(i);
+            ResolvedUnit resolved = resolvedUnits.get(i);
+            unit.setUnitName(resolved.name());
+            unit.setRatio(BigDecimal.valueOf(resolved.ratio()));
+            unit.setSellPrice(resolved.sellPrice());
+            unit.setIsBaseUnit(resolved.baseUnit());
+            unit.setIsDefault(resolved.defaultUnit());
+            unit.setIsActive(resolved.active());
+            productunitRepository.save(unit);
+        }
+
+        medicineapiRepository.deleteAll(medicineapiRepository.findByProductId(productId));
+        if (request.getIngredients() != null) {
+            for (ProductIngredientCreateRequest ingredient : request.getIngredients()) {
+                String apiName = trimToNull(ingredient.getApiName());
+                if (apiName == null) {
+                    continue;
+                }
+                Medicineapi api = new Medicineapi();
+                api.setProductID(product);
+                api.setApiName(apiName);
+                api.setStrength(trimToNull(ingredient.getStrength()));
+                medicineapiRepository.save(api);
+            }
+        }
+
+        positionRepository.deleteAll(positionRepository.findByProductId(productId));
+        if (request.getPositions() != null) {
+            for (ProductPositionCreateRequest position : request.getPositions()) {
+                String positionName = trimToNull(position.getName());
+                if (positionName == null) {
+                    continue;
+                }
+                Position entity = new Position();
+                entity.setProductID(product);
+                entity.setName(positionName);
+                positionRepository.save(entity);
+            }
+        }
     }
 
     /**

@@ -31,9 +31,10 @@ public class Procurementplan {
     @JoinColumn(name = "employeeID")
     private Account employeeID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statusID")
-    private Status statusID;
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @Column(name = "approveAt")
     private Instant approveAt;

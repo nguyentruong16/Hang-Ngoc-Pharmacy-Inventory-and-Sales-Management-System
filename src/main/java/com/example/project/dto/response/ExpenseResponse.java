@@ -29,7 +29,7 @@ public class ExpenseResponse {
     private Integer supplierId;
     private Integer customerId;
     private Integer accountId;
-    private Integer statusId;
+    private String status;
     private Instant approvedAt;
     private String note;
 
@@ -51,7 +51,7 @@ public class ExpenseResponse {
                 expense.getSupplierID() != null ? expense.getSupplierID().getId() : null,
                 expense.getCustomerID() != null ? expense.getCustomerID().getId() : null,
                 expense.getAccountID() != null ? expense.getAccountID().getId() : null,
-                expense.getStatusID() != null ? expense.getStatusID().getId() : null,
+                expense.getStatus(),
                 expense.getApprovedAt(),
                 expense.getNote()
         );

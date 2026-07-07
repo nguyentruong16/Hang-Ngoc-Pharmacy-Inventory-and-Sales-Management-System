@@ -73,6 +73,11 @@
                 <a th:href="${basePath}" class="btn btn-sm btn-outline-secondary mb-2">
                     <i class="ti ti-arrow-left me-1"></i> Quay lại danh sách
                 </a>
+                <a th:if="${basePath == '/owner/products'}"
+                   th:href="@{/owner/products/{id}/edit(id=${product.productId})}"
+                   class="btn btn-sm btn-outline-secondary mb-2 ms-2">
+                    <i class="ti ti-edit me-1"></i> Sửa hàng hóa
+                </a>
                 <h1 class="fs-4 mb-1" th:text="${product.name}">Tên hàng hóa</h1>
                 <div class="text-secondary">
                     <span th:text="${product.code}">MED-001</span>

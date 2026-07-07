@@ -39,8 +39,9 @@ public class Return {
     @Column(name = "returnDate", nullable = false)
     private Instant returnDate;
 
+    @Size(max = 50)
     @NotNull
-    @Column(name = "returnType", nullable = false, columnDefinition = "enum('CASH','BANKING', 'DEBT')")
+    @Column(name = "returnType", nullable = false, length = 50)
     private String returnType;
 
     @ColumnDefault("0.00")
@@ -75,10 +76,10 @@ public class Return {
     @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
 
+    @Size(max = 50)
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "statusID", nullable = false)
-    private Status statusID;
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @Column(name = "approvedAt")
     private Instant approvedAt;
