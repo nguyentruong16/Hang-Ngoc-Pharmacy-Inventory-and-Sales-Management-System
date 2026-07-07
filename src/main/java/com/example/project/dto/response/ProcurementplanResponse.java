@@ -13,22 +13,26 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ProcurementplanResponse {
     private Integer id;
-    private String procurementPlanCode;
+    private String procurementCode;
     private Instant date;
-    private Integer employeeId;
+    private Integer requestedBy;
     private String status;
     private Instant approveAt;
     private String note;
+    private Integer supplierId;
+    private Instant createdAt;
 
     public static ProcurementplanResponse from(Procurementplan procurementplan) {
         return new ProcurementplanResponse(
                 procurementplan.getId(),
-                procurementplan.getProcurementPlanCode(), 
+                procurementplan.getProcurementCode(),
                 procurementplan.getDate(),
-                procurementplan.getEmployeeID() != null ? procurementplan.getEmployeeID().getId() : null,
+                procurementplan.getRequestedBy() != null ? procurementplan.getRequestedBy().getId() : null,
                 procurementplan.getStatus(),
                 procurementplan.getApproveAt(),
-                procurementplan.getNote()
+                procurementplan.getNote(),
+                procurementplan.getSupplierID() != null ? procurementplan.getSupplierID().getId() : null,
+                procurementplan.getCreatedAt()
         );
     }
 }

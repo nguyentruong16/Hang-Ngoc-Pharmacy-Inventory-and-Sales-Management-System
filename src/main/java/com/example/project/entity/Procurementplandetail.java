@@ -15,12 +15,12 @@ import java.math.BigDecimal;
 public class Procurementplandetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "planDetailID", nullable = false)
+    @Column(name = "procurementDetailID", nullable = false)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "planID")
-    private Procurementplan planID;
+    @JoinColumn(name = "procurementID")
+    private Procurementplan procurementID;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -28,8 +28,8 @@ public class Procurementplandetail {
     private Product productID;
 
     @NotNull
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity;
+    @Column(name = "requestedQuantity", nullable = false)
+    private Integer requestedQuantity;
 
     @Size(max = 20)
     @Column(name = "unit", length = 20)
@@ -41,5 +41,9 @@ public class Procurementplandetail {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "currentStock")
+    private Integer currentStock;
 
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
 }

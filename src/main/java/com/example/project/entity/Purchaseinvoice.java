@@ -46,8 +46,8 @@ public class Purchaseinvoice {
     private BigDecimal totalAmount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requisitionID")
-    private Purchaserequisition requisitionID;
+    @JoinColumn(name = "procurementID")
+    private Procurementplan procurementID;
 
     @Column(name = "paid", precision = 15, scale = 2)
     private BigDecimal paid;
