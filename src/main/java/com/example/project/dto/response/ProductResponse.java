@@ -20,7 +20,7 @@ public class ProductResponse {
     private Integer maxStock;
     private Integer minStock;
     private Integer producerId;
-    private Integer originId;
+    private String origin;
     private String registrationNumber;
     private Boolean status;
     private String image;
@@ -36,7 +36,7 @@ public class ProductResponse {
                 product.getMaxStock(),
                 product.getMinStock(),
                 product.getProducerID() != null ? product.getProducerID().getId() : null,
-                product.getOriginID() != null ? product.getOriginID().getId() : null,
+                product.getOrigin(),
                 product.getRegistrationNumber(),
                 product.getStatus(),
                 product.getImage(),

@@ -29,7 +29,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
        from Product p
        left join fetch p.typeID
        left join fetch p.producerID
-       left join fetch p.originID
        where p.productID = :productId
        """)
     Optional<Product> findDetailById(@Param("productId") Integer productId);

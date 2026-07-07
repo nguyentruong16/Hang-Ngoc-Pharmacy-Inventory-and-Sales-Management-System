@@ -50,11 +50,13 @@ public class SecurityConfig {
                         .requestMatchers("/owner/**").hasRole(RoleConstants.OWNER)
                         .requestMatchers("/pharmacist/**").hasRole(RoleConstants.PHARMACIST)
                         .requestMatchers("/accountant/**").hasRole(RoleConstants.ACCOUNTANT)
-                        // Shared Customer module: reachable by Owner and Pharmacist —
-                        // not Accountant. Lives outside the role-prefixed trees.
+                        // Shared Customer module: reachable by all 3 roles — Accountant is
+                        // view-only (enforced in CustomerController, not at the route level,
+                        // since view/edit share the same /customer/** path).
                         .requestMatchers("/customer/**").hasAnyRole(
                                 RoleConstants.OWNER,
-                                RoleConstants.PHARMACIST)
+                                RoleConstants.PHARMACIST,
+                                RoleConstants.ACCOUNTANT)
                         // Everything else (/, /dashboard, /profile, /change-password, /403, REST APIs)
                         // requires only that the user is signed in.
                         .anyRequest().authenticated()

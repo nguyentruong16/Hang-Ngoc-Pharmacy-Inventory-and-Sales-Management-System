@@ -190,7 +190,7 @@
 
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách khách hàng</h2>
-        <a th:href="@{/customer/create}" class="btn-create">
+        <a th:if="${currentRole != 'ACCOUNTANT'}" th:href="@{/customer/create}" class="btn-create">
           <i class="ti ti-plus"></i>Tạo khách hàng
         </a>
       </div>

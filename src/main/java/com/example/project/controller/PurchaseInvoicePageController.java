@@ -30,7 +30,8 @@ public class PurchaseInvoicePageController {
 
     @GetMapping({
             "/owner/purchase-invoices",
-            "/accountant/purchase-invoices"
+            "/accountant/purchase-invoices",
+            "/pharmacist/purchase-invoices"
     })
     public String listPurchaseInvoices(@RequestParam(name = "keyword", required = false) String keyword,
                                        @RequestParam(name = "fromDate", required = false) String fromDate,
@@ -86,7 +87,7 @@ public class PurchaseInvoicePageController {
         return "purchase-invoice/list";
     }
 
-    @GetMapping("/accountant/purchase-invoices/create")
+    @GetMapping("/pharmacist/purchase-invoices/create")
     public String createPage(HttpServletRequest request, Model model) {
         PurchaseInvoiceCreateRequest form = new PurchaseInvoiceCreateRequest();
 
@@ -99,7 +100,7 @@ public class PurchaseInvoicePageController {
         return "purchase-invoice/create";
     }
 
-    @PostMapping("/accountant/purchase-invoices/create")
+    @PostMapping("/pharmacist/purchase-invoices/create")
     public String createPurchaseInvoice(@Valid @ModelAttribute("form") PurchaseInvoiceCreateRequest form,
                                         BindingResult bindingResult,
                                         HttpServletRequest request,
@@ -117,7 +118,7 @@ public class PurchaseInvoicePageController {
             );
 
             redirectAttributes.addFlashAttribute("successMessage", "Tạo phiếu nhập thành công");
-            return "redirect:/accountant/purchase-invoices/" + purchaseId;
+            return "redirect:" + resolveBasePath(request) + "/" + purchaseId;
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
             addCreatePageData(request, model);
@@ -127,7 +128,8 @@ public class PurchaseInvoicePageController {
 
     @GetMapping({
             "/owner/purchase-invoices/{purchaseId}",
-            "/accountant/purchase-invoices/{purchaseId}"
+            "/accountant/purchase-invoices/{purchaseId}",
+            "/pharmacist/purchase-invoices/{purchaseId}"
     })
     public String detailPage(@PathVariable Integer purchaseId,
                              HttpServletRequest request,
@@ -152,6 +154,9 @@ public class PurchaseInvoicePageController {
 
         if (uri.startsWith("/owner/purchase-invoices")) {
             return "/owner/purchase-invoices";
+        }
+        if (uri.startsWith("/pharmacist/purchase-invoices")) {
+            return "/pharmacist/purchase-invoices";
         }
 
         return "/accountant/purchase-invoices";
