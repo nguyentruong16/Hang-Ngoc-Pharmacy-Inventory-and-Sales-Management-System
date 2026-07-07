@@ -15,13 +15,13 @@ import java.math.BigDecimal;
 public class Stockadjustmentdetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "stockAdjustmentDetailID ", nullable = false)
+    @Column(name = "stockAdjustmentDetailID", nullable = false)
     private Integer id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "stockAdjustmentID ", nullable = false)
-    private Stockadjustment stockAdjustmentID ;
+    @JoinColumn(name = "stockAdjustmentID", nullable = false)
+    private Stockadjustment stockAdjustmentID;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

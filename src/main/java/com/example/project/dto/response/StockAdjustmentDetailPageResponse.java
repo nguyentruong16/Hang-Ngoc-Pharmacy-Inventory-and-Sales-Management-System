@@ -12,13 +12,13 @@ import java.util.List;
 public class StockAdjustmentDetailPageResponse {
 
     private Integer id;
-    private String stockOutCode;
+    private String code;
 
     private Instant date;
     private String dateDisplay;
 
-    private String outType;
-    private String outTypeDisplay;
+    private String adjustmentType;
+    private String adjustmentTypeDisplay;
 
     private String createdByName;
     private String approvedByName;
@@ -40,10 +40,10 @@ public class StockAdjustmentDetailPageResponse {
     private int accountingCheckTotal;
     private int accountingCheckPercent;
 
-    private boolean sourceChecked;
-    private boolean targetChecked;
+    private boolean itemsChecked;
+    private boolean batchChecked;
     private boolean valueChecked;
-    private boolean reasonChecked;
+    private boolean approvalChecked;
 
     private List<StockAdjustmentDetailItemResponse> items;
 }

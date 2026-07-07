@@ -133,13 +133,13 @@
     <div class="container-fluid">
 
         <div class="mb-4">
-            <h1 class="fs-4 mb-1">Tạo phiếu hủy xuất kho</h1>
-            <p class="text-secondary mb-0">Tạo phiếu xuất kho loại hủy hàng từ các lô tồn kho hiện có</p>
+            <h1 class="fs-4 mb-1">Tạo phiếu điều chỉnh kho (hủy hàng)</h1>
+            <p class="text-secondary mb-0">Tạo phiếu điều chỉnh loại hủy hàng từ các lô tồn kho hiện có</p>
         </div>
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <form th:action="${basePath + '/destroy/create'}" th:object="${form}" method="post">
+        <form th:action="${basePath + '/create'}" th:object="${form}" method="post">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <div class="row g-4">
@@ -372,7 +372,7 @@
     }
 
     function candidateLabel(candidate) {
-        return `${candidate.productName} - ${candidate.lotNumber || 'Không có số lô'} - Tồn: ${candidate.storageQuantity} - ${candidate.branchName}`;
+        return `${candidate.productName} - ${candidate.lotNumber || 'Không có số lô'} - Tồn: ${candidate.storageQuantity}`;
     }
 
     function filterCandidateOptions() {
