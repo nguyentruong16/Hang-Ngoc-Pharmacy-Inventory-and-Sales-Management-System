@@ -15,7 +15,6 @@ public interface StockoutRepository extends JpaRepository<Stockout, Integer> {
            left join fetch s.createdBy
            left join fetch s.approvedBy
            left join fetch s.expenseID
-           left join fetch s.statusID
            order by s.date desc
            """)
     List<Stockout> findAllWithRelations();
@@ -26,7 +25,6 @@ public interface StockoutRepository extends JpaRepository<Stockout, Integer> {
            left join fetch s.createdBy
            left join fetch s.approvedBy
            left join fetch s.expenseID
-           left join fetch s.statusID
            where s.id = :id
            """)
     Optional<Stockout> findByIdWithRelations(Integer id);

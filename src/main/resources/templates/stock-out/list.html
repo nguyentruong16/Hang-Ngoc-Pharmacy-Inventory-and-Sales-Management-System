@@ -220,12 +220,12 @@
                     </div>
 
                     <div class="col-12 col-xl-2">
-                        <select class="form-select" name="statusId">
+                        <select class="form-select" name="status">
                             <option value="">Trạng thái</option>
                             <option th:each="status : ${statuses}"
-                                    th:value="${status.id}"
-                                    th:text="${status.name}"
-                                    th:selected="${filterStatusId == status.id}">
+                                    th:value="${status}"
+                                    th:text="${status}"
+                                    th:selected="${filterStatus == status}">
                             </option>
                         </select>
                     </div>
@@ -331,7 +331,7 @@
                     <ul class="pagination mb-0">
                         <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, statusId=${filterStatusId}, page=${currentPage - 1}, size=${pageSize})}">
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, status=${filterStatus}, page=${currentPage - 1}, size=${pageSize})}">
                                 Trước
                             </a>
                         </li>
@@ -341,14 +341,14 @@
                             th:classappend="${pageNumber == currentPage} ? ' active'">
                             <a class="page-link"
                                th:text="${pageNumber + 1}"
-                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, statusId=${filterStatusId}, page=${pageNumber}, size=${pageSize})}">
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, status=${filterStatus}, page=${pageNumber}, size=${pageSize})}">
                                 1
                             </a>
                         </li>
 
                         <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, statusId=${filterStatusId}, page=${currentPage + 1}, size=${pageSize})}">
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, status=${filterStatus}, page=${currentPage + 1}, size=${pageSize})}">
                                 Sau
                             </a>
                         </li>

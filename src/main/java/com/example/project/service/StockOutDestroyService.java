@@ -21,24 +21,25 @@ import java.util.stream.Collectors;
 public class StockOutDestroyService {
 
     private static final String OUT_TYPE_DESTROY = "DESTROY";
+    // Matches StockoutService.STATUS_PENDING_RECONCILIATION — a freshly created stock-out starts
+    // in the same "pending" bucket that the Stock-Out list/stats screens already understand.
+    private static final String STATUS_PENDING = "Chờ đối chiếu";
 
     private final StockoutRepository stockoutRepository;
     private final StockoutdetailRepository stockoutdetailRepository;
     private final BatchRepository batchRepository;
     private final AccountRepository accountRepository;
-    private final StatusRepository statusRepository;
     private final ProductunitRepository productunitRepository;
 
     public StockOutDestroyService(StockoutRepository stockoutRepository,
                                   StockoutdetailRepository stockoutdetailRepository,
                                   BatchRepository batchRepository,
                                   AccountRepository accountRepository,
-                                  StatusRepository statusRepository, ProductunitRepository productunitRepository) {
+                                  ProductunitRepository productunitRepository) {
         this.stockoutRepository = stockoutRepository;
         this.stockoutdetailRepository = stockoutdetailRepository;
         this.batchRepository = batchRepository;
         this.accountRepository = accountRepository;
-        this.statusRepository = statusRepository;
         this.productunitRepository = productunitRepository;
     }
 
@@ -59,8 +60,6 @@ public class StockOutDestroyService {
 
         Account creator = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
-
-        Status pendingStatus = resolvePendingStatus();
 
         Map<Integer, StockOutDestroyItemRequest> itemMap = request.getItems()
                 .stream()
@@ -96,7 +95,7 @@ public class StockOutDestroyService {
         stockOut.setCreatedBy(creator);
         stockOut.setReason(request.getReason().trim());
         stockOut.setExpenseID(null);
-        stockOut.setStatusID(pendingStatus);
+        stockOut.setStatus(STATUS_PENDING);
         stockOut.setNote(trimToNull(request.getNote()));
 
         Stockout savedStockOut = stockoutRepository.save(stockOut);
@@ -172,25 +171,6 @@ public class StockOutDestroyService {
                 );
             }
         }
-    }
-
-    private Status resolvePendingStatus() {
-        List<String> possibleStatusNames = List.of(
-                "Chờ xử lý",
-                "Chờ phê duyệt",
-                "Chờ đối chiếu",
-                "PENDING"
-        );
-
-        for (String statusName : possibleStatusNames) {
-            Optional<Status> status = statusRepository.findByNameIgnoreCase(statusName);
-
-            if (status.isPresent()) {
-                return status.get();
-            }
-        }
-
-        throw new IllegalArgumentException("Không tìm thấy trạng thái chờ xử lý trong bảng Status");
     }
 
     private Productunit resolveUnit(Batch batch, Product product) {

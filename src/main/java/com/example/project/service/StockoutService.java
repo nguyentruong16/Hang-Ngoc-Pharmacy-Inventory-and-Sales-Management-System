@@ -33,16 +33,13 @@ public class StockoutService {
 
     private final StockoutRepository stockoutRepository;
     private final StockoutdetailRepository stockoutdetailRepository;
-    private final StatusRepository statusRepository;
     private final AccountRepository accountRepository;
 
     public StockoutService(StockoutRepository stockoutRepository,
                            StockoutdetailRepository stockoutdetailRepository,
-                           StatusRepository statusRepository,
                            AccountRepository accountRepository) {
         this.stockoutRepository = stockoutRepository;
         this.stockoutdetailRepository = stockoutdetailRepository;
-        this.statusRepository = statusRepository;
         this.accountRepository = accountRepository;
     }
 
@@ -52,7 +49,7 @@ public class StockoutService {
                                                           String toDate,
                                                           String outType,
                                                           Integer branchId,
-                                                          Integer statusId,
+                                                          String status,
                                                           Pageable pageable) {
         final String normalizedKeyword = normalize(keyword);
         final LocalDate from = parseDate(fromDate);
@@ -69,7 +66,7 @@ public class StockoutService {
                 .filter(stockOut -> matchesKeyword(stockOut, detailMap.getOrDefault(stockOut.getId(), List.of()), normalizedKeyword))
                 .filter(stockOut -> matchesDate(stockOut, from, to))
                 .filter(stockOut -> outType == null || outType.isBlank() || outType.equals(stockOut.getOutType()))
-                .filter(stockOut -> statusId == null || statusMatches(stockOut, statusId))
+                .filter(stockOut -> status == null || status.isBlank() || isStatus(getStatusName(stockOut), status))
                 .map(stockOut -> toListItem(stockOut, detailMap.getOrDefault(stockOut.getId(), List.of())))
                 .toList();
 
@@ -174,7 +171,6 @@ public class StockoutService {
                 formatInstant(stockOut.getApprovedAt()),
                 stockOut.getReason(),
                 stockOut.getNote(),
-                stockOut.getStatusID() != null ? stockOut.getStatusID().getId() : null,
                 statusName,
                 statusCssClass(statusName),
                 totalItems,
@@ -200,10 +196,7 @@ public class StockoutService {
         Account account = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
-        Status reconciledStatus = statusRepository.findByNameIgnoreCase(STATUS_RECONCILED)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy trạng thái: " + STATUS_RECONCILED));
-
-        stockOut.setStatusID(reconciledStatus);
+        stockOut.setStatus(STATUS_RECONCILED);
         stockOut.setApprovedBy(account);
         stockOut.setApprovedAt(Instant.now());
 
@@ -215,10 +208,7 @@ public class StockoutService {
         Stockout stockOut = stockoutRepository.findByIdWithRelations(stockOutId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu xuất kho"));
 
-        Status needCheckStatus = statusRepository.findByNameIgnoreCase(STATUS_NEED_CHECK)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy trạng thái: " + STATUS_NEED_CHECK));
-
-        stockOut.setStatusID(needCheckStatus);
+        stockOut.setStatus(STATUS_NEED_CHECK);
 
         if (stockOut.getNote() == null || stockOut.getNote().isBlank()) {
             stockOut.setNote("Đã gửi yêu cầu kiểm tra lại phiếu xuất kho.");
@@ -234,12 +224,10 @@ public class StockoutService {
         return List.of();
     }
 
+    /** The fixed set of statuses a StockOut can be in, in workflow order, for the filter dropdown. */
     @Transactional(readOnly = true)
-    public List<Status> listStatuses() {
-        return statusRepository.findAll()
-                .stream()
-                .sorted(Comparator.comparing(status -> status.getName() == null ? "" : status.getName()))
-                .toList();
+    public List<String> listStatuses() {
+        return List.of(STATUS_PENDING_RECONCILIATION, STATUS_NEED_CHECK, STATUS_RECONCILED);
     }
 
     public Map<String, String> outTypeLabels() {
@@ -270,7 +258,6 @@ public class StockoutService {
                 stockOut.getCreatedBy() != null ? stockOut.getCreatedBy().getName() : "Không rõ",
                 details.size(),
                 estimatedValue,
-                stockOut.getStatusID() != null ? stockOut.getStatusID().getId() : null,
                 statusName,
                 statusCssClass(statusName)
         );
@@ -340,10 +327,6 @@ public class StockoutService {
         return to == null || !date.isAfter(to);
     }
 
-    private boolean statusMatches(Stockout stockOut, Integer statusId) {
-        return stockOut.getStatusID() != null && statusId.equals(stockOut.getStatusID().getId());
-    }
-
     private long countByStatusName(List<Stockout> stockOuts, String statusName) {
         return stockOuts.stream()
                 .filter(stockOut -> isStatus(getStatusName(stockOut), statusName))
@@ -351,7 +334,7 @@ public class StockoutService {
     }
 
     private String getStatusName(Stockout stockOut) {
-        return stockOut.getStatusID() != null ? stockOut.getStatusID().getName() : "Không rõ";
+        return stockOut.getStatus() != null ? stockOut.getStatus() : "Không rõ";
     }
 
     private boolean isStatus(String actual, String expected) {

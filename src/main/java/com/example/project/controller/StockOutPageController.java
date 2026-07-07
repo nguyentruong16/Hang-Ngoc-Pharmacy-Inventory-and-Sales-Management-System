@@ -34,7 +34,7 @@ public class StockOutPageController {
                                 @RequestParam(name = "toDate", required = false) String toDate,
                                 @RequestParam(name = "outType", required = false) String outType,
                                 @RequestParam(name = "branchId", required = false) Integer branchId,
-                                @RequestParam(name = "statusId", required = false) Integer statusId,
+                                @RequestParam(name = "status", required = false) String status,
                                 @RequestParam(name = "page", defaultValue = "0") int page,
                                 @RequestParam(name = "size", defaultValue = "5") int size,
                                 HttpServletRequest request,
@@ -54,7 +54,7 @@ public class StockOutPageController {
                         toDate,
                         outType,
                         branchId,
-                        statusId,
+                        status,
                         PageRequest.of(page, size)
                 );
 
@@ -71,7 +71,7 @@ public class StockOutPageController {
         model.addAttribute("toDate", toDate);
         model.addAttribute("filterOutType", outType);
         model.addAttribute("filterBranchId", branchId);
-        model.addAttribute("filterStatusId", statusId);
+        model.addAttribute("filterStatus", status);
 
         model.addAttribute("currentPage", stockOutPage.getNumber());
         model.addAttribute("totalPages", stockOutPage.getTotalPages());
