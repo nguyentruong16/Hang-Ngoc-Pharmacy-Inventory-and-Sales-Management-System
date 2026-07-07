@@ -26,7 +26,6 @@ public class StockAdjustmentPageController {
 
     @GetMapping({
             "/owner/stock-outs",
-            "/chief-pharmacist/stock-outs",
             "/accountant/stock-outs"
     })
     public String listStockOuts(@RequestParam(name = "keyword", required = false) String keyword,
@@ -85,7 +84,6 @@ public class StockAdjustmentPageController {
 
     @GetMapping({
             "/owner/stock-outs/{stockOutId}",
-            "/chief-pharmacist/stock-outs/{stockOutId}",
             "/accountant/stock-outs/{stockOutId}"
     })
     public String viewStockOutDetail(@PathVariable Integer stockOutId,
@@ -101,7 +99,6 @@ public class StockAdjustmentPageController {
 
     @PostMapping({
             "/owner/stock-outs/{stockOutId}/approve",
-            "/chief-pharmacist/stock-outs/{stockOutId}/approve",
             "/accountant/stock-outs/{stockOutId}/approve"
     })
     public String approve(@PathVariable Integer stockOutId,
@@ -119,7 +116,6 @@ public class StockAdjustmentPageController {
 
     @PostMapping({
             "/owner/stock-outs/{stockOutId}/reject",
-            "/chief-pharmacist/stock-outs/{stockOutId}/reject",
             "/accountant/stock-outs/{stockOutId}/reject"
     })
     public String reject(@PathVariable Integer stockOutId,
@@ -142,10 +138,6 @@ public class StockAdjustmentPageController {
             return "/owner/stock-outs";
         }
 
-        if (uri.startsWith("/accountant/stock-outs")) {
-            return "/accountant/stock-outs";
-        }
-
-        return "/chief-pharmacist/stock-outs";
+        return "/accountant/stock-outs";
     }
 }

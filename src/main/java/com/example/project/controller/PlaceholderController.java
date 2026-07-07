@@ -37,29 +37,17 @@ public class PlaceholderController {
             "/owner/financial-setting",
             "/owner/customers",
             "/owner/approvals",
-            "/owner/notifications"
+            "/owner/notifications",
+            "/owner/selling",
+            "/owner/procurements",
+            "/owner/purchase-requisitions",
+            "/owner/invoices",
+            "/owner/incomes",
+            "/owner/expenses",
+            "/owner/returns",
+            "/owner/shift-reports"
     })
     public String owner(HttpServletRequest request, Model model) {
-        return render(request, model);
-    }
-
-    @GetMapping({
-            "/chief-pharmacist/dashboard",
-            "/chief-pharmacist/selling",
-            "/chief-pharmacist/origins",
-            "/chief-pharmacist/suppliers",
-            "/chief-pharmacist/procurements",
-            "/chief-pharmacist/purchase-requisitions",
-            "/chief-pharmacist/debts",
-            "/chief-pharmacist/invoices",
-            "/chief-pharmacist/incomes",
-            "/chief-pharmacist/expenses",
-            "/chief-pharmacist/returns",
-            "/chief-pharmacist/customers",
-            "/chief-pharmacist/shift-reports",
-            "/chief-pharmacist/notifications"
-    })
-    public String chiefPharmacist(HttpServletRequest request, Model model) {
         return render(request, model);
     }
 

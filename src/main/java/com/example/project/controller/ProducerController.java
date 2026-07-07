@@ -36,10 +36,7 @@ public class ProducerController {
         return producerService.getAll();
     }
 
-    @GetMapping({
-            "/owner/producers",
-            "/chief-pharmacist/producers"
-    })
+    @GetMapping("/owner/producers")
     public String producerList(@RequestParam(name = "search", required = false) String search,
                                @RequestParam(name = "page", defaultValue = "0") int page,
                                @RequestParam(name = "size", defaultValue = "5") int size,
@@ -69,10 +66,7 @@ public class ProducerController {
         return "owner/producer-list";
     }
 
-    @GetMapping({
-            "/owner/producers/create-producer",
-            "/chief-pharmacist/producers/create-producer"
-    })
+    @GetMapping("/owner/producers/create-producer")
     public String createProducerForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("producerForm")) {
             model.addAttribute("producerForm", new ProducerCreateRequest());
@@ -82,10 +76,7 @@ public class ProducerController {
         return "owner/create-producer";
     }
 
-    @PostMapping({
-            "/owner/producers/create-producer",
-            "/chief-pharmacist/producers/create-producer"
-    })
+    @PostMapping("/owner/producers/create-producer")
     public String createProducer(@Valid @ModelAttribute("producerForm") ProducerCreateRequest form,
                                  BindingResult bindingResult,
                                  HttpServletRequest request,
@@ -103,10 +94,7 @@ public class ProducerController {
         return "redirect:" + basePath;
     }
 
-    @GetMapping({
-            "/owner/producers/update-producer/{id}",
-            "/chief-pharmacist/producers/update-producer/{id}"
-    })
+    @GetMapping("/owner/producers/update-producer/{id}")
     public String updateProducerForm(@PathVariable Integer id,
                                      HttpServletRequest request,
                                      Model model) {
@@ -124,10 +112,7 @@ public class ProducerController {
         return "owner/update-producer";
     }
 
-    @PostMapping({
-            "/owner/producers/update-producer/{id}",
-            "/chief-pharmacist/producers/update-producer/{id}"
-    })
+    @PostMapping("/owner/producers/update-producer/{id}")
     public String updateProducer(@PathVariable Integer id,
                                  @Valid @ModelAttribute("producerForm") ProducerCreateRequest form,
                                  BindingResult bindingResult,
@@ -148,9 +133,6 @@ public class ProducerController {
     }
 
     private String resolveBasePath(HttpServletRequest request) {
-        if (request.getRequestURI().startsWith("/chief-pharmacist/producers")) {
-            return "/chief-pharmacist/producers";
-        }
         return "/owner/producers";
     }
 }

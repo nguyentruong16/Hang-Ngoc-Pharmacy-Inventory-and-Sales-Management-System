@@ -36,7 +36,7 @@ public class PositionController {
         return positionService.getAll();
     }
 
-    @GetMapping("/chief-pharmacist/positions")
+    @GetMapping("/owner/positions")
     public String positionList(@RequestParam(name = "search", required = false) String search,
                                @RequestParam(name = "page", defaultValue = "0") int page,
                                @RequestParam(name = "size", defaultValue = "5") int size,
@@ -66,7 +66,7 @@ public class PositionController {
         return "owner/position-list";
     }
 
-    @GetMapping("/chief-pharmacist/positions/create-position")
+    @GetMapping("/owner/positions/create-position")
     public String createPositionForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("positionForm")) {
             model.addAttribute("positionForm", new PositionCreateRequest());
@@ -75,7 +75,7 @@ public class PositionController {
         return "owner/create-position";
     }
 
-    @PostMapping("/chief-pharmacist/positions/create-position")
+    @PostMapping("/owner/positions/create-position")
     public String createPosition(@Valid @ModelAttribute("positionForm") PositionCreateRequest form,
                                  BindingResult bindingResult,
                                  HttpServletRequest request,
@@ -92,7 +92,7 @@ public class PositionController {
         return "redirect:" + basePath;
     }
 
-    @GetMapping("/chief-pharmacist/positions/update-position/{id}")
+    @GetMapping("/owner/positions/update-position/{id}")
     public String updatePositionForm(@PathVariable Integer id,
                                      HttpServletRequest request,
                                      Model model) {
@@ -110,7 +110,7 @@ public class PositionController {
         return "owner/update-position";
     }
 
-    @PostMapping("/chief-pharmacist/positions/update-position/{id}")
+    @PostMapping("/owner/positions/update-position/{id}")
     public String updatePosition(@PathVariable Integer id,
                                  @Valid @ModelAttribute("positionForm") PositionCreateRequest form,
                                  BindingResult bindingResult,
@@ -140,6 +140,6 @@ public class PositionController {
     }
 
     private String resolveBasePath(HttpServletRequest request) {
-        return "/chief-pharmacist/positions";
+        return "/owner/positions";
     }
 }
