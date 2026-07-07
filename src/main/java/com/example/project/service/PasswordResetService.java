@@ -5,6 +5,7 @@ import com.example.project.entity.PasswordResetToken;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.PasswordResetTokenRepository;
 import com.example.project.security.AccountPrincipal;
+import com.example.project.security.SessionExpiryReasonRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -48,6 +49,7 @@ public class PasswordResetService {
     private final AccountPasswordService accountPasswordService;
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final SessionRegistry sessionRegistry;
+    private final SessionExpiryReasonRegistry sessionExpiryReasonRegistry;
     private final SecureRandom secureRandom = new SecureRandom();
     private final boolean logResetLink;
     private final String smtpHost;
@@ -63,6 +65,7 @@ public class PasswordResetService {
             AccountPasswordService accountPasswordService,
             ObjectProvider<JavaMailSender> mailSenderProvider,
             SessionRegistry sessionRegistry,
+            SessionExpiryReasonRegistry sessionExpiryReasonRegistry,
             @Value("${app.auth.log-reset-link:true}") boolean logResetLink,
             @Value("${spring.mail.host:}") String smtpHost,
             @Value("${spring.mail.username:}") String smtpUsername,
@@ -75,6 +78,7 @@ public class PasswordResetService {
         this.accountPasswordService = accountPasswordService;
         this.mailSenderProvider = mailSenderProvider;
         this.sessionRegistry = sessionRegistry;
+        this.sessionExpiryReasonRegistry = sessionExpiryReasonRegistry;
         this.logResetLink = logResetLink;
         this.smtpHost = smtpHost;
         this.smtpUsername = smtpUsername;
@@ -146,6 +150,10 @@ public class PasswordResetService {
             if (principal instanceof AccountPrincipal accountPrincipal
                     && Objects.equals(accountPrincipal.getAccountId(), account.getId())) {
                 for (SessionInformation session : sessionRegistry.getAllSessions(principal, false)) {
+                    // Tag the reason so the login screen shows "mật khẩu đã thay đổi",
+                    // not the generic role-change message. See SessionExpiryReasonRegistry.
+                    sessionExpiryReasonRegistry.mark(session.getSessionId(),
+                            SessionExpiryReasonRegistry.PASSWORD_CHANGED);
                     session.expireNow();
                 }
             }

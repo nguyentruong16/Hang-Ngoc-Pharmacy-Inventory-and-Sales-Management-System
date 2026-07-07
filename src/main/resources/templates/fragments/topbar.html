@@ -362,12 +362,16 @@
     <script th:inline="none">
     (function () {
         var POLL_MS = 30000;
-        var REDIRECT_URL = '/signin?roleChanged';
         setInterval(function () {
             fetch('/api/session/check')
                 .then(function (res) {
-                    if (res.redirected || res.status === 401 || res.status === 403) {
-                        window.location.replace(REDIRECT_URL);
+                    // Đi theo đích mà server điều hướng tới:
+                    //  - /signin?roleChanged : vai trò/quyền bị đổi (ConcurrentSessionFilter) -> hiện thông báo
+                    //  - /signin             : chỉ mất phiên (hết hạn, app khởi động lại, đăng xuất...) -> KHÔNG hiện thông báo
+                    if (res.redirected) {
+                        window.location.replace(res.url);
+                    } else if (res.status === 401 || res.status === 403) {
+                        window.location.replace('/signin');
                     }
                 })
                 .catch(function () { /* bỏ qua lỗi mạng tạm thời */ });

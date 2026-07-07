@@ -2,6 +2,7 @@ package com.example.project.config;
 
 import com.example.project.constant.RoleConstants;
 import com.example.project.security.AccountAuthenticationProvider;
+import com.example.project.security.ReasonAwareSessionExpiredStrategy;
 import com.example.project.security.RoleBasedAuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,7 @@ public class SecurityConfig {
             SessionRegistry sessionRegistry,
             AuthenticationSuccessHandler authenticationSuccessHandler,
             AuthenticationFailureHandler authenticationFailureHandler,
+            ReasonAwareSessionExpiredStrategy sessionExpiredStrategy,
             AccountAuthenticationProvider accountAuthenticationProvider) throws Exception {
         http
                 .authenticationProvider(accountAuthenticationProvider)
@@ -78,7 +80,7 @@ public class SecurityConfig {
                         .sessionAuthenticationErrorUrl("/signin?sessionLimit")
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(true)
-                        .expiredUrl("/signin?roleChanged")
+                        .expiredSessionStrategy(sessionExpiredStrategy)
                         .sessionRegistry(sessionRegistry)
                 )
                 // Authenticated user without the required role -> friendly 403 page.
