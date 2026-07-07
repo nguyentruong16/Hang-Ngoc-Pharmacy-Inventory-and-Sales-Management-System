@@ -11,22 +11,22 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "stockout")
-public class Stockout {
+@Table(name = "stockadjustment")
+public class Stockadjustment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "stockOutID", nullable = false)
+    @Column(name = "stockAdjustmentID", nullable = false)
     private Integer id;
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "stockOutCode", nullable = false, length = 50)
-    private String stockOutCode;
+    @Column(name = "stockAdjustmentCode", nullable = false, length = 50)
+    private String stockAdjustmentCode;
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "outType", nullable = false, length = 50)
-    private String outType;
+    @Column(name = "adjustmentType", nullable = false, length = 50)
+    private String adjustmentType;
 
     @NotNull
     @Column(name = "date", nullable = false)
@@ -47,6 +47,10 @@ public class Stockout {
     @NotNull
     @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stockCountID")
+    private Stockcount stockCountID;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "expenseID")

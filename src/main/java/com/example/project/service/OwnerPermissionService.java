@@ -30,12 +30,9 @@ import java.util.Map;
  * <ul>
  *   <li>An account holds at most one role (one {@code AccountPermission} row).</li>
  *   <li>Assignable roles are exactly {@code PHARMACIST}, {@code ACCOUNTANT}, {@code OWNER}, plus
- *       blank/"Không quyền" to clear the assignment. The legacy {@code CHIEF_PHARMACIST} role can
- *       no longer be assigned from this screen — it has been merged into {@code OWNER} ("Chủ nhà
- *       thuốc"); any existing {@code CHIEF_PHARMACIST} row is displayed and counted as an Owner
- *       (see {@link #canonicalDisplayRole}) but is never written back as-is.</li>
- *   <li>The system must always keep at least one Owner: an account that currently holds an
- *       owner-like role cannot be changed away from it while it is the last one.</li>
+ *       blank/"Không quyền" to clear the assignment.</li>
+ *   <li>The system must always keep at least one Owner: an account that currently holds the
+ *       {@code OWNER} role cannot be changed away from it while it is the last one.</li>
  * </ul>
  * Friendly Vietnamese messages are thrown as {@link IllegalArgumentException} for the controller
  * to surface as flash messages.
@@ -99,7 +96,7 @@ public class OwnerPermissionService {
             }
 
             Accountpermission ap = assignmentByAccount.get(account.getId());
-            String role = ap == null ? null : canonicalDisplayRole(ap.getRole());
+            String role = ap == null ? null : canonicalRole(ap.getRole());
             boolean lastOwner = isOwnerLikeRole(role) && ownerLikeCount <= 1;
             String roleDisplay = (role == null || role.isBlank())
                     ? "Không quyền"
@@ -136,7 +133,7 @@ public class OwnerPermissionService {
      *   <li>A blank/empty {@code role} clears the assignment: the existing
      *       {@code AccountPermission} row (if any) is deleted, meaning "Không quyền".</li>
      *   <li>Only {@code PHARMACIST}, {@code ACCOUNTANT} and {@code OWNER} can be assigned; anything
-     *       else (including the legacy {@code CHIEF_PHARMACIST}) is rejected.</li>
+     *       else is rejected.</li>
      *   <li>If the account currently holds an owner-like role and is the last one in the system,
      *       changing it away from Owner is rejected — the system must always keep at least one
      *       Owner.</li>
@@ -164,7 +161,7 @@ public class OwnerPermissionService {
 
         // Never let a save take the last remaining Owner away from Owner.
         if (wasOwnerLike && !staysOwner
-                && accountpermissionRepository.findOwnerLikeAssignments().size() <= 1) {
+                && accountpermissionRepository.findOwnerAssignments().size() <= 1) {
             throw new IllegalArgumentException(MSG_LAST_OWNER);
         }
 
@@ -210,25 +207,12 @@ public class OwnerPermissionService {
                 .orElseThrow(() -> new IllegalArgumentException(MSG_ACCOUNT_NOT_FOUND));
     }
 
-    /**
-     * The role to display/compare for a stored value: the legacy {@code CHIEF_PHARMACIST} role is
-     * shown merged into {@code OWNER} ("Chủ nhà thuốc"), matching the single-store role model.
-     */
-    private String canonicalDisplayRole(String rawRole) {
-        String normalized = canonicalRole(rawRole);
-        if (normalized == null || normalized.isBlank()) {
-            return null;
-        }
-        return RoleConstants.CHIEF_PHARMACIST.equals(normalized) ? RoleConstants.OWNER : normalized;
-    }
-
-    /** True for {@code OWNER} and the legacy {@code CHIEF_PHARMACIST} (merged owner identity). */
+    /** True for {@code OWNER}. */
     private boolean isOwnerLikeRole(String role) {
         if (role == null) {
             return false;
         }
-        String normalized = canonicalRole(role);
-        return RoleConstants.OWNER.equals(normalized) || RoleConstants.CHIEF_PHARMACIST.equals(normalized);
+        return RoleConstants.OWNER.equals(canonicalRole(role));
     }
 
     private String usernameOrEmail(Account account) {

@@ -61,13 +61,6 @@ public interface AccountpermissionRepository extends JpaRepository<Accountpermis
     }
 
     @Query("""
-           select ap
-           from Accountpermission ap
-           where upper(ap.role) = 'OWNER' or upper(ap.role) = 'CHIEF_PHARMACIST'
-           """)
-    List<Accountpermission> findOwnerLikeAssignments();
-
-    @Query("""
            select count(ap) > 0
            from Accountpermission ap
            where ap.accountID.id = :accountId

@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class StockOutStatsResponse {
+public class StockAdjustmentStatsResponse {
 
     private long monthlyCount;
     private long draftCount;

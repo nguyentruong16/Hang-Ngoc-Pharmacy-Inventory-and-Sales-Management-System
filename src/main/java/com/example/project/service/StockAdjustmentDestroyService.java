@@ -1,9 +1,9 @@
 package com.example.project.service;
 
 import com.example.project.constant.StockOutStatus;
-import com.example.project.dto.request.StockOutDestroyCreateRequest;
-import com.example.project.dto.request.StockOutDestroyItemRequest;
-import com.example.project.dto.response.StockOutDestroyCandidateResponse;
+import com.example.project.dto.request.StockAdjustmentDestroyCreateRequest;
+import com.example.project.dto.request.StockAdjustmentDestroyItemRequest;
+import com.example.project.dto.response.StockAdjustmentDestroyCandidateResponse;
 import com.example.project.repository.ProductunitRepository;
 import com.example.project.entity.*;
 import com.example.project.repository.*;
@@ -19,30 +19,30 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class StockOutDestroyService {
+public class StockAdjustmentDestroyService {
 
     private static final String OUT_TYPE_DESTROY = "DESTROY";
 
-    private final StockoutRepository stockoutRepository;
-    private final StockoutdetailRepository stockoutdetailRepository;
+    private final StockadjustmentRepository stockadjustmentRepository;
+    private final StockadjustmentdetailRepository stockadjustmentdetailRepository;
     private final BatchRepository batchRepository;
     private final AccountRepository accountRepository;
     private final ProductunitRepository productunitRepository;
 
-    public StockOutDestroyService(StockoutRepository stockoutRepository,
-                                  StockoutdetailRepository stockoutdetailRepository,
-                                  BatchRepository batchRepository,
-                                  AccountRepository accountRepository,
-                                  ProductunitRepository productunitRepository) {
-        this.stockoutRepository = stockoutRepository;
-        this.stockoutdetailRepository = stockoutdetailRepository;
+    public StockAdjustmentDestroyService(StockadjustmentRepository stockadjustmentRepository,
+                                         StockadjustmentdetailRepository stockadjustmentdetailRepository,
+                                         BatchRepository batchRepository,
+                                         AccountRepository accountRepository,
+                                         ProductunitRepository productunitRepository) {
+        this.stockadjustmentRepository = stockadjustmentRepository;
+        this.stockadjustmentdetailRepository = stockadjustmentdetailRepository;
         this.batchRepository = batchRepository;
         this.accountRepository = accountRepository;
         this.productunitRepository = productunitRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<StockOutDestroyCandidateResponse> listAvailableBatches(String keyword) {
+    public List<StockAdjustmentDestroyCandidateResponse> listAvailableBatches(String keyword) {
         String normalizedKeyword = normalize(keyword);
 
         return batchRepository.findAvailableBatchesForDestroy()
@@ -53,16 +53,16 @@ public class StockOutDestroyService {
     }
 
     @Transactional
-    public Integer createDestroyStockOut(StockOutDestroyCreateRequest request, Integer currentAccountId) {
+    public Integer createDestroyStockOut(StockAdjustmentDestroyCreateRequest request, Integer currentAccountId) {
         validateRequest(request);
 
         Account creator = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
-        Map<Integer, StockOutDestroyItemRequest> itemMap = request.getItems()
+        Map<Integer, StockAdjustmentDestroyItemRequest> itemMap = request.getItems()
                 .stream()
                 .collect(Collectors.toMap(
-                        StockOutDestroyItemRequest::getBatchId,
+                        StockAdjustmentDestroyItemRequest::getBatchId,
                         item -> item,
                         (first, second) -> {
                             first.setQuantity(first.getQuantity() + second.getQuantity());
@@ -86,9 +86,9 @@ public class StockOutDestroyService {
 
         validateSelectedBatches(selectedBatches, itemMap);
 
-        Stockout stockOut = new Stockout();
-        stockOut.setStockOutCode(generateStockOutCode());
-        stockOut.setOutType(OUT_TYPE_DESTROY);
+        Stockadjustment stockOut = new Stockadjustment();
+        stockOut.setStockAdjustmentCode(generateStockOutCode());
+        stockOut.setAdjustmentType(OUT_TYPE_DESTROY);
         stockOut.setDate(Instant.now());
         stockOut.setCreatedBy(creator);
         stockOut.setReason(request.getReason().trim());
@@ -96,10 +96,10 @@ public class StockOutDestroyService {
         stockOut.setStatus(StockOutStatus.DRAFT);
         stockOut.setNote(trimToNull(request.getNote()));
 
-        Stockout savedStockOut = stockoutRepository.save(stockOut);
+        Stockadjustment savedStockOut = stockadjustmentRepository.save(stockOut);
 
         for (Batch batch : selectedBatches) {
-            StockOutDestroyItemRequest item = itemMap.get(batch.getId());
+            StockAdjustmentDestroyItemRequest item = itemMap.get(batch.getId());
 
             Product product = batch.getProductID();
             Productunit unit = resolveUnit(batch, product);
@@ -107,8 +107,8 @@ public class StockOutDestroyService {
             BigDecimal unitCost = resolveUnitCost(batch);
             BigDecimal lineCost = unitCost.multiply(BigDecimal.valueOf(item.getQuantity()));
 
-            Stockoutdetail detail = new Stockoutdetail();
-            detail.setStockOutID(savedStockOut);
+            Stockadjustmentdetail detail = new Stockadjustmentdetail();
+            detail.setStockAdjustmentID(savedStockOut);
             detail.setProductID(product);
             detail.setProductUnitID(unit);
             detail.setBatchID(batch);
@@ -118,7 +118,7 @@ public class StockOutDestroyService {
             detail.setLineCost(lineCost);
             detail.setNote(trimToNull(item.getReason()));
 
-            stockoutdetailRepository.save(detail);
+            stockadjustmentdetailRepository.save(detail);
         }
 
         return savedStockOut.getId();
@@ -129,7 +129,7 @@ public class StockOutDestroyService {
         return List.of();
     }
 
-    private void validateRequest(StockOutDestroyCreateRequest request) {
+    private void validateRequest(StockAdjustmentDestroyCreateRequest request) {
         if (request.getReason() == null || request.getReason().isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập lý do hủy");
         }
@@ -138,7 +138,7 @@ public class StockOutDestroyService {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một hàng hóa cần hủy");
         }
 
-        for (StockOutDestroyItemRequest item : request.getItems()) {
+        for (StockAdjustmentDestroyItemRequest item : request.getItems()) {
             if (item.getBatchId() == null) {
                 throw new IllegalArgumentException("Dữ liệu lô hàng không hợp lệ");
             }
@@ -150,9 +150,9 @@ public class StockOutDestroyService {
     }
 
     private void validateSelectedBatches(List<Batch> selectedBatches,
-                                         Map<Integer, StockOutDestroyItemRequest> itemMap) {
+                                         Map<Integer, StockAdjustmentDestroyItemRequest> itemMap) {
         for (Batch batch : selectedBatches) {
-            StockOutDestroyItemRequest item = itemMap.get(batch.getId());
+            StockAdjustmentDestroyItemRequest item = itemMap.get(batch.getId());
 
             if (!Boolean.TRUE.equals(batch.getStatus())) {
                 throw new IllegalArgumentException("Lô hàng " + displayBatch(batch) + " không còn hoạt động");
@@ -203,11 +203,11 @@ public class StockOutDestroyService {
         return BigDecimal.ZERO;
     }
 
-    private StockOutDestroyCandidateResponse toCandidateResponse(Batch batch) {
+    private StockAdjustmentDestroyCandidateResponse toCandidateResponse(Batch batch) {
         Product product = batch.getProductID();
         Productunit unit = resolveCandidateUnit(batch, product);
 
-        return new StockOutDestroyCandidateResponse(
+        return new StockAdjustmentDestroyCandidateResponse(
                 batch.getId(),
                 product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
@@ -331,8 +331,8 @@ public class StockOutDestroyService {
     }
 
     private String generateStockOutCode() {
-        int nextId = stockoutRepository.findAll().stream()
-                .map(Stockout::getId)
+        int nextId = stockadjustmentRepository.findAll().stream()
+                .map(Stockadjustment::getId)
                 .filter(Objects::nonNull)
                 .max(Integer::compareTo)
                 .orElse(0) + 1;

@@ -1,6 +1,6 @@
 package com.example.project.repository;
 
-import com.example.project.entity.Stockoutdetail;
+import com.example.project.entity.Stockadjustmentdetail;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -8,39 +8,39 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface StockoutdetailRepository extends JpaRepository<Stockoutdetail, Integer> {
+public interface StockadjustmentdetailRepository extends JpaRepository<Stockadjustmentdetail, Integer> {
 
     @Query("""
            select d
-           from Stockoutdetail d
-           left join fetch d.stockOutID
+           from Stockadjustmentdetail d
+           left join fetch d.stockAdjustmentID
            left join fetch d.productID
            left join fetch d.productUnitID
            left join fetch d.batchID
-           where d.stockOutID.id = :stockOutId
+           where d.stockAdjustmentID.id = :stockOutId
            order by d.id asc
            """)
-    List<Stockoutdetail> findByStockOutIdWithRelations(Integer stockOutId);
+    List<Stockadjustmentdetail> findByStockOutIdWithRelations(Integer stockOutId);
 
     /** Most recent stock-out lines of one product, for the Product Detail history preview. */
     @Query("""
        select d
-       from Stockoutdetail d
-       left join fetch d.stockOutID
+       from Stockadjustmentdetail d
+       left join fetch d.stockAdjustmentID
        left join fetch d.batchID
        where d.productID.productID = :productId
-       order by d.stockOutID.date desc
+       order by d.stockAdjustmentID.date desc
        """)
-    List<Stockoutdetail> findRecentStockOutsByProduct(@Param("productId") Integer productId,
-                                                      Pageable pageable);
+    List<Stockadjustmentdetail> findRecentStockOutsByProduct(@Param("productId") Integer productId,
+                                                             Pageable pageable);
 
     @Query("""
            select d
-           from Stockoutdetail d
-           left join fetch d.stockOutID
+           from Stockadjustmentdetail d
+           left join fetch d.stockAdjustmentID
            left join fetch d.productID
            left join fetch d.productUnitID
            left join fetch d.batchID
            """)
-    List<Stockoutdetail> findAllWithRelations();
+    List<Stockadjustmentdetail> findAllWithRelations();
 }

@@ -24,12 +24,6 @@
       background: #fff; border: 1px solid var(--sup-border);
       border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
     }
-    .sup-back-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      color: var(--sup-muted); font-size: 13px; font-weight: 500;
-      text-decoration: none; margin-bottom: 16px;
-    }
-    .sup-back-link:hover { color: var(--sup-green); }
     .form-label { font-size: 13px; color: #111827; margin-bottom: 6px; }
     .form-control, .form-select {
       min-height: 40px; border-radius: 10px;
@@ -56,12 +50,6 @@
       display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
     }
     .btn-sup-primary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
-    .btn-sup-secondary {
-      background: #fff; border: 1px solid var(--sup-green); color: var(--sup-green);
-      border-radius: 10px; min-height: 42px; font-size: 13px; font-weight: 500;
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
-    }
-    .btn-sup-secondary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
     .btn-cancel {
       background: transparent; border: none; color: var(--sup-muted);
       font-size: 13px; font-weight: 500; min-height: 42px; width: 100%;
@@ -84,10 +72,6 @@
 <main id="content" class="content py-8">
   <div class="container-fluid">
 
-    <a class="sup-back-link" th:href="@{/customer}">
-      <i class="ti ti-arrow-left"></i>Quay lại danh sách khách hàng
-    </a>
-
     <div class="mb-4">
       <h1 class="fs-4 mb-0">Tạo khách hàng mới</h1>
     </div>
@@ -96,7 +80,7 @@
       <div class="row g-4">
 
         <!-- Form thông tin -->
-        <div class="col-12 col-lg-8">
+        <div class="col-12">
           <div class="sup-card p-4 p-md-5">
             <h2 class="fs-6 mb-4">Thông tin khách hàng</h2>
 
@@ -193,30 +177,23 @@
               <textarea id="cusNote" class="form-control" th:field="*{note}" rows="3"
                         placeholder="Ghi chú thêm về khách hàng (nếu có)"></textarea>
             </div>
-          </div>
-        </div>
 
-        <!-- Panel gợi ý + nút thao tác -->
-        <div class="col-12 col-lg-4">
-          <div class="sup-card p-4">
-            <h2 class="fs-6 mb-3">Gợi ý</h2>
-            <ul class="tip-list">
-              <li><i class="ti ti-phone"></i><span>Số điện thoại nên có đủ 10 chữ số và là duy nhất.</span></li>
-              <li><i class="ti ti-search"></i><span>Kiểm tra khách hàng trùng trước khi tạo mới.</span></li>
-              <li><i class="ti ti-building"></i><span>Khách doanh nghiệp cần điền mã số thuế và thông tin ngân hàng.</span></li>
-            </ul>
+            <!-- Gợi ý -->
+            <div class="alert alert-info small p-3 mt-4 mb-4">
+              <ul class="tip-list mb-0">
+                <li><i class="ti ti-phone"></i><span>Số điện thoại nên có đủ 10 chữ số và là duy nhất.</span></li>
+                <li><i class="ti ti-search"></i><span>Kiểm tra khách hàng trùng trước khi tạo mới.</span></li>
+                <li><i class="ti ti-building"></i><span>Khách doanh nghiệp cần điền mã số thuế và thông tin ngân hàng.</span></li>
+              </ul>
+            </div>
 
-            <hr class="my-3">
-
-            <div class="d-grid gap-2">
-              <button type="submit" name="action" value="create" class="btn btn-sup-primary">
+            <!-- Nút thao tác -->
+            <div class="d-flex flex-wrap gap-2">
+              <button type="submit" name="action" value="create" class="btn btn-sup-primary w-auto px-4">
                 <i class="ti ti-check"></i>Tạo khách hàng
               </button>
-              <button type="submit" name="action" value="createAndSelect" class="btn btn-sup-secondary">
-                <i class="ti ti-user-check"></i>Tạo &amp; chọn khách hàng
-              </button>
-              <a th:href="@{/customer}" class="btn-cancel">
-                <i class="ti ti-x"></i>Hủy
+              <a th:href="@{/customer}" class="btn-cancel w-auto px-4">
+                <i class="ti ti-arrow-left"></i>Quay lại danh sách
               </a>
             </div>
           </div>

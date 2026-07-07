@@ -15,21 +15,21 @@ import java.time.Instant;
 public class Procurementplan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "planID", nullable = false)
+    @Column(name = "procurementID", nullable = false)
     private Integer id;
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "procurementPlanCode", nullable = false, length = 50)
-    private String procurementPlanCode;
+    @Column(name = "procurementCode", nullable = false, length = 50)
+    private String procurementCode;
 
     @NotNull
     @Column(name = "date", nullable = false)
     private Instant date;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employeeID")
-    private Account employeeID;
+    @JoinColumn(name = "requestedBy")
+    private Account requestedBy;
 
     @Size(max = 50)
     @NotNull
@@ -42,5 +42,12 @@ public class Procurementplan {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplierID")
+    private Supplier supplierID;
+
+    @NotNull
+    @Column(name = "createdAt", nullable = false)
+    private Instant createdAt;
 
 }

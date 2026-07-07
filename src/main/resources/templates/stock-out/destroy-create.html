@@ -139,7 +139,7 @@
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <form th:action="@{/chief-pharmacist/stock-outs/destroy/create}" th:object="${form}" method="post">
+        <form th:action="${basePath + '/destroy/create'}" th:object="${form}" method="post">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <div class="row g-4">

@@ -103,9 +103,6 @@ public class SidebarInterceptor implements HandlerInterceptor {
         if (RoleConstants.OWNER.equals(role)) {
             return "/owner/notifications";
         }
-        if (RoleConstants.CHIEF_PHARMACIST.equals(role)) {
-            return "/chief-pharmacist/notifications";
-        }
         if (RoleConstants.PHARMACIST.equals(role)) {
             return "/pharmacist/notifications";
         }

@@ -18,51 +18,51 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class StockoutService {
+public class StockadjustmentService {
 
     @Transactional(readOnly = true)
-    public List<StockoutResponse> getAll() {
-        return stockoutRepository.findAllWithRelations()
+    public List<StockadjustmentResponse> getAll() {
+        return stockadjustmentRepository.findAllWithRelations()
                 .stream()
-                .map(StockoutResponse::from)
+                .map(StockadjustmentResponse::from)
                 .toList();
     }
 
-    private final StockoutRepository stockoutRepository;
-    private final StockoutdetailRepository stockoutdetailRepository;
+    private final StockadjustmentRepository stockadjustmentRepository;
+    private final StockadjustmentdetailRepository stockadjustmentdetailRepository;
     private final AccountRepository accountRepository;
 
-    public StockoutService(StockoutRepository stockoutRepository,
-                           StockoutdetailRepository stockoutdetailRepository,
-                           AccountRepository accountRepository) {
-        this.stockoutRepository = stockoutRepository;
-        this.stockoutdetailRepository = stockoutdetailRepository;
+    public StockadjustmentService(StockadjustmentRepository stockadjustmentRepository,
+                                  StockadjustmentdetailRepository stockadjustmentdetailRepository,
+                                  AccountRepository accountRepository) {
+        this.stockadjustmentRepository = stockadjustmentRepository;
+        this.stockadjustmentdetailRepository = stockadjustmentdetailRepository;
         this.accountRepository = accountRepository;
     }
 
     @Transactional(readOnly = true)
-    public Page<StockOutListItemResponse> searchStockOuts(String keyword,
-                                                          String fromDate,
-                                                          String toDate,
-                                                          String outType,
-                                                          Integer branchId,
-                                                          String status,
-                                                          Pageable pageable) {
+    public Page<StockAdjustmentListItemResponse> searchStockOuts(String keyword,
+                                                                 String fromDate,
+                                                                 String toDate,
+                                                                 String outType,
+                                                                 Integer branchId,
+                                                                 String status,
+                                                                 Pageable pageable) {
         final String normalizedKeyword = normalize(keyword);
         final LocalDate from = parseDate(fromDate);
         final LocalDate to = parseDate(toDate);
 
-        List<Stockout> stockOuts = stockoutRepository.findAllWithRelations();
-        List<Stockoutdetail> allDetails = stockoutdetailRepository.findAllWithRelations();
+        List<Stockadjustment> stockOuts = stockadjustmentRepository.findAllWithRelations();
+        List<Stockadjustmentdetail> allDetails = stockadjustmentdetailRepository.findAllWithRelations();
 
-        Map<Integer, List<Stockoutdetail>> detailMap = allDetails.stream()
-                .filter(detail -> detail.getStockOutID() != null)
-                .collect(Collectors.groupingBy(detail -> detail.getStockOutID().getId()));
+        Map<Integer, List<Stockadjustmentdetail>> detailMap = allDetails.stream()
+                .filter(detail -> detail.getStockAdjustmentID() != null)
+                .collect(Collectors.groupingBy(detail -> detail.getStockAdjustmentID().getId()));
 
-        List<StockOutListItemResponse> filtered = stockOuts.stream()
+        List<StockAdjustmentListItemResponse> filtered = stockOuts.stream()
                 .filter(stockOut -> matchesKeyword(stockOut, detailMap.getOrDefault(stockOut.getId(), List.of()), normalizedKeyword))
                 .filter(stockOut -> matchesDate(stockOut, from, to))
-                .filter(stockOut -> outType == null || outType.isBlank() || outType.equals(stockOut.getOutType()))
+                .filter(stockOut -> outType == null || outType.isBlank() || outType.equals(stockOut.getAdjustmentType()))
                 .filter(stockOut -> status == null || status.isBlank() || isStatus(getStatusName(stockOut), status))
                 .map(stockOut -> toListItem(stockOut, detailMap.getOrDefault(stockOut.getId(), List.of())))
                 .toList();
@@ -70,7 +70,7 @@ public class StockoutService {
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), filtered.size());
 
-        List<StockOutListItemResponse> content = start >= filtered.size()
+        List<StockAdjustmentListItemResponse> content = start >= filtered.size()
                 ? List.of()
                 : filtered.subList(start, end);
 
@@ -78,8 +78,8 @@ public class StockoutService {
     }
 
     @Transactional(readOnly = true)
-    public StockOutStatsResponse getStats() {
-        List<Stockout> stockOuts = stockoutRepository.findAllWithRelations();
+    public StockAdjustmentStatsResponse getStats() {
+        List<Stockadjustment> stockOuts = stockadjustmentRepository.findAllWithRelations();
 
         YearMonth currentMonth = YearMonth.now();
 
@@ -92,7 +92,7 @@ public class StockoutService {
         long approvedCount = countByStatusName(stockOuts, StockOutStatus.APPROVED);
         long rejectedCount = countByStatusName(stockOuts, StockOutStatus.REJECTED);
 
-        return new StockOutStatsResponse(
+        return new StockAdjustmentStatsResponse(
                 monthlyCount,
                 draftCount,
                 approvedCount,
@@ -101,27 +101,27 @@ public class StockoutService {
     }
 
     @Transactional(readOnly = true)
-    public StockOutDetailPageResponse getDetail(Integer stockOutId) {
-        Stockout stockOut = stockoutRepository.findByIdWithRelations(stockOutId)
+    public StockAdjustmentDetailPageResponse getDetail(Integer stockOutId) {
+        Stockadjustment stockOut = stockadjustmentRepository.findByIdWithRelations(stockOutId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu xuất kho"));
 
-        List<Stockoutdetail> details =
-                stockoutdetailRepository.findByStockOutIdWithRelations(stockOutId);
+        List<Stockadjustmentdetail> details =
+                stockadjustmentdetailRepository.findByStockOutIdWithRelations(stockOutId);
 
-        List<StockOutDetailItemResponse> itemResponses = details.stream()
+        List<StockAdjustmentDetailItemResponse> itemResponses = details.stream()
                 .map(this::toDetailItem)
                 .toList();
 
         long totalItems = details.size();
 
         int totalQuantity = details.stream()
-                .map(Stockoutdetail::getQuantity)
+                .map(Stockadjustmentdetail::getQuantity)
                 .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue)
                 .sum();
 
         BigDecimal estimatedValue = details.stream()
-                .map(Stockoutdetail::getLineCost)
+                .map(Stockadjustmentdetail::getLineCost)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -139,11 +139,11 @@ public class StockoutService {
             reasonChecked = true;
         } else if (isStatus(statusName, StockOutStatus.REJECTED)) {
             sourceChecked = true;
-            targetChecked = !"INTERNAL_TRANSFER".equals(stockOut.getOutType());            valueChecked = false;
+            targetChecked = !"INTERNAL_TRANSFER".equals(stockOut.getAdjustmentType());            valueChecked = false;
             reasonChecked = false;
         } else {
             sourceChecked = true;
-            targetChecked = !"INTERNAL_TRANSFER".equals(stockOut.getOutType());            valueChecked = estimatedValue.compareTo(BigDecimal.ZERO) > 0;
+            targetChecked = !"INTERNAL_TRANSFER".equals(stockOut.getAdjustmentType());            valueChecked = estimatedValue.compareTo(BigDecimal.ZERO) > 0;
             reasonChecked = false;
         }
 
@@ -156,13 +156,13 @@ public class StockoutService {
         int total = 4;
         int percent = done * 100 / total;
 
-        return new StockOutDetailPageResponse(
+        return new StockAdjustmentDetailPageResponse(
                 stockOut.getId(),
                 formatStockOutCode(stockOut.getId()),
                 stockOut.getDate(),
                 formatInstant(stockOut.getDate()),
-                stockOut.getOutType(),
-                formatOutType(stockOut.getOutType()),
+                stockOut.getAdjustmentType(),
+                formatOutType(stockOut.getAdjustmentType()),
                 stockOut.getCreatedBy() != null ? stockOut.getCreatedBy().getName() : "Không rõ",
                 stockOut.getApprovedBy() != null ? stockOut.getApprovedBy().getName() : "Chưa có",
                 formatInstant(stockOut.getApprovedAt()),
@@ -187,7 +187,7 @@ public class StockoutService {
 
     @Transactional
     public void approve(Integer stockOutId, Integer currentAccountId) {
-        Stockout stockOut = stockoutRepository.findByIdWithRelations(stockOutId)
+        Stockadjustment stockOut = stockadjustmentRepository.findByIdWithRelations(stockOutId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu xuất kho"));
 
         Account account = accountRepository.findById(currentAccountId)
@@ -197,12 +197,12 @@ public class StockoutService {
         stockOut.setApprovedBy(account);
         stockOut.setApprovedAt(Instant.now());
 
-        stockoutRepository.save(stockOut);
+        stockadjustmentRepository.save(stockOut);
     }
 
     @Transactional
     public void reject(Integer stockOutId, Integer currentAccountId) {
-        Stockout stockOut = stockoutRepository.findByIdWithRelations(stockOutId)
+        Stockadjustment stockOut = stockadjustmentRepository.findByIdWithRelations(stockOutId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu xuất kho"));
 
         stockOut.setStatus(StockOutStatus.REJECTED);
@@ -213,7 +213,7 @@ public class StockoutService {
             stockOut.setNote(stockOut.getNote() + "\nĐã từ chối phiếu xuất kho.");
         }
 
-        stockoutRepository.save(stockOut);
+        stockadjustmentRepository.save(stockOut);
     }
 
     @Transactional(readOnly = true)
@@ -237,21 +237,21 @@ public class StockoutService {
         return labels;
     }
 
-    private StockOutListItemResponse toListItem(Stockout stockOut, List<Stockoutdetail> details) {
+    private StockAdjustmentListItemResponse toListItem(Stockadjustment stockOut, List<Stockadjustmentdetail> details) {
         BigDecimal estimatedValue = details.stream()
-                .map(Stockoutdetail::getLineCost)
+                .map(Stockadjustmentdetail::getLineCost)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         String statusName = getStatusName(stockOut);
 
-        return new StockOutListItemResponse(
+        return new StockAdjustmentListItemResponse(
                 stockOut.getId(),
                 formatStockOutCode(stockOut.getId()),
                 stockOut.getDate(),
                 formatInstant(stockOut.getDate()),
-                stockOut.getOutType(),
-                formatOutType(stockOut.getOutType()),
+                stockOut.getAdjustmentType(),
+                formatOutType(stockOut.getAdjustmentType()),
                 stockOut.getCreatedBy() != null ? stockOut.getCreatedBy().getName() : "Không rõ",
                 details.size(),
                 estimatedValue,
@@ -260,12 +260,12 @@ public class StockoutService {
         );
     }
 
-    private StockOutDetailItemResponse toDetailItem(Stockoutdetail detail) {
+    private StockAdjustmentDetailItemResponse toDetailItem(Stockadjustmentdetail detail) {
         Product product = detail.getProductID();
         Productunit unit = detail.getProductUnitID();
         Batch batch = detail.getBatchID();
 
-        return new StockOutDetailItemResponse(
+        return new StockAdjustmentDetailItemResponse(
                 product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
                 batch != null ? batch.getLotNumber() : "",
@@ -281,8 +281,8 @@ public class StockoutService {
         );
     }
 
-    private boolean matchesKeyword(Stockout stockOut,
-                                   List<Stockoutdetail> details,
+    private boolean matchesKeyword(Stockadjustment stockOut,
+                                   List<Stockadjustmentdetail> details,
                                    String normalizedKeyword) {
         if (normalizedKeyword == null || normalizedKeyword.isBlank()) {
             return true;
@@ -290,7 +290,7 @@ public class StockoutService {
 
         if (containsNormalized(formatStockOutCode(stockOut.getId()), normalizedKeyword)
                 || containsNormalized(stockOut.getReason(), normalizedKeyword)
-                || containsNormalized(formatOutType(stockOut.getOutType()), normalizedKeyword)
+                || containsNormalized(formatOutType(stockOut.getAdjustmentType()), normalizedKeyword)
                 || containsNormalized(getStatusName(stockOut), normalizedKeyword)
                 || containsNormalized(stockOut.getCreatedBy() != null ? stockOut.getCreatedBy().getName() : null, normalizedKeyword)) {
             return true;
@@ -306,7 +306,7 @@ public class StockoutService {
         });
     }
 
-    private boolean matchesDate(Stockout stockOut, LocalDate from, LocalDate to) {
+    private boolean matchesDate(Stockadjustment stockOut, LocalDate from, LocalDate to) {
         if (from == null && to == null) {
             return true;
         }
@@ -324,13 +324,13 @@ public class StockoutService {
         return to == null || !date.isAfter(to);
     }
 
-    private long countByStatusName(List<Stockout> stockOuts, String statusName) {
+    private long countByStatusName(List<Stockadjustment> stockOuts, String statusName) {
         return stockOuts.stream()
                 .filter(stockOut -> isStatus(getStatusName(stockOut), statusName))
                 .count();
     }
 
-    private String getStatusName(Stockout stockOut) {
+    private String getStatusName(Stockadjustment stockOut) {
         return stockOut.getStatus() != null ? stockOut.getStatus() : "Không rõ";
     }
 
@@ -356,8 +356,8 @@ public class StockoutService {
         return "status-default";
     }
 
-    private String costImpactDisplay(Stockout stockOut) {
-        if ("INTERNAL_TRANSFER".equals(stockOut.getOutType())) {
+    private String costImpactDisplay(Stockadjustment stockOut) {
+        if ("INTERNAL_TRANSFER".equals(stockOut.getAdjustmentType())) {
             return "Không ghi nhận chi phí trực tiếp";
         }
 

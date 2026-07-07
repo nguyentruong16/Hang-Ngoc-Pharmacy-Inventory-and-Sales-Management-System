@@ -46,12 +46,11 @@ public class CustomAccountDetailsService {
             throw new UsernameNotFoundException("Invalid credentials");
         }
 
-        // Only the three remaining roles (OWNER, PHARMACIST, ACCOUNTANT) may sign in.
+        // Only the three roles (OWNER, PHARMACIST, ACCOUNTANT) may sign in.
         List<String> validRoles = accountpermissionRepository.findByAccountId(account.getId())
                 .stream()
                 .map(permission -> canonicalRole(permission.getRole()))
-                .filter(role -> RoleConstants.isValid(role)
-                        && !RoleConstants.CHIEF_PHARMACIST.equals(role))
+                .filter(RoleConstants::isValid)
                 .toList();
         if (validRoles.isEmpty()) {
             throw new UsernameNotFoundException("Invalid credentials");

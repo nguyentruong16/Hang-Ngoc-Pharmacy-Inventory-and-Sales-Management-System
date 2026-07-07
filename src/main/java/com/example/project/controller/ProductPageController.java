@@ -38,7 +38,6 @@ public class ProductPageController {
 
     @GetMapping({
             "/owner/products",
-            "/chief-pharmacist/products",
             "/pharmacist/products"
     })
     public String listProducts(@RequestParam(name = "keyword", required = false) String keyword,
@@ -182,10 +181,10 @@ public class ProductPageController {
 
     @GetMapping({
             "/owner/products/{productId}",
-            "/chief-pharmacist/products/{productId}",
             "/pharmacist/products/{productId}"
     })
     public String productDetail(@PathVariable Integer productId,
+                                @RequestParam(name = "backSupplierId", required = false) Integer backSupplierId,
                                 HttpServletRequest request,
                                 Model model,
                                 RedirectAttributes redirectAttributes) {
@@ -201,6 +200,8 @@ public class ProductPageController {
         model.addAttribute("product", product);
         model.addAttribute("basePath", basePath);
         model.addAttribute("canViewRecentHistory", product.isCanViewRecentHistory());
+        // Khi mở từ trang chi tiết nhà cung cấp: cho phép quay lại đúng NCC đó.
+        model.addAttribute("backSupplierId", backSupplierId);
 
         return "product/detail";
     }
@@ -214,6 +215,6 @@ public class ProductPageController {
         if (uri.startsWith("/pharmacist/products")) {
             return "/pharmacist/products";
         }
-        return "/chief-pharmacist/products";
+        return "/owner/products";
     }
 }

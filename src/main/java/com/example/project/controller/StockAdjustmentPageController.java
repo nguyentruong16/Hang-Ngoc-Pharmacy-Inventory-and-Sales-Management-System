@@ -1,9 +1,9 @@
 package com.example.project.controller;
 
 import com.example.project.context.CurrentUserContext;
-import com.example.project.dto.response.StockOutDetailPageResponse;
-import com.example.project.dto.response.StockOutListItemResponse;
-import com.example.project.service.StockoutService;
+import com.example.project.dto.response.StockAdjustmentDetailPageResponse;
+import com.example.project.dto.response.StockAdjustmentListItemResponse;
+import com.example.project.service.StockadjustmentService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,20 +13,19 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-public class StockOutPageController {
+public class StockAdjustmentPageController {
 
-    private final StockoutService stockoutService;
+    private final StockadjustmentService stockadjustmentService;
     private final CurrentUserContext currentUserContext;
 
-    public StockOutPageController(StockoutService stockoutService,
-                                  CurrentUserContext currentUserContext) {
-        this.stockoutService = stockoutService;
+    public StockAdjustmentPageController(StockadjustmentService stockadjustmentService,
+                                         CurrentUserContext currentUserContext) {
+        this.stockadjustmentService = stockadjustmentService;
         this.currentUserContext = currentUserContext;
     }
 
     @GetMapping({
             "/owner/stock-outs",
-            "/chief-pharmacist/stock-outs",
             "/accountant/stock-outs"
     })
     public String listStockOuts(@RequestParam(name = "keyword", required = false) String keyword,
@@ -47,8 +46,8 @@ public class StockOutPageController {
             size = 5;
         }
 
-        Page<StockOutListItemResponse> stockOutPage =
-                stockoutService.searchStockOuts(
+        Page<StockAdjustmentListItemResponse> stockOutPage =
+                stockadjustmentService.searchStockOuts(
                         keyword,
                         fromDate,
                         toDate,
@@ -60,11 +59,11 @@ public class StockOutPageController {
 
         model.addAttribute("stockOutPage", stockOutPage);
         model.addAttribute("stockOuts", stockOutPage.getContent());
-        model.addAttribute("stats", stockoutService.getStats());
+        model.addAttribute("stats", stockadjustmentService.getStats());
 
-        model.addAttribute("branches", stockoutService.listBranches());
-        model.addAttribute("statuses", stockoutService.listStatuses());
-        model.addAttribute("outTypeLabels", stockoutService.outTypeLabels());
+        model.addAttribute("branches", stockadjustmentService.listBranches());
+        model.addAttribute("statuses", stockadjustmentService.listStatuses());
+        model.addAttribute("outTypeLabels", stockadjustmentService.outTypeLabels());
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("fromDate", fromDate);
@@ -85,13 +84,12 @@ public class StockOutPageController {
 
     @GetMapping({
             "/owner/stock-outs/{stockOutId}",
-            "/chief-pharmacist/stock-outs/{stockOutId}",
             "/accountant/stock-outs/{stockOutId}"
     })
     public String viewStockOutDetail(@PathVariable Integer stockOutId,
                                      HttpServletRequest request,
                                      Model model) {
-        StockOutDetailPageResponse detail = stockoutService.getDetail(stockOutId);
+        StockAdjustmentDetailPageResponse detail = stockadjustmentService.getDetail(stockOutId);
 
         model.addAttribute("detail", detail);
         model.addAttribute("basePath", resolveBasePath(request));
@@ -101,14 +99,13 @@ public class StockOutPageController {
 
     @PostMapping({
             "/owner/stock-outs/{stockOutId}/approve",
-            "/chief-pharmacist/stock-outs/{stockOutId}/approve",
             "/accountant/stock-outs/{stockOutId}/approve"
     })
     public String approve(@PathVariable Integer stockOutId,
                           HttpServletRequest request,
                           RedirectAttributes redirectAttributes) {
         try {
-            stockoutService.approve(stockOutId, currentUserContext.getCurrentAccountId());
+            stockadjustmentService.approve(stockOutId, currentUserContext.getCurrentAccountId());
             redirectAttributes.addFlashAttribute("successMessage", "Đã duyệt phiếu xuất kho");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
@@ -119,14 +116,13 @@ public class StockOutPageController {
 
     @PostMapping({
             "/owner/stock-outs/{stockOutId}/reject",
-            "/chief-pharmacist/stock-outs/{stockOutId}/reject",
             "/accountant/stock-outs/{stockOutId}/reject"
     })
     public String reject(@PathVariable Integer stockOutId,
                          HttpServletRequest request,
                          RedirectAttributes redirectAttributes) {
         try {
-            stockoutService.reject(stockOutId, currentUserContext.getCurrentAccountId());
+            stockadjustmentService.reject(stockOutId, currentUserContext.getCurrentAccountId());
             redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối phiếu xuất kho");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
@@ -142,10 +138,6 @@ public class StockOutPageController {
             return "/owner/stock-outs";
         }
 
-        if (uri.startsWith("/accountant/stock-outs")) {
-            return "/accountant/stock-outs";
-        }
-
-        return "/chief-pharmacist/stock-outs";
+        return "/accountant/stock-outs";
     }
 }
