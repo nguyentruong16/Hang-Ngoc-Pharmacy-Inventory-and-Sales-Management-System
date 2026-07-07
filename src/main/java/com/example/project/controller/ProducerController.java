@@ -36,7 +36,11 @@ public class ProducerController {
         return producerService.getAll();
     }
 
-    @GetMapping("/owner/producers")
+    @GetMapping({
+            "/owner/producers",
+            "/pharmacist/producers",
+            "/accountant/producers"
+    })
     public String producerList(@RequestParam(name = "search", required = false) String search,
                                @RequestParam(name = "page", defaultValue = "0") int page,
                                @RequestParam(name = "size", defaultValue = "5") int size,
@@ -133,6 +137,13 @@ public class ProducerController {
     }
 
     private String resolveBasePath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/pharmacist/producers")) {
+            return "/pharmacist/producers";
+        }
+        if (uri.startsWith("/accountant/producers")) {
+            return "/accountant/producers";
+        }
         return "/owner/producers";
     }
 }

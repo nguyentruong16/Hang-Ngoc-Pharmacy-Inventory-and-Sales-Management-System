@@ -36,7 +36,11 @@ public class TypeController {
         return typeService.getAll();
     }
 
-    @GetMapping("/owner/types")
+    @GetMapping({
+            "/owner/types",
+            "/pharmacist/types",
+            "/accountant/types"
+    })
     public String typeList(@RequestParam(name = "search", required = false) String search,
                            @RequestParam(name = "sortType", required = false) String sortType,
                            @RequestParam(name = "page", defaultValue = "0") int page,
@@ -141,6 +145,13 @@ public class TypeController {
     }
 
     private String resolveBasePath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/pharmacist/types")) {
+            return "/pharmacist/types";
+        }
+        if (uri.startsWith("/accountant/types")) {
+            return "/accountant/types";
+        }
         return "/owner/types";
     }
 }

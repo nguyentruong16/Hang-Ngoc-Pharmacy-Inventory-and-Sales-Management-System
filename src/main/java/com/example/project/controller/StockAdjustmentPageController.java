@@ -24,10 +24,7 @@ public class StockAdjustmentPageController {
         this.currentUserContext = currentUserContext;
     }
 
-    @GetMapping({
-            "/owner/stock-outs",
-            "/accountant/stock-outs"
-    })
+    @GetMapping("/owner/stock-outs")
     public String listStockOuts(@RequestParam(name = "keyword", required = false) String keyword,
                                 @RequestParam(name = "fromDate", required = false) String fromDate,
                                 @RequestParam(name = "toDate", required = false) String toDate,
@@ -82,10 +79,7 @@ public class StockAdjustmentPageController {
         return "stock-out/list";
     }
 
-    @GetMapping({
-            "/owner/stock-outs/{stockOutId}",
-            "/accountant/stock-outs/{stockOutId}"
-    })
+    @GetMapping("/owner/stock-outs/{stockOutId}")
     public String viewStockOutDetail(@PathVariable Integer stockOutId,
                                      HttpServletRequest request,
                                      Model model) {
@@ -97,10 +91,7 @@ public class StockAdjustmentPageController {
         return "stock-out/detail";
     }
 
-    @PostMapping({
-            "/owner/stock-outs/{stockOutId}/approve",
-            "/accountant/stock-outs/{stockOutId}/approve"
-    })
+    @PostMapping("/owner/stock-outs/{stockOutId}/approve")
     public String approve(@PathVariable Integer stockOutId,
                           HttpServletRequest request,
                           RedirectAttributes redirectAttributes) {
@@ -114,10 +105,7 @@ public class StockAdjustmentPageController {
         return "redirect:" + resolveBasePath(request) + "/" + stockOutId;
     }
 
-    @PostMapping({
-            "/owner/stock-outs/{stockOutId}/reject",
-            "/accountant/stock-outs/{stockOutId}/reject"
-    })
+    @PostMapping("/owner/stock-outs/{stockOutId}/reject")
     public String reject(@PathVariable Integer stockOutId,
                          HttpServletRequest request,
                          RedirectAttributes redirectAttributes) {
@@ -132,12 +120,6 @@ public class StockAdjustmentPageController {
     }
 
     private String resolveBasePath(HttpServletRequest request) {
-        String uri = request.getRequestURI();
-
-        if (uri.startsWith("/owner/stock-outs")) {
-            return "/owner/stock-outs";
-        }
-
-        return "/accountant/stock-outs";
+        return "/owner/stock-outs";
     }
 }

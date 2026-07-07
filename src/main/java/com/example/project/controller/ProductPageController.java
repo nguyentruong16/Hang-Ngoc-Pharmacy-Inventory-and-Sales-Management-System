@@ -38,7 +38,8 @@ public class ProductPageController {
 
     @GetMapping({
             "/owner/products",
-            "/pharmacist/products"
+            "/pharmacist/products",
+            "/accountant/products"
     })
     public String listProducts(@RequestParam(name = "keyword", required = false) String keyword,
                                @RequestParam(name = "typeId", required = false) Integer typeId,
@@ -181,7 +182,8 @@ public class ProductPageController {
 
     @GetMapping({
             "/owner/products/{productId}",
-            "/pharmacist/products/{productId}"
+            "/pharmacist/products/{productId}",
+            "/accountant/products/{productId}"
     })
     public String productDetail(@PathVariable Integer productId,
                                 @RequestParam(name = "backSupplierId", required = false) Integer backSupplierId,
@@ -214,6 +216,9 @@ public class ProductPageController {
         }
         if (uri.startsWith("/pharmacist/products")) {
             return "/pharmacist/products";
+        }
+        if (uri.startsWith("/accountant/products")) {
+            return "/accountant/products";
         }
         return "/owner/products";
     }
