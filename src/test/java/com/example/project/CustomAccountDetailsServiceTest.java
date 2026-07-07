@@ -21,12 +21,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit test (no Spring, no DB) for how {@link CustomAccountDetailsService} turns AccountPermission
- * rows into the authenticated principal: primary role/branch selection and the fail-closed rule.
+ * rows into the authenticated principal, single-store: no branch selection any more — the account
+ * signs in with {@code loadUserByLoginId(loginId)} and gets its one system-wide role. Only
+ * {@code OWNER}, {@code PHARMACIST} and {@code ACCOUNTANT} may sign in; the legacy
+ * {@code CHIEF_PHARMACIST} role alone is rejected (merged into {@code OWNER}), and {@code OWNER}
+ * wins when an account somehow holds more than one role row.
  */
 @ExtendWith(MockitoExtension.class)
 class CustomAccountDetailsServiceTest {
@@ -35,25 +40,20 @@ class CustomAccountDetailsServiceTest {
     AccountRepository accountRepository;
     @Mock
     AccountpermissionRepository accountpermissionRepository;
-    @Mock
-    BranchRepository branchRepository;
     @InjectMocks
     CustomAccountDetailsService service;
 
     @Test
-    void selectedBranchRoleIsTheOnlyGrantedAuthority() {
+    void signInReturnsPrincipalWithItsSingleRole() {
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(activeAccount()));
-        when(accountpermissionRepository.findProfilePermissionsByAccountId(1))
-                .thenReturn(List.of(perm(5, "PHARMACIST", 2)));
-        when(branchRepository.findById(2)).thenReturn(Optional.of(branch(2)));
-        when(accountpermissionRepository.findByAccountIdAndBranchId(1, 2))
-                .thenReturn(List.of(perm(5, "PHARMACIST", 2)));
+        when(accountpermissionRepository.findByAccountId(1))
+                .thenReturn(List.of(perm(5, "PHARMACIST")));
 
-        AccountPrincipal principal = service.loadUserByUsernameAndBranch("u", 2);
+        AccountPrincipal principal = service.loadUserByLoginId("u");
 
         assertEquals("PHARMACIST", principal.getPrimaryRole());
-        assertEquals(Integer.valueOf(2), principal.getBranchId());
+        assertNull(principal.getBranchId()); // single store — no branch concept any more
         Set<String> authorities = principal.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
@@ -61,13 +61,37 @@ class CustomAccountDetailsServiceTest {
     }
 
     @Test
+    void ownerWinsWhenAccountHoldsMultipleRoleRows() {
+        when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
+                .thenReturn(Optional.of(activeAccount()));
+        when(accountpermissionRepository.findByAccountId(1))
+                .thenReturn(List.of(perm(5, "PHARMACIST"), perm(6, "OWNER")));
+
+        AccountPrincipal principal = service.loadUserByLoginId("u");
+
+        assertEquals("OWNER", principal.getPrimaryRole());
+    }
+
+    @Test
     void accountWithNoValidRoleCannotSignIn() {
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(activeAccount()));
-        when(accountpermissionRepository.findProfilePermissionsByAccountId(1))
-                .thenReturn(List.of(perm(1, "SOMETHING_UNKNOWN", 1)));
+        when(accountpermissionRepository.findByAccountId(1))
+                .thenReturn(List.of(perm(1, "SOMETHING_UNKNOWN")));
 
-        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsernameAndBranch("u", 1));
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByLoginId("u"));
+    }
+
+    @Test
+    void legacyChiefPharmacistAloneCannotSignIn() {
+        // CHIEF_PHARMACIST was merged into OWNER — a leftover row with only this role must not
+        // authenticate on its own.
+        when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
+                .thenReturn(Optional.of(activeAccount()));
+        when(accountpermissionRepository.findByAccountId(1))
+                .thenReturn(List.of(perm(1, "CHIEF_PHARMACIST")));
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByLoginId("u"));
     }
 
     @Test
@@ -77,7 +101,30 @@ class CustomAccountDetailsServiceTest {
         when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
                 .thenReturn(Optional.of(inactive));
 
-        assertThrows(DisabledException.class, () -> service.loadUserByUsernameAndBranch("u", 1));
+        assertThrows(DisabledException.class, () -> service.loadUserByLoginId("u"));
+    }
+
+    @Test
+    void accountWithBlankPasswordCannotSignIn() {
+        Account noPassword = activeAccount();
+        noPassword.setPassword("  ");
+        when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("u", "u"))
+                .thenReturn(Optional.of(noPassword));
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByLoginId("u"));
+    }
+
+    @Test
+    void blankLoginIdIsRejected() {
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByLoginId("   "));
+    }
+
+    @Test
+    void unknownLoginIdIsRejected() {
+        when(accountRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("nobody", "nobody"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class, () -> service.loadUserByLoginId("nobody"));
     }
 
     private Account activeAccount() {
@@ -91,22 +138,10 @@ class CustomAccountDetailsServiceTest {
         return account;
     }
 
-    private Branch branch(Integer id) {
-        Branch branch = new Branch();
-        branch.setId(id);
-        branch.setName("Branch " + id);
-        return branch;
-    }
-
-    private Accountpermission perm(int id, String role, Integer branchId) {
+    private Accountpermission perm(int id, String role) {
         Accountpermission permission = new Accountpermission();
         permission.setId(id);
         permission.setRole(role);
-        if (branchId != null) {
-            Branch branch = new Branch();
-            branch.setId(branchId);
-            permission.setBranchID(branch);
-        }
         return permission;
     }
 }

@@ -27,7 +27,6 @@ public class StockOutDetailPageResponse {
     private String reason;
     private String note;
 
-    private Integer statusId;
     private String statusName;
     private String statusCssClass;
 

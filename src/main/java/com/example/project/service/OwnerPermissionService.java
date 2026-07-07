@@ -110,9 +110,10 @@ public class OwnerPermissionService {
                     role, roleDisplay, lastOwner));
         }
 
-        // Owner(s) first, then by account name, then by id.
+        // Owner(s) always first, then assigned before unassigned, then by account name, then by id.
         allRows.sort(Comparator
-                .comparing(PermissionAccountRow::isAssigned).reversed()
+                .comparing((PermissionAccountRow row) -> RoleConstants.OWNER.equals(row.getRole()) ? 0 : 1)
+                .thenComparing(Comparator.comparing(PermissionAccountRow::isAssigned).reversed())
                 .thenComparing(row -> normalizedName(row.getAccountName()))
                 .thenComparing(row -> row.getAccountId() == null ? Integer.MAX_VALUE : row.getAccountId()));
 
