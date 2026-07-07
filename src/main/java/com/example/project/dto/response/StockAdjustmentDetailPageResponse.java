@@ -9,7 +9,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class StockOutDetailPageResponse {
+public class StockAdjustmentDetailPageResponse {
 
     private Integer id;
     private String stockOutCode;
@@ -45,5 +45,5 @@ public class StockOutDetailPageResponse {
     private boolean valueChecked;
     private boolean reasonChecked;
 
-    private List<StockOutDetailItemResponse> items;
+    private List<StockAdjustmentDetailItemResponse> items;
 }

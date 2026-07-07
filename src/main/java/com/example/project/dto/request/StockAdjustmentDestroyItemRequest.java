@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class StockOutDestroyItemRequest {
+public class StockAdjustmentDestroyItemRequest {
 
     private Integer batchId;
 
