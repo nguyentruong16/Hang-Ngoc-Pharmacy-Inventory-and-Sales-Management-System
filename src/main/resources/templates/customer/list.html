@@ -111,9 +111,8 @@
     }
     .type-badge.individual { background: var(--sup-blue-bg); color: var(--sup-blue); }
     .type-badge.company    { background: var(--sup-purple-bg); color: var(--sup-purple); }
-    .view-link { color: var(--sup-green); font-size: 13px; font-weight: 500; text-decoration: none; }
-    .view-link:hover { color: var(--sup-green-dark); text-decoration: underline; }
-
+    /* nút Xem: hover nền xanh + chữ trắng */
+    .btn-outline-success:hover, .btn-outline-success:active { color: #fff !important; }
     /* ── Create button ── */
     .btn-create {
       height: 40px; padding: 0 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
@@ -237,7 +236,7 @@
               </td>
               <td th:text="${cus.taxCode != null ? cus.taxCode : '—'}">—</td>
               <td style="text-align:center;">
-                <a class="view-link" th:href="@{/customer/{id}(id=${cus.id})}">Xem</a>
+                <a class="btn btn-sm btn-outline-success" th:href="@{/customer/{id}(id=${cus.id})}">Xem</a>
               </td>
             </tr>
 
