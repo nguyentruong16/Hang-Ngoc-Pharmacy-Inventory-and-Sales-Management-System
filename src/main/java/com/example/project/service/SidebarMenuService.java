@@ -126,8 +126,7 @@ public class SidebarMenuService {
 
                 menuGroup("Cung ứng", "ti ti-truck",
                         i("Danh sách nhà cung cấp", "/supplier", "ti ti-truck"),
-                        i("Danh sách dự trù", "/owner/procurements", "ti ti-clipboard-list"),
-                        i("Danh sách đề nghị mua hàng", "/owner/purchase-requisitions", "ti ti-shopping-cart-plus"),
+                        i("Danh sách dự trù mua hàng", "/owner/procurements", "ti ti-clipboard-list"),
                         i("Danh sách phiếu nhập", "/owner/purchase-invoices", "ti ti-receipt")),
 
                 menuGroup("Tài chính", "ti ti-cash-banknote",
@@ -151,8 +150,9 @@ public class SidebarMenuService {
                 linkGroup("Phê duyệt", "ti ti-clipboard-check",
                         i("Phê duyệt", "/owner/approvals", "ti ti-clipboard-check")),
 
-                linkGroup("Báo cáo ca", "ti ti-report",
-                        i("Báo cáo ca", "/owner/shift-reports", "ti ti-report"))
+                menuGroup("Báo cáo", "ti ti-report",
+                        i("Báo cáo ca", "/owner/shift-reports", "ti ti-report"),
+                        i("Báo cáo tổng hợp theo ngày", "/owner/daily-reports", "ti ti-report-analytics"))
         );
     }
 
@@ -164,11 +164,25 @@ public class SidebarMenuService {
                 linkGroup("Bán hàng", "ti ti-shopping-cart",
                         i("Bán hàng", "/pharmacist/selling", "ti ti-shopping-cart")),
 
-                linkGroup("Hàng hóa", "ti ti-package",
-                        i("Hàng hóa", "/pharmacist/products", "ti ti-package")),
+                menuGroup("Hàng hóa", "ti ti-package",
+                        i("Danh sách hàng hóa", "/pharmacist/products", "ti ti-package"),
+                        i("Loại hàng", "/pharmacist/types", "ti ti-category"),
+                        i("Nhà sản xuất", "/pharmacist/producers", "ti ti-building-factory-2")),
 
-                linkGroup("Hóa đơn", "ti ti-file-invoice",
-                        i("Hóa đơn", "/pharmacist/invoices", "ti ti-file-invoice")),
+                linkGroup("Danh sách vị trí", "ti ti-map-pin",
+                        i("Danh sách vị trí", "/pharmacist/positions", "ti ti-map-pin")),
+
+                menuGroup("Cung ứng", "ti ti-truck",
+                        i("Danh sách nhà cung cấp", "/supplier", "ti ti-truck"),
+                        i("Danh sách phiếu nhập", "/pharmacist/purchase-invoices", "ti ti-receipt")),
+
+                linkGroup("Kho", "ti ti-archive",
+                        i("Tạo phiếu điều chỉnh kho", "/pharmacist/stock-outs/create", "ti ti-archive")),
+
+                menuGroup("Giao dịch", "ti ti-file-invoice",
+                        i("Danh sách hóa đơn", "/pharmacist/invoices", "ti ti-file-invoice"),
+                        i("Danh sách khoản thu", "/pharmacist/incomes", "ti ti-cash-banknote"),
+                        i("Danh sách trả hàng", "/pharmacist/returns", "ti ti-rotate")),
 
                 linkGroup("Khách hàng", "ti ti-users",
                         i("Khách hàng", "/customer", "ti ti-users")),
@@ -183,8 +197,16 @@ public class SidebarMenuService {
                 linkGroup(GROUP_MAIN, "ti ti-chart-line",
                         i("Tổng quan", "/accountant/dashboard", "ti ti-chart-line")),
 
-                linkGroup("Xuất kho", "ti ti-archive",
-                        i("Xuất kho", "/accountant/stock-outs", "ti ti-archive")),
+                menuGroup("Hàng hóa", "ti ti-package",
+                        i("Danh sách hàng hóa", "/accountant/products", "ti ti-package"),
+                        i("Loại hàng", "/accountant/types", "ti ti-category"),
+                        i("Nhà sản xuất", "/accountant/producers", "ti ti-building-factory-2")),
+
+                linkGroup("Nhà cung cấp", "ti ti-truck",
+                        i("Nhà cung cấp", "/supplier", "ti ti-truck")),
+
+                linkGroup("Khách hàng", "ti ti-users",
+                        i("Khách hàng", "/customer", "ti ti-users")),
 
                 linkGroup("Công nợ", "ti ti-credit-card",
                         i("Công nợ", "/accountant/debts", "ti ti-credit-card")),
@@ -195,9 +217,11 @@ public class SidebarMenuService {
                 linkGroup("Khoản chi", "ti ti-cash",
                         i("Khoản chi", "/accountant/expenses", "ti ti-cash")),
 
-                menuGroup("Báo cáo", "ti ti-report",
-                        i("Danh sách báo cáo ngày", "/accountant/daily-reports", "ti ti-report"),
-                        i("Danh sách báo cáo ca", "/accountant/shift-reports", "ti ti-report-analytics")),
+                linkGroup("Thiết lập tài chính", "ti ti-settings",
+                        i("Thiết lập tài chính", "/accountant/financial-setting", "ti ti-settings")),
+
+                linkGroup("Báo cáo", "ti ti-report",
+                        i("Danh sách báo cáo ngày", "/accountant/daily-reports", "ti ti-report")),
 
                 menuGroup("Hóa đơn", "ti ti-file-invoice",
                         i("Danh sách hóa đơn", "/accountant/invoices", "ti ti-file-invoice"),

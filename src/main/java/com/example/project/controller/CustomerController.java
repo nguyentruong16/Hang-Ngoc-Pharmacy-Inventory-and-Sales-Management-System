@@ -1,5 +1,7 @@
 package com.example.project.controller;
 
+import com.example.project.constant.RoleConstants;
+import com.example.project.context.CurrentUserContext;
 import com.example.project.dto.request.CustomerRequest;
 import com.example.project.dto.response.CustomerResponse;
 import com.example.project.service.CustomerService;
@@ -7,20 +9,35 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * Shared Customer module: Owner and Pharmacist get full create/edit rights, Accountant is
+ * view-only (per the PHÂN QUYỀN MÀN HÌNH matrix). Since all 3 roles share this one
+ * {@code /customer/**} path (no role-prefixed variants), the view-only restriction is enforced
+ * here with {@link #requireCanManage()} rather than at the route level.
+ */
 @Controller
 @RequestMapping("/customer")
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final CurrentUserContext currentUserContext;
 
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, CurrentUserContext currentUserContext) {
         this.customerService = customerService;
+        this.currentUserContext = currentUserContext;
+    }
+
+    private void requireCanManage() {
+        if (RoleConstants.ACCOUNTANT.equals(currentUserContext.getCurrentRole())) {
+            throw new AccessDeniedException("Kế toán chỉ được xem khách hàng, không được tạo/sửa");
+        }
     }
 
     // ------------------------------------------------------------------ list
@@ -59,6 +76,7 @@ public class CustomerController {
 
     @GetMapping("/create")
     public String createForm(Model model) {
+        requireCanManage();
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new CustomerRequest());
         }
@@ -72,6 +90,7 @@ public class CustomerController {
                          @RequestParam(name = "action", defaultValue = "create") String action,
                          Model model,
                          RedirectAttributes redirectAttributes) {
+        requireCanManage();
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", "Tạo khách hàng");
             return "customer/create";
@@ -117,6 +136,7 @@ public class CustomerController {
                          BindingResult bindingResult,
                          Model model,
                          RedirectAttributes redirectAttributes) {
+        requireCanManage();
         if (bindingResult.hasErrors()) {
             populateDetail(model, id);
             model.addAttribute("showEditForm", true);

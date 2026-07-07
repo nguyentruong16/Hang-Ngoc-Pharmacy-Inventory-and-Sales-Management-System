@@ -40,12 +40,12 @@ public class PlaceholderController {
             "/owner/notifications",
             "/owner/selling",
             "/owner/procurements",
-            "/owner/purchase-requisitions",
             "/owner/invoices",
             "/owner/incomes",
             "/owner/expenses",
             "/owner/returns",
-            "/owner/shift-reports"
+            "/owner/shift-reports",
+            "/owner/daily-reports"
     })
     public String owner(HttpServletRequest request, Model model) {
         return render(request, model);
@@ -57,7 +57,10 @@ public class PlaceholderController {
             "/pharmacist/invoices",
             "/pharmacist/customers",
             "/pharmacist/shift-reports",
-            "/pharmacist/notifications"
+            "/pharmacist/notifications",
+            "/pharmacist/returns",
+            "/pharmacist/incomes",
+            "/pharmacist/stock-outs/create"
     })
     public String pharmacist(HttpServletRequest request, Model model) {
         return render(request, model);
@@ -68,10 +71,10 @@ public class PlaceholderController {
             "/accountant/debts",
             "/accountant/expenses",
             "/accountant/daily-reports",
-            "/accountant/shift-reports",
             "/accountant/invoices",
             "/accountant/vat-invoices",
-            "/accountant/notifications"
+            "/accountant/notifications",
+            "/accountant/financial-setting"
     })
     public String accountant(HttpServletRequest request, Model model) {
         return render(request, model);
