@@ -16,8 +16,9 @@ public class Customer {
     @Column(name = "customerID", nullable = false)
     private Integer id;
 
+    @Size(max = 50)
     @NotNull
-    @Column(name = "customerType", nullable = false, columnDefinition = "enum('INDIVIDUAL','COMPANY')")
+    @Column(name = "customerType", nullable = false, length = 50)
     private String customerType;
 
     @Size(max = 100)

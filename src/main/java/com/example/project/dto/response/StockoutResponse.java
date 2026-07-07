@@ -21,7 +21,7 @@ public class StockoutResponse {
     private Instant approvedAt;
     private String reason;
     private Integer expenseId;
-    private Integer statusId;
+    private String status;
     private String note;
 
     public static StockoutResponse from(Stockout stockout) {
@@ -35,7 +35,7 @@ public class StockoutResponse {
                 stockout.getApprovedAt(),
                 stockout.getReason(),
                 stockout.getExpenseID() != null ? stockout.getExpenseID().getId() : null,
-                stockout.getStatusID() != null ? stockout.getStatusID().getId() : null,
+                stockout.getStatus(),
                 stockout.getNote()
         );
     }

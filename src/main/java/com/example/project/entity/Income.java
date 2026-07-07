@@ -29,8 +29,9 @@ public class Income {
     @JoinColumn(name = "applicantID", nullable = false)
     private Account applicantID;
 
+    @Size(max = 50)
     @NotNull
-    @Column(name = "incomeType", nullable = false, columnDefinition = "enum('SUPPLIER','EMPLOYEE','CUSTOMER','OTHER')")
+    @Column(name = "incomeType", nullable = false, length = 50)
     private String incomeType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -77,9 +78,10 @@ public class Income {
     @JoinColumn(name = "accountID")
     private Account accountID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statusID")
-    private Status statusID;
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;

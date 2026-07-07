@@ -78,13 +78,15 @@ public class Invoice {
     @Column(name = "prescriptionRequired")
     private Boolean prescriptionRequired;
 
-    @ColumnDefault("'NONE'")
-    @Column(name = "returnStatus", columnDefinition = "enum('NONE','PARTIAL','FULL')")
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "returnStatus", nullable = false, length = 50)
     private String returnStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statusID")
-    private Status statusID;
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "status", nullable = false, length = 50)
+    private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shiftReportID")
