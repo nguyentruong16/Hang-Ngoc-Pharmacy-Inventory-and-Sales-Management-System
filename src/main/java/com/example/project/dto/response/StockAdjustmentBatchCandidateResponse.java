@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 @Getter
 @AllArgsConstructor
-public class StockAdjustmentDestroyCandidateResponse {
+public class StockAdjustmentBatchCandidateResponse {
 
     private Integer batchId;
 
