@@ -1,5 +1,6 @@
 package com.example.project.service;
 
+import com.example.project.constant.PurchaseInvoiceStatus;
 import com.example.project.dto.request.PurchaseInvoiceCreateRequest;
 import com.example.project.dto.request.PurchaseInvoiceDetailCreateRequest;
 import com.example.project.dto.response.*;
@@ -216,6 +217,7 @@ public class PurchaseinvoiceService {
         invoice.setDiscount(discount);
         invoice.setTotalAmount(totalAmount);
         invoice.setPaid(paid);
+        invoice.setStatus(resolveInvoiceStatus(totalAmount, paid));
         invoice.setNote(request.getNote());
 
         Purchaseinvoice savedInvoice = purchaseinvoiceRepository.save(invoice);
@@ -250,6 +252,11 @@ public class PurchaseinvoiceService {
     @Transactional(readOnly = true)
     public List<Object> listBranches() {
         return List.of();
+    }
+
+    /** The fixed set of statuses a PurchaseInvoice can be in, for the filter dropdown. */
+    public List<String> listPaymentStatuses() {
+        return PurchaseInvoiceStatus.ALL;
     }
 
     @Transactional(readOnly = true)
@@ -399,21 +406,30 @@ public class PurchaseinvoiceService {
     }
 
     private String resolvePaymentStatus(BigDecimal totalAmount, BigDecimal paid) {
+        return resolveInvoiceStatus(totalAmount, paid);
+    }
+
+    /**
+     * Computes the {@code Purchaseinvoice.status} value from the paid-vs-total thresholds — used
+     * both to persist the status on creation and to render it (as {@code paymentStatus}) on the
+     * list/detail screens, so the two never drift apart.
+     */
+    private String resolveInvoiceStatus(BigDecimal totalAmount, BigDecimal paid) {
         if (paid.compareTo(BigDecimal.ZERO) <= 0) {
-            return "Chưa thanh toán";
+            return PurchaseInvoiceStatus.DEBT;
         }
 
         if (paid.compareTo(totalAmount) >= 0) {
-            return "Hoàn tất";
+            return PurchaseInvoiceStatus.COMPLETED;
         }
 
-        return "Thanh toán một phần";
+        return PurchaseInvoiceStatus.PARTIAL_DEBT;
     }
 
     private String statusCssClass(String paymentStatus) {
         return switch (paymentStatus) {
-            case "Hoàn tất" -> "status-completed";
-            case "Thanh toán một phần" -> "status-partial";
+            case PurchaseInvoiceStatus.COMPLETED -> "status-completed";
+            case PurchaseInvoiceStatus.PARTIAL_DEBT -> "status-partial";
             default -> "status-pending";
         };
     }

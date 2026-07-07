@@ -68,6 +68,7 @@ public class PurchaseInvoicePageController {
 
         model.addAttribute("suppliers", purchaseinvoiceService.listSuppliers());
         model.addAttribute("branches", purchaseinvoiceService.listBranches());
+        model.addAttribute("paymentStatuses", purchaseinvoiceService.listPaymentStatuses());
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("fromDate", fromDate);

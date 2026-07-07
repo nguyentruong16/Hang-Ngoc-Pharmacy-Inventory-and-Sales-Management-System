@@ -1,5 +1,6 @@
 package com.example.project.service;
 
+import com.example.project.constant.StockOutStatus;
 import com.example.project.dto.request.StockOutDestroyCreateRequest;
 import com.example.project.dto.request.StockOutDestroyItemRequest;
 import com.example.project.dto.response.StockOutDestroyCandidateResponse;
@@ -21,9 +22,6 @@ import java.util.stream.Collectors;
 public class StockOutDestroyService {
 
     private static final String OUT_TYPE_DESTROY = "DESTROY";
-    // Matches StockoutService.STATUS_PENDING_RECONCILIATION — a freshly created stock-out starts
-    // in the same "pending" bucket that the Stock-Out list/stats screens already understand.
-    private static final String STATUS_PENDING = "Chờ đối chiếu";
 
     private final StockoutRepository stockoutRepository;
     private final StockoutdetailRepository stockoutdetailRepository;
@@ -95,7 +93,7 @@ public class StockOutDestroyService {
         stockOut.setCreatedBy(creator);
         stockOut.setReason(request.getReason().trim());
         stockOut.setExpenseID(null);
-        stockOut.setStatus(STATUS_PENDING);
+        stockOut.setStatus(StockOutStatus.DRAFT);
         stockOut.setNote(trimToNull(request.getNote()));
 
         Stockout savedStockOut = stockoutRepository.save(stockOut);

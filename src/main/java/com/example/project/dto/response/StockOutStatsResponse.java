@@ -8,7 +8,7 @@ import lombok.Getter;
 public class StockOutStatsResponse {
 
     private long monthlyCount;
-    private long pendingCount;
-    private long reconciledCount;
-    private long needCheckCount;
+    private long draftCount;
+    private long approvedCount;
+    private long rejectedCount;
 }
