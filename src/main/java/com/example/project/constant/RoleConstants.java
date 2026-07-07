@@ -17,23 +17,20 @@ import java.util.Map;
 public final class RoleConstants {
 
     public static final String OWNER = "OWNER";
-    public static final String CHIEF_PHARMACIST = "CHIEF_PHARMACIST";
     public static final String PHARMACIST = "PHARMACIST";
     public static final String ACCOUNTANT = "ACCOUNTANT";
 
     /** All valid roles, in display order. */
     public static final List<String> ALL = List.of(
-            OWNER, CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT);
+            OWNER, PHARMACIST, ACCOUNTANT);
 
     public static final List<String> NON_OWNER_ROLES = List.of(
-            CHIEF_PHARMACIST, PHARMACIST, ACCOUNTANT
+            PHARMACIST, ACCOUNTANT
     );
 
     /**
      * Roles assignable from the single-store Permission Table ({@code /owner/permissions}), in
-     * display order. {@code CHIEF_PHARMACIST} is intentionally excluded — it has been merged into
-     * {@code OWNER} ("Chủ nhà thuốc") and is no longer a distinct assignable role; the removed
-     * {@code CASHIER} role was never part of this set either.
+     * display order. The removed {@code CASHIER} role was never part of this set.
      */
     public static final List<String> PERMISSION_TABLE_ROLES = List.of(PHARMACIST, ACCOUNTANT, OWNER);
 
@@ -53,7 +50,7 @@ public final class RoleConstants {
         return role != null && ALL.contains(role);
     }
 
-    /** Human-friendly label, e.g. {@code CHIEF_PHARMACIST -> "Chief Pharmacist"}. */
+    /** Human-friendly label, e.g. {@code ACCOUNTANT -> "Accountant"}. */
     public static String displayName(String role) {
         if (role == null || role.isBlank()) {
             return "";
@@ -80,7 +77,6 @@ public final class RoleConstants {
         }
         return switch (role) {
             case OWNER -> "Chủ nhà thuốc";
-            case CHIEF_PHARMACIST -> "Dược sĩ trưởng";
             case PHARMACIST -> "Dược sĩ";
             case ACCOUNTANT -> "Kế toán";
             default -> role;
@@ -122,7 +118,7 @@ public final class RoleConstants {
         return role != null && PERMISSION_TABLE_ROLES.contains(role);
     }
 
-    /** URL slug for a role, e.g. {@code CHIEF_PHARMACIST -> "chief-pharmacist"}. */
+    /** URL slug for a role, e.g. {@code ACCOUNTANT -> "accountant"}. */
     public static String urlPrefix(String role) {
         if (role == null) {
             return "";

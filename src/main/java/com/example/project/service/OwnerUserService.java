@@ -94,8 +94,7 @@ public class OwnerUserService {
 
         Set<Integer> pharmacistAccountIds = permissions.stream()
                 .filter(ap -> ap.getAccountID() != null)
-                .filter(ap -> RoleConstants.PHARMACIST.equals(ap.getRole())
-                        || RoleConstants.CHIEF_PHARMACIST.equals(ap.getRole()))
+                .filter(ap -> RoleConstants.PHARMACIST.equals(ap.getRole()))
                 .map(ap -> ap.getAccountID().getId())
                 .collect(Collectors.toSet());
 
@@ -221,14 +220,7 @@ public class OwnerUserService {
         return permissions.stream()
                 .map(Accountpermission::getRole)
                 .filter(Objects::nonNull)
-                .anyMatch(userRole -> {
-                    if (RoleConstants.PHARMACIST.equals(role)) {
-                        return RoleConstants.PHARMACIST.equals(userRole)
-                                || RoleConstants.CHIEF_PHARMACIST.equals(userRole);
-                    }
-
-                    return role.equals(userRole);
-                });
+                .anyMatch(userRole -> role.equals(userRole));
     }
 
     private OwnerUserRowResponse toRow(Account account, List<Accountpermission> permissions) {

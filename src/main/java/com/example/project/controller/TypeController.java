@@ -36,10 +36,7 @@ public class TypeController {
         return typeService.getAll();
     }
 
-    @GetMapping({
-            "/owner/types",
-            "/chief-pharmacist/types"
-    })
+    @GetMapping("/owner/types")
     public String typeList(@RequestParam(name = "search", required = false) String search,
                            @RequestParam(name = "sortType", required = false) String sortType,
                            @RequestParam(name = "page", defaultValue = "0") int page,
@@ -72,10 +69,7 @@ public class TypeController {
         return "owner/type-list";
     }
 
-    @GetMapping({
-            "/owner/types/create-type",
-            "/chief-pharmacist/types/create-type"
-    })
+    @GetMapping("/owner/types/create-type")
     public String createTypeForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("typeForm")) {
             model.addAttribute("typeForm", new TypeCreateRequest());
@@ -86,10 +80,7 @@ public class TypeController {
         return "owner/create-type";
     }
 
-    @PostMapping({
-            "/owner/types/create-type",
-            "/chief-pharmacist/types/create-type"
-    })
+    @PostMapping("/owner/types/create-type")
     public String createType(@Valid @ModelAttribute("typeForm") TypeCreateRequest form,
                              BindingResult bindingResult,
                              HttpServletRequest request,
@@ -108,10 +99,7 @@ public class TypeController {
         return "redirect:" + basePath;
     }
 
-    @GetMapping({
-            "/owner/types/update-type/{id}",
-            "/chief-pharmacist/types/update-type/{id}"
-    })
+    @GetMapping("/owner/types/update-type/{id}")
     public String updateTypeForm(@PathVariable Integer id,
                                  HttpServletRequest request,
                                  Model model) {
@@ -131,10 +119,7 @@ public class TypeController {
         return "owner/update-type";
     }
 
-    @PostMapping({
-            "/owner/types/update-type/{id}",
-            "/chief-pharmacist/types/update-type/{id}"
-    })
+    @PostMapping("/owner/types/update-type/{id}")
     public String updateType(@PathVariable Integer id,
                              @Valid @ModelAttribute("typeForm") TypeCreateRequest form,
                              BindingResult bindingResult,
@@ -156,9 +141,6 @@ public class TypeController {
     }
 
     private String resolveBasePath(HttpServletRequest request) {
-        if (request.getRequestURI().startsWith("/chief-pharmacist/types")) {
-            return "/chief-pharmacist/types";
-        }
         return "/owner/types";
     }
 }

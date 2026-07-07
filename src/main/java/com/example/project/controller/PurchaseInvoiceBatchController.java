@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@RequestMapping("/chief-pharmacist/purchase-invoices")
 public class PurchaseInvoiceBatchController {
 
     private final PurchaseInvoiceBatchService purchaseInvoiceBatchService;
@@ -18,18 +17,19 @@ public class PurchaseInvoiceBatchController {
         this.purchaseInvoiceBatchService = purchaseInvoiceBatchService;
     }
 
-    @GetMapping("/{purchaseId}/to-batch")
-    public String toBatchPage(@PathVariable Integer purchaseId, Model model) {
+    @GetMapping("/owner/purchase-invoices/{purchaseId}/to-batch")
+    public String toBatchPage(@PathVariable Integer purchaseId, HttpServletRequest request, Model model) {
         model.addAttribute("pageData", purchaseInvoiceBatchService.getPage(purchaseId));
         model.addAttribute("form", purchaseInvoiceBatchService.buildForm(purchaseId));
-        model.addAttribute("basePath", "/chief-pharmacist/purchase-invoices");
+        model.addAttribute("basePath", resolvePurchaseInvoicesBasePath(request));
 
         return "purchase-invoice/to-batch";
     }
 
-    @PostMapping("/{purchaseId}/to-batch/draft")
+    @PostMapping("/owner/purchase-invoices/{purchaseId}/to-batch/draft")
     public String saveDraft(@PathVariable Integer purchaseId,
                             @ModelAttribute("form") PurchaseInvoiceToBatchRequest form,
+                            HttpServletRequest request,
                             RedirectAttributes redirectAttributes) {
         try {
             purchaseInvoiceBatchService.saveDraft(purchaseId, form);
@@ -38,12 +38,13 @@ public class PurchaseInvoiceBatchController {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
 
-        return "redirect:/chief-pharmacist/purchase-invoices/" + purchaseId + "/to-batch";
+        return "redirect:" + resolvePurchaseInvoicesBasePath(request) + "/" + purchaseId + "/to-batch";
     }
 
-    @PostMapping("/{purchaseId}/to-batch/create")
+    @PostMapping("/owner/purchase-invoices/{purchaseId}/to-batch/create")
     public String createBatches(@PathVariable Integer purchaseId,
                                 @ModelAttribute("form") PurchaseInvoiceToBatchRequest form,
+                                HttpServletRequest request,
                                 RedirectAttributes redirectAttributes) {
         try {
             purchaseInvoiceBatchService.createBatches(purchaseId, form);
@@ -52,6 +53,10 @@ public class PurchaseInvoiceBatchController {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
 
-        return "redirect:/chief-pharmacist/purchase-invoices/" + purchaseId + "/to-batch";
+        return "redirect:" + resolvePurchaseInvoicesBasePath(request) + "/" + purchaseId + "/to-batch";
+    }
+
+    private String resolvePurchaseInvoicesBasePath(HttpServletRequest request) {
+        return "/owner/purchase-invoices";
     }
 }

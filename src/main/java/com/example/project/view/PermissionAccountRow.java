@@ -7,9 +7,7 @@ import lombok.Getter;
  * holds system-wide. Built inside a transaction so the Thymeleaf view never touches lazy
  * associations.
  *
- * <p>A {@code null}/blank {@link #role} means "Không quyền" (no {@code Accountpermission} row).
- * The legacy {@code CHIEF_PHARMACIST} role is displayed here already merged into {@code OWNER}
- * ("Chủ nhà thuốc") — see {@code OwnerPermissionService}.</p>
+ * <p>A {@code null}/blank {@link #role} means "Không quyền" (no {@code Accountpermission} row).</p>
  *
  * <p>{@link #lastOwner} is {@code true} only when this account currently holds an owner-like role
  * <em>and</em> is the only one left in the system; the screen renders such a row read-only so it

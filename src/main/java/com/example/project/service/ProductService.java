@@ -234,12 +234,12 @@ public class ProductService {
     }
 
     /**
-     * Whether the current user may see the "recent inventory history" block. Owner and Chief
-     * Pharmacist may; Pharmacist may not.
+     * Whether the current user may see the "recent inventory history" block. Only Owner may;
+     * Pharmacist may not.
      */
     public boolean canViewRecentHistory() {
         String role = currentUserContext.getCurrentRole();
-        return RoleConstants.OWNER.equals(role) || RoleConstants.CHIEF_PHARMACIST.equals(role);
+        return RoleConstants.OWNER.equals(role);
     }
 
     @Transactional(readOnly = true)

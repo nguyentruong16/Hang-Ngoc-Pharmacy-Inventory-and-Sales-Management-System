@@ -15,7 +15,7 @@ import java.util.Map;
  *
  * <p>This is the single source of truth for role-based navigation. The menu is purely
  * presentational config (no database access) and its labels are Vietnamese; only the role
- * <em>codes</em> (OWNER, CHIEF_PHARMACIST, ...) stay in English. Each role maps to an ordered list of
+ * <em>codes</em> (OWNER, PHARMACIST, ...) stay in English. Each role maps to an ordered list of
  * {@link SidebarMenuGroup}s; the Thymeleaf {@code fragments/sidebar} renders whatever this
  * service returns for the current role.</p>
  *
@@ -33,7 +33,6 @@ public class SidebarMenuService {
 
     public SidebarMenuService() {
         menusByRole.put(RoleConstants.OWNER, ownerMenu());
-        menusByRole.put(RoleConstants.CHIEF_PHARMACIST, chiefPharmacistMenu());
         menusByRole.put(RoleConstants.PHARMACIST, pharmacistMenu());
         menusByRole.put(RoleConstants.ACCOUNTANT, accountantMenu());
     }
@@ -84,17 +83,9 @@ public class SidebarMenuService {
                 || uri.startsWith("/owner/types/update-type")) {
             uri = "/owner/types";
         }
-        if (uri.startsWith("/chief-pharmacist/producers/create-producer")
-                || uri.startsWith("/chief-pharmacist/producers/update-producer")) {
-            uri = "/chief-pharmacist/producers";
-        }
-        if (uri.startsWith("/chief-pharmacist/types/create-type")
-                || uri.startsWith("/chief-pharmacist/types/update-type")) {
-            uri = "/chief-pharmacist/types";
-        }
-        if (uri.startsWith("/chief-pharmacist/positions/create-position")
-                || uri.startsWith("/chief-pharmacist/positions/update-position")) {
-            uri = "/chief-pharmacist/positions";
+        if (uri.startsWith("/owner/positions/create-position")
+                || uri.startsWith("/owner/positions/update-position")) {
+            uri = "/owner/positions";
         }
         String best = null;
         for (SidebarMenuGroup group : menu) {
@@ -122,15 +113,21 @@ public class SidebarMenuService {
                         i("Danh sách người dùng", "/owner/users", "ti ti-users"),
                         i("Bảng phân quyền", "/owner/permissions", "ti ti-shield-lock")),
 
+                linkGroup("Bán hàng", "ti ti-shopping-cart",
+                        i("Bán hàng", "/owner/selling", "ti ti-shopping-cart")),
+
                 menuGroup("Hàng hóa", "ti ti-package",
                         i("Danh sách hàng hóa", "/owner/products", "ti ti-package")),
 
                 menuGroup("Danh mục hàng hóa", "ti ti-layout-grid",
+                        i("Danh sách vị trí", "/owner/positions", "ti ti-map-pin"),
                         i("Loại hàng", "/owner/types", "ti ti-category"),
                         i("Nhà sản xuất", "/owner/producers", "ti ti-building-factory-2")),
 
                 menuGroup("Cung ứng", "ti ti-truck",
                         i("Danh sách nhà cung cấp", "/supplier", "ti ti-truck"),
+                        i("Danh sách dự trù", "/owner/procurements", "ti ti-clipboard-list"),
+                        i("Danh sách đề nghị mua hàng", "/owner/purchase-requisitions", "ti ti-shopping-cart-plus"),
                         i("Danh sách phiếu nhập", "/owner/purchase-invoices", "ti ti-receipt")),
 
                 menuGroup("Tài chính", "ti ti-cash-banknote",
@@ -139,56 +136,23 @@ public class SidebarMenuService {
                         i("Thiết lập tài chính", "/owner/financial-setting", "ti ti-settings")),
 
                 menuGroup("Kho", "ti ti-archive",
-                        i("Xuất kho", "/owner/stock-outs", "ti ti-archive")),
+                        i("Xuất kho", "/owner/stock-outs", "ti ti-archive"),
+                        i("Tạo phiếu hủy xuất kho", "/owner/stock-outs/destroy/create", "ti ti-trash")),
+
+                menuGroup("Giao dịch", "ti ti-file-invoice",
+                        i("Danh sách hóa đơn", "/owner/invoices", "ti ti-file-invoice"),
+                        i("Danh sách khoản thu", "/owner/incomes", "ti ti-cash-banknote"),
+                        i("Danh sách khoản chi", "/owner/expenses", "ti ti-cash"),
+                        i("Danh sách trả hàng", "/owner/returns", "ti ti-rotate")),
 
                 linkGroup("Khách hàng", "ti ti-users",
                         i("Khách hàng", "/customer", "ti ti-users")),
 
                 linkGroup("Phê duyệt", "ti ti-clipboard-check",
-                        i("Phê duyệt", "/owner/approvals", "ti ti-clipboard-check"))
-        );
-    }
-
-    private List<SidebarMenuGroup> chiefPharmacistMenu() {
-        return List.of(
-                linkGroup(GROUP_MAIN, "ti ti-chart-line",
-                        i("Tổng quan", "/chief-pharmacist/dashboard", "ti ti-chart-line")),
-
-                linkGroup("Bán hàng", "ti ti-shopping-cart",
-                        i("Bán hàng", "/chief-pharmacist/selling", "ti ti-shopping-cart")),
-
-                linkGroup("Hàng hóa", "ti ti-package",
-                        i("Hàng hóa", "/chief-pharmacist/products", "ti ti-package")),
-
-                menuGroup("Danh mục", "ti ti-layout-grid",
-                        i("Danh sách vị trí", "/chief-pharmacist/positions", "ti ti-map-pin"),
-                        i("Danh sách loại hàng", "/chief-pharmacist/types", "ti ti-category"),
-                        i("Danh sách nhà sản xuất", "/chief-pharmacist/producers", "ti ti-building-factory-2")),
-
-                menuGroup("Cung ứng", "ti ti-truck",
-                        i("Danh sách nhà cung cấp", "/supplier", "ti ti-truck"),
-                        i("Danh sách dự trù", "/chief-pharmacist/procurements", "ti ti-clipboard-list"),
-                        i("Danh sách đề nghị mua hàng", "/chief-pharmacist/purchase-requisitions", "ti ti-shopping-cart-plus"),
-                        i("Danh sách phiếu nhập", "/chief-pharmacist/purchase-invoices", "ti ti-receipt")),
-
-                menuGroup("Tài chính", "ti ti-cash-banknote",
-                        i("Danh sách công nợ", "/chief-pharmacist/debts", "ti ti-credit-card")),
-
-                menuGroup("Kho", "ti ti-archive",
-                        i("Xuất kho", "/chief-pharmacist/stock-outs", "ti ti-archive"),
-                        i("Tạo phiếu hủy xuất kho", "/chief-pharmacist/stock-outs/destroy/create", "ti ti-trash")),
-
-                menuGroup("Giao dịch", "ti ti-file-invoice",
-                        i("Danh sách hóa đơn", "/chief-pharmacist/invoices", "ti ti-file-invoice"),
-                        i("Danh sách khoản thu", "/chief-pharmacist/incomes", "ti ti-cash-banknote"),
-                        i("Danh sách khoản chi", "/chief-pharmacist/expenses", "ti ti-cash"),
-                        i("Danh sách trả hàng", "/chief-pharmacist/returns", "ti ti-rotate")),
-
-                linkGroup("Khách hàng", "ti ti-users",
-                        i("Khách hàng", "/customer", "ti ti-users")),
+                        i("Phê duyệt", "/owner/approvals", "ti ti-clipboard-check")),
 
                 linkGroup("Báo cáo ca", "ti ti-report",
-                        i("Báo cáo ca", "/chief-pharmacist/shift-reports", "ti ti-report"))
+                        i("Báo cáo ca", "/owner/shift-reports", "ti ti-report"))
         );
     }
 
