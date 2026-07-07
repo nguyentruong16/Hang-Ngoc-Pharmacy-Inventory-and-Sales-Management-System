@@ -57,17 +57,17 @@
             white-space: nowrap;
         }
 
-        .status-pending {
+        .status-draft {
             background: #fef3c7;
             color: #d97706;
         }
 
-        .status-reconciled {
+        .status-approved {
             background: #d1fae5;
             color: #059669;
         }
 
-        .status-need-check {
+        .status-rejected {
             background: #fee2e2;
             color: #dc2626;
         }
@@ -144,8 +144,8 @@
                 <div class="stock-card p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="text-secondary small">Chờ đối chiếu</div>
-                            <div class="fs-3 fw-bold" th:text="${stats.pendingCount}">0</div>
+                            <div class="text-secondary small">Nháp</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.draftCount}">0</div>
                             <div class="text-warning small">Cần xử lý sớm</div>
                         </div>
                         <div class="stat-icon">
@@ -159,8 +159,8 @@
                 <div class="stock-card p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="text-secondary small">Đã đối chiếu</div>
-                            <div class="fs-3 fw-bold" th:text="${stats.reconciledCount}">0</div>
+                            <div class="text-secondary small">Duyệt</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.approvedCount}">0</div>
                             <div class="text-success small">Hoàn tất</div>
                         </div>
                         <div class="stat-icon">
@@ -174,8 +174,8 @@
                 <div class="stock-card p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="text-secondary small">Cần kiểm tra</div>
-                            <div class="fs-3 fw-bold" th:text="${stats.needCheckCount}">0</div>
+                            <div class="text-secondary small">Từ chối</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.rejectedCount}">0</div>
                             <div class="text-danger small">Cần xem xét ngay</div>
                         </div>
                         <div class="stat-icon">
@@ -294,7 +294,7 @@
                             <span class="status-badge"
                                   th:classappend="${' ' + item.statusCssClass}"
                                   th:text="${item.statusName}">
-                                Chờ đối chiếu
+                                Nháp
                             </span>
                         </td>
                         <td class="text-end">
