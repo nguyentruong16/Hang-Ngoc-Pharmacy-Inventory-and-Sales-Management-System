@@ -76,4 +76,18 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
    """)
     List<Batch> findRecentImportsByProduct(@Param("productId") Integer productId,
                                            Pageable pageable);
+
+    /**
+     * Every batch of one product regardless of remaining stock (unlike
+     * {@link #findInStockBatchesByProduct}, which only returns {@code storageQuantity > 0}) — used
+     * to let the "Nhập vào lô" screen suggest reusing an already-known lot/expiry, including ones
+     * fully depleted.
+     */
+    @Query("""
+   select b
+   from Batch b
+   where b.productID.productID = :productId
+   order by b.expirationDate asc
+   """)
+    List<Batch> findAllByProduct(@Param("productId") Integer productId);
 }
