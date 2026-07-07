@@ -33,7 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.Collator;
 import java.text.Normalizer;
+import java.util.Arrays;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -77,9 +79,15 @@ public class ProductService {
     private final InvoicedetailRepository invoicedetailRepository;
     private final StockadjustmentdetailRepository stockadjustmentdetailRepository;
     private final ReturndetailRepository returndetailRepository;
-    private final OriginRepository originRepository;
     private final PositionRepository positionRepository;
     private final CurrentUserContext currentUserContext;
+
+    /** Country names for the "Xuất xứ" autocomplete — sourced from the JDK's ISO-3166 locale data instead of a hardcoded DB table. */
+    private static final List<String> COUNTRY_NAMES = Arrays.stream(Locale.getISOCountries())
+            .map(code -> new Locale("", code).getDisplayCountry(new Locale("vi")))
+            .distinct()
+            .sorted(Collator.getInstance(new Locale("vi")))
+            .toList();
 
     public ProductService(ProductRepository productRepository,
                           BatchRepository batchRepository,
@@ -90,7 +98,6 @@ public class ProductService {
                           InvoicedetailRepository invoicedetailRepository,
                           StockadjustmentdetailRepository stockadjustmentdetailRepository,
                           ReturndetailRepository returndetailRepository,
-                          OriginRepository originRepository,
                           PositionRepository positionRepository,
                           CurrentUserContext currentUserContext) {
         this.productRepository = productRepository;
@@ -102,7 +109,6 @@ public class ProductService {
         this.invoicedetailRepository = invoicedetailRepository;
         this.stockadjustmentdetailRepository = stockadjustmentdetailRepository;
         this.returndetailRepository = returndetailRepository;
-        this.originRepository = originRepository;
         this.positionRepository = positionRepository;
         this.currentUserContext = currentUserContext;
     }
@@ -214,7 +220,7 @@ public class ProductService {
         response.setBarcode(product.getBarcode());
         response.setTypeName(product.getTypeID() != null ? product.getTypeID().getName() : "—");
         response.setProducerName(product.getProducerID() != null ? product.getProducerID().getName() : "—");
-        response.setOriginName(product.getOriginID() != null ? product.getOriginID().getName() : "—");
+        response.setOriginName(product.getOrigin() != null ? product.getOrigin() : "—");
         response.setRegistrationNumber(product.getRegistrationNumber());
         response.setStatusActive(Boolean.TRUE.equals(product.getStatus()));
         response.setStatusLabel(Boolean.TRUE.equals(product.getStatus()) ? "Đang kinh doanh" : "Ngừng kinh doanh");
@@ -257,12 +263,8 @@ public class ProductService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<Origin> listOrigins() {
-        return originRepository.findAll()
-                .stream()
-                .sorted(Comparator.comparing(origin -> origin.getName() == null ? "" : origin.getName()))
-                .toList();
+    public List<String> listOrigins() {
+        return COUNTRY_NAMES;
     }
 
     /** Existing ingredient names, for the Create Product autocomplete (reuse instead of retyping). */
@@ -336,9 +338,6 @@ public class ProductService {
         if (request.getProducerId() != null && !producerRepository.existsById(request.getProducerId())) {
             errors.add("Nhà sản xuất không hợp lệ");
         }
-        if (request.getOriginId() != null && !originRepository.existsById(request.getOriginId())) {
-            errors.add("Xuất xứ không hợp lệ");
-        }
 
         List<ResolvedUnit> resolvedUnits = validateAndResolveUnits(request.getUnits(), errors);
 
@@ -355,14 +354,12 @@ public class ProductService {
         product.setMaxStock(request.getMaxStock());
         product.setStatus(request.getStatus() == null ? Boolean.TRUE : request.getStatus());
         product.setNote(trimToNull(request.getNote()));
+        product.setOrigin(trimToNull(request.getOrigin()));
         if (request.getTypeId() != null) {
             product.setTypeID(typeRepository.getReferenceById(request.getTypeId()));
         }
         if (request.getProducerId() != null) {
             product.setProducerID(producerRepository.getReferenceById(request.getProducerId()));
-        }
-        if (request.getOriginId() != null) {
-            product.setOriginID(originRepository.getReferenceById(request.getOriginId()));
         }
         Product saved = productRepository.save(product);
 
@@ -430,7 +427,7 @@ public class ProductService {
         form.setBarcode(product.getBarcode());
         form.setTypeId(product.getTypeID() != null ? product.getTypeID().getId() : null);
         form.setProducerId(product.getProducerID() != null ? product.getProducerID().getId() : null);
-        form.setOriginId(product.getOriginID() != null ? product.getOriginID().getId() : null);
+        form.setOrigin(product.getOrigin());
         form.setRegistrationNumber(product.getRegistrationNumber());
         form.setMinStock(product.getMinStock());
         form.setMaxStock(product.getMaxStock());
@@ -510,9 +507,6 @@ public class ProductService {
         if (request.getProducerId() != null && !producerRepository.existsById(request.getProducerId())) {
             errors.add("Nhà sản xuất không hợp lệ");
         }
-        if (request.getOriginId() != null && !originRepository.existsById(request.getOriginId())) {
-            errors.add("Xuất xứ không hợp lệ");
-        }
 
         List<Productunit> existingUnits = productunitRepository.findByProductId(productId).stream()
                 .sorted(Comparator.comparing(Productunit::getRatio, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -537,11 +531,10 @@ public class ProductService {
         product.setMaxStock(request.getMaxStock());
         product.setStatus(request.getStatus() == null ? Boolean.TRUE : request.getStatus());
         product.setNote(trimToNull(request.getNote()));
+        product.setOrigin(trimToNull(request.getOrigin()));
         product.setTypeID(request.getTypeId() != null ? typeRepository.getReferenceById(request.getTypeId()) : null);
         product.setProducerID(request.getProducerId() != null
                 ? producerRepository.getReferenceById(request.getProducerId()) : null);
-        product.setOriginID(request.getOriginId() != null
-                ? originRepository.getReferenceById(request.getOriginId()) : null);
         productRepository.save(product);
 
         for (int i = 0; i < existingUnits.size(); i++) {
