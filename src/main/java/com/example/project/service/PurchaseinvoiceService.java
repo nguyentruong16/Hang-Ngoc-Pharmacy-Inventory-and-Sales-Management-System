@@ -13,12 +13,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Creating a Purchase Invoice creates its {@link Batch} rows in the same transaction — per the
+ * team's own process spec (sheet "Thay đổi Quy trình Phê duyệt", row "Duyệt Phiếu nhập hàng"):
+ * the old 3-step flow (tạo hóa đơn → duyệt → chuyển thành lô) is "đã gộp thành 1 use case
+ * 'Create Goods Receipt Note'". There is no separate "to-batch" confirmation step any more.
+ */
 @Service
 public class PurchaseinvoiceService {
 
@@ -27,18 +34,23 @@ public class PurchaseinvoiceService {
     private final SupplierRepository supplierRepository;
     private final AccountRepository accountRepository;
     private final ProductRepository productRepository;
+    private final BatchRepository batchRepository;
+    private final ProductunitRepository productunitRepository;
 
     public PurchaseinvoiceService(PurchaseinvoiceRepository purchaseinvoiceRepository,
                                   PurchasedetailRepository purchasedetailRepository,
                                   SupplierRepository supplierRepository,
                                   AccountRepository accountRepository,
                                   ProductRepository productRepository,
-                                  BatchRepository batchRepository) {
+                                  BatchRepository batchRepository,
+                                  ProductunitRepository productunitRepository) {
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.purchasedetailRepository = purchasedetailRepository;
         this.supplierRepository = supplierRepository;
         this.accountRepository = accountRepository;
         this.productRepository = productRepository;
+        this.batchRepository = batchRepository;
+        this.productunitRepository = productunitRepository;
     }
 
     /**
@@ -235,10 +247,162 @@ public class PurchaseinvoiceService {
             detail.setExpirationDate(item.getExpirationDate());
             detail.setLotNumber(trimToNull(item.getLotNumber()));
 
-            purchasedetailRepository.save(detail);
+            Purchasedetail savedDetail = purchasedetailRepository.save(detail);
+
+            createBatchForDetail(savedInvoice, savedDetail, product);
         }
 
         return savedInvoice.getId();
+    }
+
+    /** Creates the Batch (stock) row for one just-saved Purchasedetail — see class javadoc. */
+    private void createBatchForDetail(Purchaseinvoice invoice, Purchasedetail detail, Product product) {
+        Productunit importUnit = resolveImportUnit(product);
+
+        BigDecimal importPrice = safe(detail.getImportPrice());
+        BigDecimal importPricePerBase = calculateImportPricePerBase(importPrice, importUnit);
+        int storageQuantity = calculateBaseQuantity(detail.getQuantity(), importUnit);
+
+        Batch batch = new Batch();
+        batch.setBatchCode(generateBatchCode(invoice.getId(), detail.getId()));
+        batch.setBatchName(generateBatchName(product, detail));
+        batch.setProductID(product);
+        batch.setPurchaseDetailID(detail);
+        batch.setStorageQuantity(storageQuantity);
+        batch.setImportUnitID(importUnit);
+        batch.setImportQtyInUnit(detail.getQuantity());
+        batch.setImportPrice(importPrice);
+        batch.setImportPricePerBase(importPricePerBase);
+        batch.setImportDate(invoice.getDate());
+        batch.setProductionDate(detail.getProductionDate());
+        batch.setExpirationDate(detail.getExpirationDate());
+        batch.setLotNumber(detail.getLotNumber());
+        batch.setStatus(true);
+        batch.setNote("Tạo từ phiếu nhập " + formatPurchaseCode(invoice.getId()));
+
+        batchRepository.save(batch);
+    }
+
+    private Productunit resolveImportUnit(Product product) {
+        return resolveImportUnitOrNull(product)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Sản phẩm " + (product != null ? product.getName() : "") + " chưa có đơn vị nhập trong ProductUnit"
+                ));
+    }
+
+    private Optional<Productunit> resolveImportUnitOrNull(Product product) {
+        if (product == null || product.getProductID() == null) {
+            return Optional.empty();
+        }
+
+        return productunitRepository.findByProductId(product.getProductID())
+                .stream()
+                .filter(unit -> !Boolean.FALSE.equals(unit.getIsActive()))
+                .sorted(Comparator
+                        .comparingInt(this::importUnitPriority)
+                        .thenComparing(unit -> unit.getId() == null ? Integer.MAX_VALUE : unit.getId()))
+                .findFirst();
+    }
+
+    private int importUnitPriority(Productunit unit) {
+        if (Boolean.TRUE.equals(unit.getIsDefault())) {
+            return 0;
+        }
+
+        if (Boolean.TRUE.equals(unit.getIsBaseUnit())) {
+            return 1;
+        }
+
+        return 2;
+    }
+
+    private BigDecimal calculateImportPricePerBase(BigDecimal importPrice, Productunit importUnit) {
+        if (importUnit == null
+                || importUnit.getRatio() == null
+                || importUnit.getRatio().compareTo(BigDecimal.ZERO) <= 0) {
+            return importPrice;
+        }
+
+        return importPrice.divide(importUnit.getRatio(), 2, RoundingMode.HALF_UP);
+    }
+
+    private int calculateBaseQuantity(Integer importQuantity, Productunit importUnit) {
+        BigDecimal quantity = BigDecimal.valueOf(importQuantity == null ? 0 : importQuantity);
+
+        BigDecimal ratio = BigDecimal.ONE;
+
+        if (importUnit != null
+                && importUnit.getRatio() != null
+                && importUnit.getRatio().compareTo(BigDecimal.ZERO) > 0) {
+            ratio = importUnit.getRatio();
+        }
+
+        return quantity
+                .multiply(ratio)
+                .setScale(0, RoundingMode.HALF_UP)
+                .intValue();
+    }
+
+    private String generateBatchCode(Integer purchaseId, Integer purchaseDetailId) {
+        return "BATCH-" + String.format("%06d", purchaseId == null ? 0 : purchaseId)
+                + "-" + String.format("%03d", purchaseDetailId == null ? 0 : purchaseDetailId);
+    }
+
+    private String generateBatchName(Product product, Purchasedetail detail) {
+        String productName = product != null && product.getName() != null
+                ? product.getName()
+                : "Sản phẩm";
+
+        String lot = detail.getLotNumber() != null && !detail.getLotNumber().isBlank()
+                ? detail.getLotNumber()
+                : "Không số lô";
+
+        String name = productName + " - " + lot;
+
+        return name.length() > 50 ? name.substring(0, 50) : name;
+    }
+
+    /**
+     * Known (lotNumber, expirationDate) pairs per product, with stock summed across every
+     * {@link Batch} row sharing that pair — offered on the create-invoice form so re-supplying an
+     * existing lot can reuse its label instead of the user retyping it (and risking a typo that
+     * fragments the same physical lot under two labels).
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, List<PurchaseInvoiceExistingLotResponse>> buildExistingLotsByProduct() {
+        record LotKey(Integer productId, String lotNumber, LocalDate expirationDate) {
+        }
+
+        Map<LotKey, long[]> totalsByLot = new LinkedHashMap<>();
+        Map<LotKey, LocalDate> productionDateByLot = new LinkedHashMap<>();
+
+        for (Batch batch : batchRepository.findAll()) {
+            if (batch.getProductID() == null
+                    || batch.getLotNumber() == null
+                    || batch.getLotNumber().isBlank()) {
+                continue;
+            }
+
+            LotKey key = new LotKey(batch.getProductID().getProductID(), batch.getLotNumber(), batch.getExpirationDate());
+            totalsByLot.computeIfAbsent(key, k -> new long[1])[0] +=
+                    batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity();
+            productionDateByLot.putIfAbsent(key, batch.getProductionDate());
+        }
+
+        Map<Integer, List<PurchaseInvoiceExistingLotResponse>> result = new LinkedHashMap<>();
+
+        totalsByLot.forEach((key, total) -> result
+                .computeIfAbsent(key.productId(), id -> new ArrayList<>())
+                .add(new PurchaseInvoiceExistingLotResponse(
+                        key.lotNumber(),
+                        productionDateByLot.get(key),
+                        formatLocalDate(productionDateByLot.get(key)),
+                        key.expirationDate(),
+                        formatLocalDate(key.expirationDate()),
+                        total[0]
+                )));
+
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -286,8 +450,19 @@ public class PurchaseinvoiceService {
                 throw new IllegalArgumentException("Giá nhập phải lớn hơn 0");
             }
 
+            if (detail.getLotNumber() == null || detail.getLotNumber().isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập số lô cho tất cả sản phẩm");
+            }
+
+            if (detail.getExpirationDate() == null) {
+                throw new IllegalArgumentException("Vui lòng nhập hạn sử dụng cho tất cả sản phẩm");
+            }
+
+            if (!detail.getExpirationDate().isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("Hạn sử dụng phải lớn hơn ngày hiện tại");
+            }
+
             if (detail.getProductionDate() != null
-                    && detail.getExpirationDate() != null
                     && detail.getExpirationDate().isBefore(detail.getProductionDate())) {
                 throw new IllegalArgumentException("Hạn sử dụng không được trước ngày sản xuất");
             }

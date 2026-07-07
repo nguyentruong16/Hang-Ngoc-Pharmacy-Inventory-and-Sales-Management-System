@@ -87,7 +87,10 @@ public class PurchaseInvoicePageController {
         return "purchase-invoice/list";
     }
 
-    @GetMapping("/pharmacist/purchase-invoices/create")
+    @GetMapping({
+            "/owner/purchase-invoices/create",
+            "/pharmacist/purchase-invoices/create"
+    })
     public String createPage(HttpServletRequest request, Model model) {
         PurchaseInvoiceCreateRequest form = new PurchaseInvoiceCreateRequest();
 
@@ -100,7 +103,10 @@ public class PurchaseInvoicePageController {
         return "purchase-invoice/create";
     }
 
-    @PostMapping("/pharmacist/purchase-invoices/create")
+    @PostMapping({
+            "/owner/purchase-invoices/create",
+            "/pharmacist/purchase-invoices/create"
+    })
     public String createPurchaseInvoice(@Valid @ModelAttribute("form") PurchaseInvoiceCreateRequest form,
                                         BindingResult bindingResult,
                                         HttpServletRequest request,
@@ -146,6 +152,7 @@ public class PurchaseInvoicePageController {
         model.addAttribute("suppliers", purchaseinvoiceService.listSuppliers());
         model.addAttribute("branches", purchaseinvoiceService.listBranches());
         model.addAttribute("products", purchaseinvoiceService.listProducts());
+        model.addAttribute("existingLotsByProduct", purchaseinvoiceService.buildExistingLotsByProduct());
         model.addAttribute("basePath", resolveBasePath(request));
     }
 

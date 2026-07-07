@@ -189,9 +189,9 @@
                                     <th style="min-width: 220px;">Sản phẩm</th>
                                     <th style="min-width: 110px;">Số lượng</th>
                                     <th style="min-width: 140px;">Giá nhập</th>
+                                    <th style="min-width: 180px;">Số lô <span class="text-danger">*</span></th>
                                     <th style="min-width: 140px;">Ngày sản xuất</th>
-                                    <th style="min-width: 140px;">Hạn dùng</th>
-                                    <th style="min-width: 140px;">Số lô</th>
+                                    <th style="min-width: 140px;">Hạn dùng <span class="text-danger">*</span></th>
                                     <th style="min-width: 130px;">Thành tiền</th>
                                     <th class="text-end">Xóa</th>
                                 </tr>
@@ -228,22 +228,27 @@
                                     </td>
 
                                     <td>
+                                        <select class="form-select form-select-sm mb-1 lot-picker">
+                                            <option value="">-- Lô mới --</option>
+                                        </select>
+                                        <input type="text"
+                                               class="form-control lot-number-input"
+                                               th:field="*{details[__${iterStat.index}__].lotNumber}"
+                                               required
+                                               placeholder="VD: LOT-001">
+                                    </td>
+
+                                    <td>
                                         <input type="date"
-                                               class="form-control"
+                                               class="form-control production-date-input"
                                                th:field="*{details[__${iterStat.index}__].productionDate}">
                                     </td>
 
                                     <td>
                                         <input type="date"
-                                               class="form-control"
-                                               th:field="*{details[__${iterStat.index}__].expirationDate}">
-                                    </td>
-
-                                    <td>
-                                        <input type="text"
-                                               class="form-control"
-                                               th:field="*{details[__${iterStat.index}__].lotNumber}"
-                                               placeholder="VD: LOT-001">
+                                               class="form-control expiration-date-input"
+                                               th:field="*{details[__${iterStat.index}__].expirationDate}"
+                                               required>
                                     </td>
 
                                     <td class="fw-semibold line-total">0đ</td>
@@ -326,10 +331,10 @@
                         </div>
 
                         <div class="text-secondary small">
-                            <p class="mb-2">1. Chọn đúng nhà cung cấp và chi nhánh nhập.</p>
-                            <p class="mb-2">2. Mỗi dòng sản phẩm sẽ tạo một chi tiết phiếu nhập.</p>
-                            <p class="mb-2">3. Sau khi lưu, hệ thống sẽ tạo lô hàng tương ứng.</p>
-                            <p class="mb-0">4. Hạn dùng không được trước ngày sản xuất.</p>
+                            <p class="mb-2">1. Chọn đúng nhà cung cấp.</p>
+                            <p class="mb-2">2. Số lô và hạn dùng là bắt buộc — lô hàng được tạo ngay khi lưu phiếu.</p>
+                            <p class="mb-2">3. Nếu nhập lại đúng lô cũ, chọn ở "Chọn lô có sẵn" để tự điền thay vì gõ tay.</p>
+                            <p class="mb-0">4. Hạn dùng không được trước ngày sản xuất, và phải sau ngày hiện tại.</p>
                         </div>
                     </div>
                 </div>
@@ -341,6 +346,50 @@
 
 <script th:inline="javascript">
     const products = /*[[${products}]]*/ [];
+    const existingLotsByProduct = /*[[${existingLotsByProduct}]]*/ {};
+
+    // Repopulate a row's "chọn lô có sẵn" dropdown from the row's currently selected product.
+    function refreshLotPicker(row) {
+        const productSelect = row.querySelector('.product-select');
+        const lotPicker = row.querySelector('.lot-picker');
+        if (!productSelect || !lotPicker) return;
+
+        const lots = existingLotsByProduct[productSelect.value] || [];
+
+        lotPicker.innerHTML = '<option value="">-- Lô mới --</option>' + lots.map(lot =>
+            '<option value="' + lot.lotNumber + '" data-production="' + (lot.productionDate || '') +
+            '" data-expiration="' + (lot.expirationDate || '') + '">' +
+            lot.lotNumber + ' - HSD ' + lot.expirationDateDisplay + ' - Tồn: ' + lot.totalStock +
+            '</option>'
+        ).join('');
+    }
+
+    // Picking an existing lot auto-fills that row's lot number / ngày sản xuất / hạn dùng.
+    function fillFromLotPicker(lotPicker) {
+        const row = lotPicker.closest('tr');
+        if (!row) return;
+
+        const option = lotPicker.options[lotPicker.selectedIndex];
+        if (!option.value) {
+            return;
+        }
+
+        const lotInput = row.querySelector('.lot-number-input');
+        const productionInput = row.querySelector('.production-date-input');
+        const expirationInput = row.querySelector('.expiration-date-input');
+
+        if (lotInput) lotInput.value = option.value;
+        if (productionInput) productionInput.value = option.dataset.production || '';
+        if (expirationInput) expirationInput.value = option.dataset.expiration || '';
+    }
+
+    function wireLotPicker(row) {
+        const productSelect = row.querySelector('.product-select');
+        const lotPicker = row.querySelector('.lot-picker');
+        if (productSelect) productSelect.addEventListener('change', () => refreshLotPicker(row));
+        if (lotPicker) lotPicker.addEventListener('change', () => fillFromLotPicker(lotPicker));
+        refreshLotPicker(row);
+    }
 
     function formatMoney(value) {
         value = Number(value || 0);
@@ -440,19 +489,22 @@
             </td>
 
             <td>
-                <input type="date" class="form-control"
+                <select class="form-select form-select-sm mb-1 lot-picker">
+                    <option value="">-- Lô mới --</option>
+                </select>
+                <input type="text" class="form-control lot-number-input" required
+                       data-field="lotNumber" name="details[${index}].lotNumber"
+                       placeholder="VD: LOT-001">
+            </td>
+
+            <td>
+                <input type="date" class="form-control production-date-input"
                        data-field="productionDate" name="details[${index}].productionDate">
             </td>
 
             <td>
-                <input type="date" class="form-control"
+                <input type="date" class="form-control expiration-date-input" required
                        data-field="expirationDate" name="details[${index}].expirationDate">
-            </td>
-
-            <td>
-                <input type="text" class="form-control"
-                       data-field="lotNumber" name="details[${index}].lotNumber"
-                       placeholder="VD: LOT-001">
             </td>
 
             <td class="fw-semibold line-total">0đ</td>
@@ -466,6 +518,7 @@
 
         tbody.appendChild(row);
         refreshRowIndexes();
+        wireLotPicker(row);
         calculateSummary();
     }
 
@@ -495,6 +548,8 @@
                     input.setAttribute('data-field', match[1]);
                 }
             });
+
+            wireLotPicker(row);
         });
 
         calculateSummary();
