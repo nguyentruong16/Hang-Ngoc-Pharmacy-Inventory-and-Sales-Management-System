@@ -51,7 +51,7 @@ public class SupplierController {
         model.addAttribute("totalProducts", stats.totalProducts());
 
         model.addAttribute("pageTitle", "Danh sách nhà cung cấp");
-        return "supplier-list";
+        return "supplier/list";
     }
 
     // ------------------------------------------------------------------ create
@@ -62,7 +62,7 @@ public class SupplierController {
             model.addAttribute("form", new SupplierRequest());
         }
         model.addAttribute("pageTitle", "Tạo nhà cung cấp");
-        return "supplier-create";
+        return "supplier/create";
     }
 
     @PostMapping("/create")
@@ -73,7 +73,7 @@ public class SupplierController {
                          RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", "Tạo nhà cung cấp");
-            return "supplier-create";
+            return "supplier/create";
         }
 
         Integer newId;
@@ -82,7 +82,7 @@ public class SupplierController {
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("pageTitle", "Tạo nhà cung cấp");
-            return "supplier-create";
+            return "supplier/create";
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Tạo nhà cung cấp thành công");
@@ -111,7 +111,7 @@ public class SupplierController {
 
         model.addAttribute("supplierProducts", supplierService.getProducts(id));
         model.addAttribute("pageTitle", "Chi tiết nhà cung cấp");
-        return "supplier-detail";
+        return "supplier/detail";
     }
 
     @PostMapping("/{id}")
@@ -125,7 +125,7 @@ public class SupplierController {
             model.addAttribute("supplierProducts", supplierService.getProducts(id));
             model.addAttribute("showEditForm", true);
             model.addAttribute("pageTitle", "Chi tiết nhà cung cấp");
-            return "supplier-detail";
+            return "supplier/detail";
         }
 
         try {
@@ -136,7 +136,7 @@ public class SupplierController {
             model.addAttribute("supplierProducts", supplierService.getProducts(id));
             model.addAttribute("showEditForm", true);
             model.addAttribute("pageTitle", "Chi tiết nhà cung cấp");
-            return "supplier-detail";
+            return "supplier/detail";
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật nhà cung cấp thành công");
