@@ -11,12 +11,12 @@ import java.time.Instant;
 public class StockAdjustmentListItemResponse {
 
     private Integer id;
-    private String stockOutCode;
+    private String code;
     private Instant date;
     private String dateDisplay;
 
-    private String outType;
-    private String outTypeDisplay;
+    private String adjustmentType;
+    private String adjustmentTypeDisplay;
 
     private String createdByName;
 

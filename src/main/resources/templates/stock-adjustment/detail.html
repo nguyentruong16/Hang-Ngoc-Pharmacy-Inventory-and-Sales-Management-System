@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Chi tiết xuất kho | PharmaManager</title>
+    <title>Chi tiết điều chỉnh kho | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
@@ -154,8 +154,8 @@
 
         <div class="mb-4">
             <h1 class="fs-4 mb-1">
-                Chi tiết xuất kho –
-                <span th:text="${detail.stockOutCode}">SO-000001</span>
+                Chi tiết điều chỉnh kho –
+                <span th:text="${detail.code}">PDC-000001</span>
             </h1>
         </div>
 
@@ -169,24 +169,24 @@
                     <div class="p-4 border-bottom">
                         <div class="section-title">
                             <i class="ti ti-info-circle text-success me-1"></i>
-                            Thông tin phiếu xuất
+                            Thông tin phiếu điều chỉnh
                         </div>
                     </div>
 
                     <div class="p-4">
                         <div class="info-row">
-                            <div class="info-label">Mã phiếu xuất</div>
-                            <div class="fw-semibold text-success" th:text="${detail.stockOutCode}">SO-000001</div>
+                            <div class="info-label">Mã phiếu</div>
+                            <div class="fw-semibold text-success" th:text="${detail.code}">PDC-000001</div>
                         </div>
 
                         <div class="info-row">
-                            <div class="info-label">Ngày xuất</div>
+                            <div class="info-label">Ngày lập</div>
                             <div th:text="${detail.dateDisplay}">01/06/2026 14:10</div>
                         </div>
 
                         <div class="info-row">
-                            <div class="info-label">Loại xuất</div>
-                            <div th:text="${detail.outTypeDisplay}">Chuyển chi nhánh</div>
+                            <div class="info-label">Loại điều chỉnh</div>
+                            <div th:text="${detail.adjustmentTypeDisplay}">Hủy hàng</div>
                         </div>
 
                         <div class="info-row">
@@ -196,7 +196,7 @@
 
                         <div class="info-row">
                             <div class="info-label">Lý do</div>
-                            <div th:text="${detail.reason}">Chuyển hàng bổ sung tồn kho</div>
+                            <div th:text="${detail.reason}">Hàng hết hạn sử dụng</div>
                         </div>
 
                         <div class="info-row">
@@ -205,8 +205,18 @@
                                 <span class="status-badge"
                                       th:classappend="${' ' + detail.statusCssClass}"
                                       th:text="${detail.statusName}">
-                                    Nháp
+                                    Chờ duyệt
                                 </span>
+                            </div>
+                        </div>
+
+                        <div class="info-row" th:if="${detail.approvedByName != null && detail.approvedByName != 'Chưa có'}">
+                            <div class="info-label">Người duyệt</div>
+                            <div>
+                                <span th:text="${detail.approvedByName}">Chủ nhà thuốc</span>
+                                <span class="text-secondary"
+                                      th:if="${detail.approvedAtDisplay != null && !detail.approvedAtDisplay.isBlank()}"
+                                      th:text="${' · ' + detail.approvedAtDisplay}"></span>
                             </div>
                         </div>
 
@@ -221,7 +231,7 @@
                     <div class="p-4 border-bottom">
                         <div class="section-title">
                             <i class="ti ti-package text-success me-1"></i>
-                            Hàng hóa xuất kho
+                            Hàng hóa điều chỉnh
                         </div>
                     </div>
 
@@ -255,7 +265,7 @@
                                     th:text="${#numbers.formatDecimal(item.lineCost, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     350.000đ
                                 </td>
-                                <td th:text="${item.note}">Chuyển bổ sung tồn kho</td>
+                                <td th:text="${item.note}">Hết hạn sử dụng</td>
                             </tr>
 
                             <tr class="fw-semibold">
@@ -299,13 +309,13 @@
                         </div>
 
                         <div class="d-flex justify-content-between mb-3">
-                            <span class="text-secondary">Loại xuất</span>
-                            <strong th:text="${detail.outTypeDisplay}">Chuyển chi nhánh</strong>
+                            <span class="text-secondary">Loại điều chỉnh</span>
+                            <strong th:text="${detail.adjustmentTypeDisplay}">Hủy hàng</strong>
                         </div>
 
                         <div class="d-flex justify-content-between mb-3">
                             <span class="text-secondary">Tác động chi phí</span>
-                            <em th:text="${detail.costImpactDisplay}">Không ghi nhận chi phí trực tiếp</em>
+                            <em th:text="${detail.costImpactDisplay}">Chưa ghi nhận chi phí</em>
                         </div>
 
                         <div class="d-flex justify-content-between">
@@ -313,7 +323,7 @@
                             <span class="status-badge"
                                   th:classappend="${' ' + detail.statusCssClass}"
                                   th:text="${detail.statusName}">
-                                Nháp
+                                Chờ duyệt
                             </span>
                         </div>
                     </div>
@@ -323,14 +333,14 @@
                     <div class="p-4 border-bottom">
                         <div class="section-title">
                             <i class="ti ti-circle-check text-success me-1"></i>
-                            Kiểm tra kế toán
+                            Tiến độ xử lý
                         </div>
                     </div>
 
                     <div class="p-4">
                         <div class="d-flex justify-content-between mb-2">
-                            <span th:text="${detail.accountingCheckDone + '/' + detail.accountingCheckTotal + ' mục đã kiểm tra'}">
-                                3/4 mục đã kiểm tra
+                            <span th:text="${detail.accountingCheckDone + '/' + detail.accountingCheckTotal + ' mục đã hoàn tất'}">
+                                3/4 mục đã hoàn tất
                             </span>
                             <strong class="text-success" th:text="${detail.accountingCheckPercent + '%'}">75%</strong>
                         </div>
@@ -342,57 +352,59 @@
                         </div>
 
                         <div class="check-line">
-                            <span class="check-icon" th:classappend="${detail.sourceChecked} ? ' done'">
+                            <span class="check-icon" th:classappend="${detail.itemsChecked} ? ' done'">
                                 <i class="ti ti-check"></i>
                             </span>
-                            <span>Đã kiểm tra chi nhánh xuất</span>
+                            <span>Đã chọn hàng hóa</span>
                         </div>
 
                         <div class="check-line">
-                            <span class="check-icon" th:classappend="${detail.targetChecked} ? ' done'">
+                            <span class="check-icon" th:classappend="${detail.batchChecked} ? ' done'">
                                 <i class="ti ti-check"></i>
                             </span>
-                            <span>Đã kiểm tra chi nhánh nhận</span>
+                            <span>Đã kiểm tra lô &amp; hạn dùng</span>
                         </div>
 
                         <div class="check-line">
                             <span class="check-icon" th:classappend="${detail.valueChecked} ? ' done'">
                                 <i class="ti ti-check"></i>
                             </span>
-                            <span>Đã kiểm tra giá trị hàng xuất</span>
+                            <span>Đã kiểm tra giá trị hàng</span>
                         </div>
 
                         <div class="check-line">
-                            <span class="check-icon" th:classappend="${detail.reasonChecked} ? ' done'">
+                            <span class="check-icon" th:classappend="${detail.approvalChecked} ? ' done'">
                                 <i class="ti ti-check"></i>
                             </span>
-                            <span>Đã kiểm tra lý do xuất kho</span>
+                            <span>Đã duyệt phiếu</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="stock-card p-4">
-                    <form th:action="${basePath + '/' + detail.id + '/approve'}"
-                          method="post"
-                          class="mb-3"
-                          onsubmit="return confirm('Bạn có chắc chắn muốn duyệt phiếu này không?');">
-                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="btn btn-stock-primary w-100">
-                            <i class="ti ti-circle-check me-1"></i>
-                            Duyệt phiếu xuất kho
-                        </button>
-                    </form>
+                    <th:block th:if="${#strings.startsWith(basePath, '/owner') and detail.statusName == 'Chờ duyệt'}">
+                        <form th:action="${basePath + '/' + detail.id + '/approve'}"
+                              method="post"
+                              class="mb-3"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn duyệt phiếu này không? Tồn kho sẽ được cập nhật.');">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="btn btn-stock-primary w-100">
+                                <i class="ti ti-circle-check me-1"></i>
+                                Duyệt phiếu điều chỉnh
+                            </button>
+                        </form>
 
-                    <form th:action="${basePath + '/' + detail.id + '/reject'}"
-                          method="post"
-                          class="mb-3"
-                          onsubmit="return confirm('Bạn có chắc chắn muốn từ chối phiếu này không?');">
-                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="btn btn-stock-warning w-100">
-                            <i class="ti ti-send me-1"></i>
-                            Từ chối phiếu xuất kho
-                        </button>
-                    </form>
+                        <form th:action="${basePath + '/' + detail.id + '/reject'}"
+                              method="post"
+                              class="mb-3"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn từ chối phiếu này không?');">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="btn btn-stock-warning w-100">
+                                <i class="ti ti-x me-1"></i>
+                                Từ chối phiếu điều chỉnh
+                            </button>
+                        </form>
+                    </th:block>
 
                     <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
                         <i class="ti ti-arrow-left me-1"></i>
