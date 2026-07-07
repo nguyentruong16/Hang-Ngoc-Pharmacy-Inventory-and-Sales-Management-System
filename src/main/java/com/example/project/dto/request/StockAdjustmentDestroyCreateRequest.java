@@ -8,11 +8,11 @@ import java.util.List;
 
 @Getter
 @Setter
-public class StockOutDestroyCreateRequest {
+public class StockAdjustmentDestroyCreateRequest {
 
     private String reason;
 
     private String note;
 
-    private List<StockOutDestroyItemRequest> items = new ArrayList<>();
+    private List<StockAdjustmentDestroyItemRequest> items = new ArrayList<>();
 }

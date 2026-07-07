@@ -2,6 +2,7 @@ package com.example.project.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,17 +11,17 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Entity
-@Table(name = "stockoutdetail")
-public class Stockoutdetail {
+@Table(name = "stockadjustmentdetail")
+public class Stockadjustmentdetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "stockOutDetailID", nullable = false)
+    @Column(name = "stockAdjustmentDetailID ", nullable = false)
     private Integer id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "stockOutID", nullable = false)
-    private Stockout stockOutID;
+    @JoinColumn(name = "stockAdjustmentID ", nullable = false)
+    private Stockadjustment stockAdjustmentID ;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -36,6 +37,11 @@ public class Stockoutdetail {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "batchID", nullable = false)
     private Batch batchID;
+
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "direction", nullable = false, length = 50)
+    private String direction;
 
     @NotNull
     @Column(name = "quantity", nullable = false)

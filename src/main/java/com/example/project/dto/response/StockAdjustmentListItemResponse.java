@@ -8,7 +8,7 @@ import java.time.Instant;
 
 @Getter
 @AllArgsConstructor
-public class StockOutListItemResponse {
+public class StockAdjustmentListItemResponse {
 
     private Integer id;
     private String stockOutCode;

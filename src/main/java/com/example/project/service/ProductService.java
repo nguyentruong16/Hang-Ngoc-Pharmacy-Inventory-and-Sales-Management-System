@@ -13,19 +13,7 @@ import com.example.project.dto.response.ProductRecentHistoryResponse;
 import com.example.project.dto.response.ProductResponse;
 import com.example.project.dto.response.ProductRowResponse;
 import com.example.project.dto.response.ProductUnitDetailResponse;
-import com.example.project.entity.Batch;
-import com.example.project.entity.Invoice;
-import com.example.project.entity.Invoicedetail;
-import com.example.project.entity.Medicineapi;
-import com.example.project.entity.Origin;
-import com.example.project.entity.Position;
-import com.example.project.entity.Producer;
-import com.example.project.entity.Product;
-import com.example.project.entity.Productunit;
-import com.example.project.entity.Returndetail;
-import com.example.project.entity.Stockout;
-import com.example.project.entity.Stockoutdetail;
-import com.example.project.entity.Type;
+import com.example.project.entity.*;
 import com.example.project.repository.BatchRepository;
 import com.example.project.repository.InvoicedetailRepository;
 import com.example.project.repository.MedicineapiRepository;
@@ -35,7 +23,7 @@ import com.example.project.repository.ProducerRepository;
 import com.example.project.repository.ProductRepository;
 import com.example.project.repository.ProductunitRepository;
 import com.example.project.repository.ReturndetailRepository;
-import com.example.project.repository.StockoutdetailRepository;
+import com.example.project.repository.StockadjustmentdetailRepository;
 import com.example.project.repository.TypeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -88,7 +76,7 @@ public class ProductService {
     private final TypeRepository typeRepository;
     private final ProducerRepository producerRepository;
     private final InvoicedetailRepository invoicedetailRepository;
-    private final StockoutdetailRepository stockoutdetailRepository;
+    private final StockadjustmentdetailRepository stockadjustmentdetailRepository;
     private final ReturndetailRepository returndetailRepository;
     private final OriginRepository originRepository;
     private final PositionRepository positionRepository;
@@ -101,7 +89,7 @@ public class ProductService {
                           TypeRepository typeRepository,
                           ProducerRepository producerRepository,
                           InvoicedetailRepository invoicedetailRepository,
-                          StockoutdetailRepository stockoutdetailRepository,
+                          StockadjustmentdetailRepository stockadjustmentdetailRepository,
                           ReturndetailRepository returndetailRepository,
                           OriginRepository originRepository,
                           PositionRepository positionRepository,
@@ -113,7 +101,7 @@ public class ProductService {
         this.typeRepository = typeRepository;
         this.producerRepository = producerRepository;
         this.invoicedetailRepository = invoicedetailRepository;
-        this.stockoutdetailRepository = stockoutdetailRepository;
+        this.stockadjustmentdetailRepository = stockadjustmentdetailRepository;
         this.returndetailRepository = returndetailRepository;
         this.originRepository = originRepository;
         this.positionRepository = positionRepository;
@@ -800,11 +788,11 @@ public class ProductService {
                     lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), null));
         }
 
-        for (Stockoutdetail detail : stockoutdetailRepository.findRecentStockOutsByProduct(productId, top)) {
-            Stockout stockOut = detail.getStockOutID();
+        for (Stockadjustmentdetail detail : stockadjustmentdetailRepository.findRecentStockOutsByProduct(productId, top)) {
+            Stockadjustment stockOut = detail.getStockAdjustmentID();
             rows.add(new ProductRecentHistoryResponse(
                     stockOut.getDate(), formatInstant(stockOut.getDate()),
-                    "Xuất kho - " + formatOutType(stockOut.getOutType()),
+                    "Xuất kho - " + formatOutType(stockOut.getAdjustmentType()),
                     formatCode("SO", stockOut.getId()),
                     lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), detail.getNote()));
         }

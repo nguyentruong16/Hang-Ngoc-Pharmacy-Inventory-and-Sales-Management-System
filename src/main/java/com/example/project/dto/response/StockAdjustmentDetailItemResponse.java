@@ -8,22 +8,16 @@ import java.time.LocalDate;
 
 @Getter
 @AllArgsConstructor
-public class StockOutDestroyCandidateResponse {
-
-    private Integer batchId;
+public class StockAdjustmentDetailItemResponse {
 
     private Integer productId;
     private String productName;
-
     private String lotNumber;
-
     private LocalDate expirationDate;
     private String expirationDateDisplay;
-
-    private Integer storageQuantity;
-
-    private Integer productUnitId;
     private String unitName;
-
+    private Integer quantity;
     private BigDecimal unitCostPrice;
+    private BigDecimal lineCost;
+    private String note;
 }
