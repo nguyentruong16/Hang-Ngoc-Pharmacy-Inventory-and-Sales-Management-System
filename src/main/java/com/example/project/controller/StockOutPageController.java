@@ -100,16 +100,16 @@ public class StockOutPageController {
     }
 
     @PostMapping({
-            "/owner/stock-outs/{stockOutId}/reconcile",
-            "/chief-pharmacist/stock-outs/{stockOutId}/reconcile",
-            "/accountant/stock-outs/{stockOutId}/reconcile"
+            "/owner/stock-outs/{stockOutId}/approve",
+            "/chief-pharmacist/stock-outs/{stockOutId}/approve",
+            "/accountant/stock-outs/{stockOutId}/approve"
     })
-    public String markAsReconciled(@PathVariable Integer stockOutId,
-                                   HttpServletRequest request,
-                                   RedirectAttributes redirectAttributes) {
+    public String approve(@PathVariable Integer stockOutId,
+                          HttpServletRequest request,
+                          RedirectAttributes redirectAttributes) {
         try {
-            stockoutService.markAsReconciled(stockOutId, currentUserContext.getCurrentAccountId());
-            redirectAttributes.addFlashAttribute("successMessage", "Đã đánh dấu phiếu xuất kho là đã đối chiếu");
+            stockoutService.approve(stockOutId, currentUserContext.getCurrentAccountId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã duyệt phiếu xuất kho");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
@@ -118,16 +118,16 @@ public class StockOutPageController {
     }
 
     @PostMapping({
-            "/owner/stock-outs/{stockOutId}/request-check",
-            "/chief-pharmacist/stock-outs/{stockOutId}/request-check",
-            "/accountant/stock-outs/{stockOutId}/request-check"
+            "/owner/stock-outs/{stockOutId}/reject",
+            "/chief-pharmacist/stock-outs/{stockOutId}/reject",
+            "/accountant/stock-outs/{stockOutId}/reject"
     })
-    public String requestCheck(@PathVariable Integer stockOutId,
-                               HttpServletRequest request,
-                               RedirectAttributes redirectAttributes) {
+    public String reject(@PathVariable Integer stockOutId,
+                         HttpServletRequest request,
+                         RedirectAttributes redirectAttributes) {
         try {
-            stockoutService.requestCheck(stockOutId, currentUserContext.getCurrentAccountId());
-            redirectAttributes.addFlashAttribute("successMessage", "Đã gửi yêu cầu kiểm tra phiếu xuất kho");
+            stockoutService.reject(stockOutId, currentUserContext.getCurrentAccountId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối phiếu xuất kho");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }

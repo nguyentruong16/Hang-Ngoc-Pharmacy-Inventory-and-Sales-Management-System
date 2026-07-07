@@ -1,5 +1,6 @@
 package com.example.project.service;
 
+import com.example.project.constant.StockOutStatus;
 import com.example.project.dto.response.*;
 import com.example.project.entity.*;
 import com.example.project.repository.*;
@@ -26,10 +27,6 @@ public class StockoutService {
                 .map(StockoutResponse::from)
                 .toList();
     }
-
-    private static final String STATUS_PENDING_RECONCILIATION = "Chờ đối chiếu";
-    private static final String STATUS_RECONCILED = "Đã đối chiếu";
-    private static final String STATUS_NEED_CHECK = "Cần kiểm tra";
 
     private final StockoutRepository stockoutRepository;
     private final StockoutdetailRepository stockoutdetailRepository;
@@ -91,15 +88,15 @@ public class StockoutService {
                 .filter(stockOut -> YearMonth.from(toLocalDate(stockOut.getDate())).equals(currentMonth))
                 .count();
 
-        long pendingCount = countByStatusName(stockOuts, STATUS_PENDING_RECONCILIATION);
-        long reconciledCount = countByStatusName(stockOuts, STATUS_RECONCILED);
-        long needCheckCount = countByStatusName(stockOuts, STATUS_NEED_CHECK);
+        long draftCount = countByStatusName(stockOuts, StockOutStatus.DRAFT);
+        long approvedCount = countByStatusName(stockOuts, StockOutStatus.APPROVED);
+        long rejectedCount = countByStatusName(stockOuts, StockOutStatus.REJECTED);
 
         return new StockOutStatsResponse(
                 monthlyCount,
-                pendingCount,
-                reconciledCount,
-                needCheckCount
+                draftCount,
+                approvedCount,
+                rejectedCount
         );
     }
 
@@ -135,12 +132,12 @@ public class StockoutService {
         boolean valueChecked;
         boolean reasonChecked;
 
-        if (isStatus(statusName, STATUS_RECONCILED)) {
+        if (isStatus(statusName, StockOutStatus.APPROVED)) {
             sourceChecked = true;
             targetChecked = true;
             valueChecked = true;
             reasonChecked = true;
-        } else if (isStatus(statusName, STATUS_NEED_CHECK)) {
+        } else if (isStatus(statusName, StockOutStatus.REJECTED)) {
             sourceChecked = true;
             targetChecked = !"INTERNAL_TRANSFER".equals(stockOut.getOutType());            valueChecked = false;
             reasonChecked = false;
@@ -189,14 +186,14 @@ public class StockoutService {
     }
 
     @Transactional
-    public void markAsReconciled(Integer stockOutId, Integer currentAccountId) {
+    public void approve(Integer stockOutId, Integer currentAccountId) {
         Stockout stockOut = stockoutRepository.findByIdWithRelations(stockOutId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu xuất kho"));
 
         Account account = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
-        stockOut.setStatus(STATUS_RECONCILED);
+        stockOut.setStatus(StockOutStatus.APPROVED);
         stockOut.setApprovedBy(account);
         stockOut.setApprovedAt(Instant.now());
 
@@ -204,16 +201,16 @@ public class StockoutService {
     }
 
     @Transactional
-    public void requestCheck(Integer stockOutId, Integer currentAccountId) {
+    public void reject(Integer stockOutId, Integer currentAccountId) {
         Stockout stockOut = stockoutRepository.findByIdWithRelations(stockOutId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu xuất kho"));
 
-        stockOut.setStatus(STATUS_NEED_CHECK);
+        stockOut.setStatus(StockOutStatus.REJECTED);
 
         if (stockOut.getNote() == null || stockOut.getNote().isBlank()) {
-            stockOut.setNote("Đã gửi yêu cầu kiểm tra lại phiếu xuất kho.");
+            stockOut.setNote("Đã từ chối phiếu xuất kho.");
         } else {
-            stockOut.setNote(stockOut.getNote() + "\nĐã gửi yêu cầu kiểm tra lại phiếu xuất kho.");
+            stockOut.setNote(stockOut.getNote() + "\nĐã từ chối phiếu xuất kho.");
         }
 
         stockoutRepository.save(stockOut);
@@ -227,7 +224,7 @@ public class StockoutService {
     /** The fixed set of statuses a StockOut can be in, in workflow order, for the filter dropdown. */
     @Transactional(readOnly = true)
     public List<String> listStatuses() {
-        return List.of(STATUS_PENDING_RECONCILIATION, STATUS_NEED_CHECK, STATUS_RECONCILED);
+        return StockOutStatus.ALL;
     }
 
     public Map<String, String> outTypeLabels() {
@@ -344,16 +341,16 @@ public class StockoutService {
     private String statusCssClass(String statusName) {
         String normalized = normalize(statusName);
 
-        if (normalized.contains(normalize(STATUS_RECONCILED))) {
-            return "status-reconciled";
+        if (normalized.contains(normalize(StockOutStatus.APPROVED))) {
+            return "status-approved";
         }
 
-        if (normalized.contains(normalize(STATUS_NEED_CHECK))) {
-            return "status-need-check";
+        if (normalized.contains(normalize(StockOutStatus.REJECTED))) {
+            return "status-rejected";
         }
 
-        if (normalized.contains(normalize(STATUS_PENDING_RECONCILIATION))) {
-            return "status-pending";
+        if (normalized.contains(normalize(StockOutStatus.DRAFT))) {
+            return "status-draft";
         }
 
         return "status-default";

@@ -243,9 +243,11 @@
                     <div class="col-12 col-xl-2">
                         <select class="form-select" name="paymentStatus">
                             <option value="">Trạng thái</option>
-                            <option value="Hoàn tất" th:selected="${filterPaymentStatus == 'Hoàn tất'}">Hoàn tất</option>
-                            <option value="Thanh toán một phần" th:selected="${filterPaymentStatus == 'Thanh toán một phần'}">Thanh toán một phần</option>
-                            <option value="Chưa thanh toán" th:selected="${filterPaymentStatus == 'Chưa thanh toán'}">Chưa thanh toán</option>
+                            <option th:each="status : ${paymentStatuses}"
+                                    th:value="${status}"
+                                    th:text="${status}"
+                                    th:selected="${filterPaymentStatus == status}">
+                            </option>
                         </select>
                     </div>
 
@@ -324,7 +326,7 @@
                             <span class="status-badge"
                                   th:classappend="${' ' + item.statusCssClass}"
                                   th:text="${item.paymentStatus}">
-                                Hoàn tất
+                                Hoàn thành
                             </span>
                         </td>
                         <td class="text-end">
