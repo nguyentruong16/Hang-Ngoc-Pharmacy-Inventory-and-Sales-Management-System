@@ -1,9 +1,13 @@
 package com.example.project.service;
 
 import com.example.project.dto.request.SupplierRequest;
+import com.example.project.dto.response.SupplierAvailableProductResponse;
 import com.example.project.dto.response.SupplierResponse;
 import com.example.project.dto.response.SupplierproductResponse;
+import com.example.project.entity.Product;
 import com.example.project.entity.Supplier;
+import com.example.project.entity.Supplierproduct;
+import com.example.project.repository.ProductRepository;
 import com.example.project.repository.SupplierRepository;
 import com.example.project.repository.SupplierproductRepository;
 import org.springframework.data.domain.Page;
@@ -14,17 +18,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
     private final SupplierproductRepository supplierproductRepository;
+    private final ProductRepository productRepository;
 
     public SupplierService(SupplierRepository supplierRepository,
-                           SupplierproductRepository supplierproductRepository) {
+                           SupplierproductRepository supplierproductRepository,
+                           ProductRepository productRepository) {
         this.supplierRepository = supplierRepository;
         this.supplierproductRepository = supplierproductRepository;
+        this.productRepository = productRepository;
     }
 
     // ------------------------------------------------------------------ list
@@ -86,6 +95,65 @@ public class SupplierService {
                 .stream()
                 .map(SupplierproductResponse::from)
                 .toList();
+    }
+
+    // ------------------------------------------------ available products picker
+
+    /**
+     * Products that are NOT yet supplied by this supplier, feeding the
+     * "Thêm sản phẩm cung ứng" picker modal. Sorted by name (search / filter /
+     * paging are handled client-side inside the modal).
+     */
+    @Transactional(readOnly = true)
+    public List<SupplierAvailableProductResponse> getAvailableProducts(Integer supplierId) {
+        Set<Integer> linkedProductIds = linkedProductIds(supplierId);
+        return productRepository.findAllWithRelations()
+                .stream()
+                .filter(p -> !linkedProductIds.contains(p.getProductID()))
+                .map(SupplierAvailableProductResponse::from)
+                .toList();
+    }
+
+    /**
+     * Links the given products to the supplier. Ignores blank ids, products
+     * already linked, and ids that no longer exist. Returns how many were added.
+     */
+    @Transactional
+    public int addProducts(Integer supplierId, List<Integer> productIds) {
+        Supplier supplier = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
+        if (productIds == null || productIds.isEmpty()) {
+            return 0;
+        }
+
+        Set<Integer> linkedProductIds = linkedProductIds(supplierId);
+        int added = 0;
+        for (Integer productId : productIds) {
+            if (productId == null || linkedProductIds.contains(productId)) {
+                continue;
+            }
+            Product product = productRepository.findById(productId).orElse(null);
+            if (product == null) {
+                continue;
+            }
+            Supplierproduct sp = new Supplierproduct();
+            sp.setSupplierID(supplier);
+            sp.setProductID(product);
+            sp.setIsPreferred(false);
+            sp.setIsActive(true);
+            supplierproductRepository.save(sp);
+            linkedProductIds.add(productId);
+            added++;
+        }
+        return added;
+    }
+
+    private Set<Integer> linkedProductIds(Integer supplierId) {
+        return supplierproductRepository.findBySupplierID_Id(supplierId)
+                .stream()
+                .map(sp -> sp.getProductID() != null ? sp.getProductID().getProductID() : null)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toCollection(java.util.HashSet::new));
     }
 
     // ------------------------------------------------------------------ create

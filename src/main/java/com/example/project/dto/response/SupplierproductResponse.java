@@ -18,18 +18,21 @@ public class SupplierproductResponse {
     private Integer productId;
     private String productCode;
     private String productName;
+    private String typeName;
     private BigDecimal costPrice;
     private Boolean isPreferred;
     private Boolean isActive;
     private String note;
 
     public static SupplierproductResponse from(Supplierproduct sp) {
+        var product = sp.getProductID();
         return new SupplierproductResponse(
                 sp.getId(),
                 sp.getSupplierID() != null ? sp.getSupplierID().getId() : null,
-                sp.getProductID() != null ? sp.getProductID().getProductID() : null,
-                sp.getProductID() != null ? sp.getProductID().getCode() : null,
-                sp.getProductID() != null ? sp.getProductID().getName() : null,
+                product != null ? product.getProductID() : null,
+                product != null ? product.getCode() : null,
+                product != null ? product.getName() : null,
+                product != null && product.getTypeID() != null ? product.getTypeID().getName() : null,
                 sp.getCostPrice(),
                 sp.getIsPreferred(),
                 sp.getIsActive(),

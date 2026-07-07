@@ -27,12 +27,6 @@
       background: #fff; border: 1px solid var(--sup-border);
       border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
     }
-    .sup-back-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      color: var(--sup-muted); font-size: 13px; font-weight: 500;
-      text-decoration: none; margin-bottom: 16px;
-    }
-    .sup-back-link:hover { color: var(--sup-green); }
     .sup-code-badge {
       display: inline-block; padding: 2px 10px;
       background: #f3f4f6; border-radius: 999px;
@@ -51,15 +45,6 @@
       margin-bottom: 4px; font-weight: 500;
     }
     .info-value { font-size: 14px; color: #111827; font-weight: 500; }
-
-    /* summary panel */
-    .summary-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 11px 0; border-bottom: 1px solid #f3f4f6;
-    }
-    .summary-row:last-child { border-bottom: none; }
-    .summary-key { font-size: 13px; color: var(--sup-muted); }
-    .summary-val { font-size: 13px; color: #111827; font-weight: 600; }
 
     /* form & buttons */
     .form-label { font-size: 13px; color: #111827; margin-bottom: 6px; }
@@ -86,6 +71,9 @@
     }
     .btn-sup-outline:hover { background: #f9fafb; color: #111827; border-color: #d1d5db; }
 
+    /* nút Xem: hover nền xanh + chữ trắng */
+    .btn-outline-success:hover, .btn-outline-success:active { color: #fff !important; }
+
     .table thead th {
       font-size: 12px; color: var(--sup-muted); font-weight: 600;
       background: #f9fafb; white-space: nowrap;
@@ -104,30 +92,6 @@
 <main id="content" class="content py-8">
   <div class="container-fluid">
 
-    <!-- Breadcrumb -->
-    <a class="sup-back-link" th:href="@{/supplier}">
-      <i class="ti ti-arrow-left"></i>Quay lại danh sách nhà cung cấp
-    </a>
-
-    <!-- Header + Action buttons -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
-      <div>
-        <h1 class="fs-4 mb-1" th:text="${supplier.name}">Tên nhà cung cấp</h1>
-        <span class="sup-code-badge" th:text="${supplier.supplierCode}">NCC-000001</span>
-      </div>
-      <div class="d-flex flex-wrap gap-2">
-        <a href="#" class="btn btn-sup-primary px-3">
-          <i class="ti ti-plus"></i>Thêm sản phẩm cung ứng
-        </a>
-        <button type="button" class="btn btn-sup-outline px-3" id="btnToggleEdit">
-          <i class="ti ti-edit"></i>Cập nhật thông tin
-        </button>
-        <a th:href="@{/supplier}" class="btn btn-sup-outline px-3">
-          <i class="ti ti-arrow-left"></i>Quay lại
-        </a>
-      </div>
-    </div>
-
     <!-- Toast thành công -->
     <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
       <i class="ti ti-circle-check me-2"></i>
@@ -145,8 +109,27 @@
     <div class="row g-4">
 
       <!-- Thông tin nhà cung cấp (read-only) -->
-      <div class="col-12 col-lg-8">
+      <div class="col-12">
         <div class="sup-card p-4 p-md-5">
+
+          <!-- Header: tên/mã (trái) + nút (phải) -->
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+            <div>
+              <h1 class="fs-4 mb-1" th:text="${supplier.name}">Tên nhà cung cấp</h1>
+              <span class="sup-code-badge" th:text="${supplier.supplierCode}">NCC-000001</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sup-primary px-3" id="btnToggleEdit">
+                <i class="ti ti-edit"></i>Cập nhật thông tin
+              </button>
+              <a th:href="@{/supplier}" class="btn btn-sup-outline px-3">
+                <i class="ti ti-arrow-left"></i>Quay lại danh sách
+              </a>
+            </div>
+          </div>
+
+          <hr class="mb-4">
+
           <h2 class="fs-6 mb-4">Thông tin nhà cung cấp</h2>
           <div class="info-grid">
             <div>
@@ -169,21 +152,6 @@
               <div class="info-label">Địa chỉ</div>
               <div class="info-value" th:text="${supplier.address != null ? supplier.address : '—'}">—</div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tóm tắt cung ứng -->
-      <div class="col-12 col-lg-4">
-        <div class="sup-card p-4">
-          <h3 class="fs-6 mb-3">Tóm tắt cung ứng</h3>
-          <div class="summary-row">
-            <span class="summary-key">Số sản phẩm cung ứng</span>
-            <span class="summary-val" th:text="${supplier.productCount}">0</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-key">Mã nhà cung cấp</span>
-            <span class="summary-val" th:text="${supplier.supplierCode}">NCC-000001</span>
           </div>
         </div>
       </div>
@@ -270,10 +238,16 @@
 
     <!-- Bảng sản phẩm cung ứng -->
     <div class="sup-card p-4 p-md-5 mt-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap">
         <h2 class="fs-6 mb-0">Sản phẩm cung ứng</h2>
-        <span class="badge bg-light text-dark border"
-              th:text="${supplier.productCount + ' sản phẩm'}">0 sản phẩm</span>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sup-primary btn-sm px-3"
+                  data-bs-toggle="modal" data-bs-target="#addProductModal">
+            <i class="ti ti-plus"></i>Thêm sản phẩm cung ứng
+          </button>
+          <span class="badge bg-light text-dark border fs-6 fw-semibold px-3 py-2"
+                th:text="${supplier.productCount + ' sản phẩm'}">0 sản phẩm</span>
+        </div>
       </div>
 
       <div class="table-responsive">
@@ -282,9 +256,10 @@
             <tr>
               <th>Mã hàng</th>
               <th>Tên hàng hóa</th>
-              <th class="text-end">Giá nhập tham khảo</th>
-              <th class="text-center">Ưu tiên</th>
+              <th>Loại hàng</th>
+              <th class="text-end">Giá nhập cuối</th>
               <th class="text-center">Trạng thái</th>
+              <th class="text-end">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -292,23 +267,28 @@
               <td class="fw-semibold text-secondary small"
                   th:text="${sp.productCode != null ? sp.productCode : sp.productId}">SP001</td>
               <td th:text="${sp.productName != null ? sp.productName : '—'}">Tên hàng hóa</td>
-              <td class="text-end">
-                <span th:if="${sp.costPrice != null}"
-                      th:text="${#numbers.formatInteger(sp.costPrice, 1, 'COMMA') + ' ₫'}">0 ₫</span>
-                <span th:unless="${sp.costPrice != null}" class="text-secondary">—</span>
+              <td>
+                <span th:if="${sp.typeName != null}" class="badge bg-light text-dark border" th:text="${sp.typeName}">Loại</span>
+                <span th:unless="${sp.typeName != null}" class="text-secondary">—</span>
               </td>
-              <td class="text-center">
-                <span th:if="${sp.isPreferred}" class="badge badge-preferred rounded-pill">Ưu tiên</span>
-                <span th:unless="${sp.isPreferred}" class="text-secondary small">—</span>
+              <td class="text-end">
+                <span th:if="${sp.costPrice != null}" class="fw-semibold"
+                      th:text="${#numbers.formatInteger(sp.costPrice, 1, 'COMMA') + ' ₫'}">0 ₫</span>
+                <span th:unless="${sp.costPrice != null}" class="text-secondary" title="Chưa có dữ liệu nhập hàng">—</span>
               </td>
               <td class="text-center">
                 <span th:if="${sp.isActive}" class="badge badge-active rounded-pill">Đang cung ứng</span>
                 <span th:unless="${sp.isActive}" class="badge badge-inactive rounded-pill">Ngừng</span>
               </td>
+              <td class="text-end">
+                <a th:href="@{/owner/products/{productId}(productId=${sp.productId}, backSupplierId=${supplier.id})}"
+                   class="btn btn-sm btn-outline-success"
+                   title="Xem chi tiết sản phẩm">Xem</a>
+              </td>
             </tr>
 
             <tr th:if="${#lists.isEmpty(supplierProducts)}">
-              <td colspan="5" class="text-center text-secondary py-5">
+              <td colspan="6" class="text-center text-secondary py-5">
                 <i class="ti ti-package-off d-block fs-2 mb-2 text-muted"></i>
                 Chưa có sản phẩm cung ứng nào.
               </td>
@@ -320,6 +300,120 @@
 
   </div>
 </main>
+
+<!-- ===================== Modal: chọn sản phẩm chưa cung ứng ===================== -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+    <div class="modal-content" style="border-radius:16px;">
+      <form th:action="@{/supplier/{id}/products(id=${supplier.id})}" method="post" id="addProductForm">
+
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title fs-6 mb-0" id="addProductModalLabel">Thêm sản phẩm cung ứng</h5>
+            <small class="text-secondary">Chọn các sản phẩm chưa có trong danh sách cung ứng của nhà cung cấp này.</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Thanh công cụ: tìm kiếm / lọc / sắp xếp -->
+          <div class="row g-2 mb-3">
+            <div class="col-12 col-md-5">
+              <div class="position-relative">
+                <i class="ti ti-search position-absolute text-secondary"
+                   style="left:12px; top:50%; transform:translateY(-50%);"></i>
+                <input type="text" class="form-control ps-5" id="apSearch"
+                       placeholder="Tìm theo mã hàng hoặc tên hàng hóa...">
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <select class="form-select form-control" id="apTypeFilter">
+                <option value="">Tất cả loại hàng</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <select class="form-select form-control" id="apSort">
+                <option value="name-asc">Tên A → Z</option>
+                <option value="name-desc">Tên Z → A</option>
+                <option value="code-asc">Mã hàng tăng dần</option>
+                <option value="code-desc">Mã hàng giảm dần</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Thông tin chọn -->
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-secondary small">
+              Đã chọn <span class="fw-semibold text-dark" id="apSelectedCount">0</span> sản phẩm
+            </span>
+            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0" id="apClearSelection">
+              Bỏ chọn tất cả
+            </button>
+          </div>
+
+          <div class="table-responsive" style="max-height:46vh;">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="position-sticky top-0" style="z-index:1;">
+                <tr>
+                  <th style="width:44px;" class="text-center">
+                    <input class="form-check-input" type="checkbox" id="apSelectAll" title="Chọn tất cả (trang hiện tại)">
+                  </th>
+                  <th>Mã hàng</th>
+                  <th>Tên hàng hóa</th>
+                  <th>Loại hàng</th>
+                </tr>
+              </thead>
+              <tbody id="apTableBody">
+                <tr th:each="p : ${availableProducts}"
+                    class="ap-row"
+                    th:attr="data-code=${p.code != null ? p.code : ''},
+                             data-name=${p.name != null ? p.name : ''},
+                             data-type=${p.typeName != null ? p.typeName : ''}">
+                  <td class="text-center">
+                    <input class="form-check-input ap-check" type="checkbox"
+                           name="productIds" th:value="${p.productId}">
+                  </td>
+                  <td class="fw-semibold text-secondary small" th:text="${p.code != null ? p.code : p.productId}">SP001</td>
+                  <td th:text="${p.name != null ? p.name : '—'}">Tên hàng hóa</td>
+                  <td>
+                    <span th:if="${p.typeName != null}" class="badge bg-light text-dark border" th:text="${p.typeName}">Loại</span>
+                    <span th:unless="${p.typeName != null}" class="text-secondary">—</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Không còn sản phẩm nào để thêm -->
+            <div th:if="${#lists.isEmpty(availableProducts)}" class="text-center text-secondary py-5" id="apEmptyAll">
+              <i class="ti ti-checkbox d-block fs-2 mb-2 text-muted"></i>
+              Tất cả sản phẩm đã có trong danh sách cung ứng.
+            </div>
+            <!-- Không có kết quả khớp bộ lọc (ẩn mặc định) -->
+            <div class="text-center text-secondary py-5 d-none" id="apEmptyFiltered">
+              <i class="ti ti-search-off d-block fs-2 mb-2 text-muted"></i>
+              Không tìm thấy sản phẩm phù hợp.
+            </div>
+          </div>
+
+          <!-- Phân trang -->
+          <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <span class="text-secondary small" id="apPageInfo">0 sản phẩm</span>
+            <nav>
+              <ul class="pagination pagination-sm mb-0" id="apPagination"></ul>
+            </nav>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sup-outline px-3" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-sup-primary px-4" id="apSubmit" disabled>
+            <i class="ti ti-plus"></i>Thêm <span id="apSubmitCount"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <script th:inline="javascript">
   (function () {
@@ -340,6 +434,183 @@
     if (editForm && editForm.style.display === 'block') {
       editForm.scrollIntoView({ block: 'start' });
     }
+  })();
+</script>
+
+<!-- JS cho modal chọn sản phẩm cung ứng: tìm kiếm / lọc / sắp xếp / phân trang / chọn nhiều -->
+<script>
+  (function () {
+    var body = document.getElementById('apTableBody');
+    if (!body) return;
+
+    var rows        = Array.prototype.slice.call(body.querySelectorAll('.ap-row'));
+    var searchInput = document.getElementById('apSearch');
+    var typeFilter  = document.getElementById('apTypeFilter');
+    var sortSelect  = document.getElementById('apSort');
+    var selectAll   = document.getElementById('apSelectAll');
+    var clearBtn    = document.getElementById('apClearSelection');
+    var pageInfo    = document.getElementById('apPageInfo');
+    var pagination  = document.getElementById('apPagination');
+    var emptyFilter = document.getElementById('apEmptyFiltered');
+    var selCountEl  = document.getElementById('apSelectedCount');
+    var submitBtn   = document.getElementById('apSubmit');
+    var submitCount = document.getElementById('apSubmitCount');
+
+    var PAGE_SIZE = 8;
+    var currentPage = 1;
+    var visibleRows = rows.slice();
+
+    // -- Bộ lọc loại hàng: gom các loại có sẵn
+    (function fillTypes() {
+      var seen = {};
+      rows.forEach(function (r) {
+        var t = (r.getAttribute('data-type') || '').trim();
+        if (t && !seen[t]) { seen[t] = true; }
+      });
+      Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'vi'); })
+        .forEach(function (t) {
+          var opt = document.createElement('option');
+          opt.value = t; opt.textContent = t;
+          typeFilter.appendChild(opt);
+        });
+    })();
+
+    function norm(s) { return (s || '').toString().toLowerCase().trim(); }
+
+    function applyFilterSort() {
+      var kw   = norm(searchInput.value);
+      var type = typeFilter.value;
+
+      visibleRows = rows.filter(function (r) {
+        var code = norm(r.getAttribute('data-code'));
+        var name = norm(r.getAttribute('data-name'));
+        var t    = r.getAttribute('data-type') || '';
+        var matchKw   = !kw || code.indexOf(kw) !== -1 || name.indexOf(kw) !== -1;
+        var matchType = !type || t === type;
+        return matchKw && matchType;
+      });
+
+      var sort = sortSelect.value;
+      visibleRows.sort(function (a, b) {
+        if (sort === 'code-asc')  return norm(a.getAttribute('data-code')).localeCompare(norm(b.getAttribute('data-code')));
+        if (sort === 'code-desc') return norm(b.getAttribute('data-code')).localeCompare(norm(a.getAttribute('data-code')));
+        if (sort === 'name-desc') return norm(b.getAttribute('data-name')).localeCompare(norm(a.getAttribute('data-name')), 'vi');
+        return norm(a.getAttribute('data-name')).localeCompare(norm(b.getAttribute('data-name')), 'vi'); // name-asc
+      });
+
+      currentPage = 1;
+      render();
+    }
+
+    function render() {
+      var total = visibleRows.length;
+      var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      if (currentPage > pages) currentPage = pages;
+
+      var start = (currentPage - 1) * PAGE_SIZE;
+      var end   = start + PAGE_SIZE;
+
+      // Ẩn tất cả rồi hiện đúng trang hiện tại (giữ nguyên trạng thái tick)
+      rows.forEach(function (r) { r.style.display = 'none'; });
+      visibleRows.slice(start, end).forEach(function (r) { r.style.display = ''; });
+
+      // Trạng thái rỗng khi lọc không ra kết quả
+      if (emptyFilter) emptyFilter.classList.toggle('d-none', total !== 0 || rows.length === 0);
+
+      // Thông tin trang
+      if (total === 0) {
+        pageInfo.textContent = rows.length === 0 ? '' : '0 sản phẩm';
+      } else {
+        pageInfo.textContent = 'Hiển thị ' + (start + 1) + '–' + Math.min(end, total) + ' / ' + total + ' sản phẩm';
+      }
+
+      renderPagination(pages);
+      syncSelectAll();
+    }
+
+    function renderPagination(pages) {
+      pagination.innerHTML = '';
+      if (pages <= 1) return;
+
+      function pageItem(label, page, disabled, active) {
+        var li = document.createElement('li');
+        li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+        var a = document.createElement('a');
+        a.className = 'page-link'; a.href = '#'; a.innerHTML = label;
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          if (disabled || active) return;
+          currentPage = page;
+          render();
+        });
+        li.appendChild(a);
+        return li;
+      }
+
+      pagination.appendChild(pageItem('&laquo;', currentPage - 1, currentPage === 1, false));
+
+      // cửa sổ tối đa 5 số trang quanh trang hiện tại
+      var from = Math.max(1, currentPage - 2);
+      var to   = Math.min(pages, from + 4);
+      from = Math.max(1, to - 4);
+      for (var p = from; p <= to; p++) {
+        pagination.appendChild(pageItem(String(p), p, false, p === currentPage));
+      }
+
+      pagination.appendChild(pageItem('&raquo;', currentPage + 1, currentPage === pages, false));
+    }
+
+    function currentPageChecks() {
+      return visibleRows
+        .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+        .map(function (r) { return r.querySelector('.ap-check'); })
+        .filter(Boolean);
+    }
+
+    function syncSelectAll() {
+      var checks = currentPageChecks();
+      if (!checks.length) { selectAll.checked = false; selectAll.indeterminate = false; return; }
+      var checked = checks.filter(function (c) { return c.checked; }).length;
+      selectAll.checked = checked === checks.length;
+      selectAll.indeterminate = checked > 0 && checked < checks.length;
+    }
+
+    function updateSelectedCount() {
+      var n = rows.filter(function (r) {
+        var c = r.querySelector('.ap-check');
+        return c && c.checked;
+      }).length;
+      selCountEl.textContent = n;
+      submitBtn.disabled = n === 0;
+      submitCount.textContent = n > 0 ? '(' + n + ')' : '';
+      syncSelectAll();
+    }
+
+    // -- Sự kiện
+    searchInput.addEventListener('input', applyFilterSort);
+    typeFilter.addEventListener('change', applyFilterSort);
+    sortSelect.addEventListener('change', applyFilterSort);
+
+    selectAll.addEventListener('change', function () {
+      currentPageChecks().forEach(function (c) { c.checked = selectAll.checked; });
+      updateSelectedCount();
+    });
+
+    body.addEventListener('change', function (e) {
+      if (e.target && e.target.classList.contains('ap-check')) updateSelectedCount();
+    });
+
+    clearBtn.addEventListener('click', function () {
+      rows.forEach(function (r) {
+        var c = r.querySelector('.ap-check');
+        if (c) c.checked = false;
+      });
+      updateSelectedCount();
+    });
+
+    // Khởi tạo
+    applyFilterSort();
+    updateSelectedCount();
   })();
 </script>
 </body>
