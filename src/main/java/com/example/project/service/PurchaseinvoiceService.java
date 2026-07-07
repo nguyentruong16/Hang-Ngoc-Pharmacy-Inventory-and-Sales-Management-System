@@ -395,9 +395,9 @@ public class PurchaseinvoiceService {
                 .computeIfAbsent(key.productId(), id -> new ArrayList<>())
                 .add(new PurchaseInvoiceExistingLotResponse(
                         key.lotNumber(),
-                        productionDateByLot.get(key),
+                        toIso(productionDateByLot.get(key)),
                         formatLocalDate(productionDateByLot.get(key)),
-                        key.expirationDate(),
+                        toIso(key.expirationDate()),
                         formatLocalDate(key.expirationDate()),
                         total[0]
                 )));
@@ -633,6 +633,11 @@ public class PurchaseinvoiceService {
         }
 
         return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    /** ISO ({@code yyyy-MM-dd}) form, or {@code null} — matches what {@code <input type="date">} needs. */
+    private String toIso(LocalDate date) {
+        return date == null ? null : date.toString();
     }
 
     private LocalDate parseDate(String value) {
