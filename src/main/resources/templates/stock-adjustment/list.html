@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Danh sách xuất kho | PharmaManager</title>
+    <title>Danh sách điều chỉnh kho | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
@@ -116,9 +116,15 @@
 <main id="content" class="content stockadjustment-page-content">
     <div class="container-fluid">
 
-        <div class="mb-4">
-            <h1 class="fs-4 mb-1">Danh sách xuất kho</h1>
-            <p class="text-secondary mb-0">Quản lý và đối chiếu các phiếu xuất kho nội bộ</p>
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Danh sách điều chỉnh kho</h1>
+                <p class="text-secondary mb-0">Quản lý và đối chiếu các phiếu điều chỉnh tồn kho (hủy hàng, dùng nội bộ, hàng mẫu, quà tặng)</p>
+            </div>
+            <a th:href="${basePath + '/create'}" class="btn btn-stock-primary">
+                <i class="ti ti-plus me-1"></i>
+                Tạo phiếu điều chỉnh
+            </a>
         </div>
 
         <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
@@ -129,12 +135,12 @@
                 <div class="stock-card p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="text-secondary small">Phiếu xuất kho tháng này</div>
+                            <div class="text-secondary small">Phiếu điều chỉnh tháng này</div>
                             <div class="fs-3 fw-bold" th:text="${stats.monthlyCount}">0</div>
                             <div class="text-success small">Tháng hiện tại</div>
                         </div>
                         <div class="stat-icon">
-                            <i class="ti ti-upload"></i>
+                            <i class="ti ti-adjustments"></i>
                         </div>
                     </div>
                 </div>
@@ -144,8 +150,8 @@
                 <div class="stock-card p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="text-secondary small">Nháp</div>
-                            <div class="fs-3 fw-bold" th:text="${stats.draftCount}">0</div>
+                            <div class="text-secondary small">Chờ duyệt</div>
+                            <div class="fs-3 fw-bold" th:text="${stats.pendingCount}">0</div>
                             <div class="text-warning small">Cần xử lý sớm</div>
                         </div>
                         <div class="stat-icon">
@@ -159,7 +165,7 @@
                 <div class="stock-card p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="text-secondary small">Duyệt</div>
+                            <div class="text-secondary small">Đã duyệt</div>
                             <div class="fs-3 fw-bold" th:text="${stats.approvedCount}">0</div>
                             <div class="text-success small">Hoàn tất</div>
                         </div>
@@ -209,12 +215,12 @@
                     </div>
 
                     <div class="col-12 col-xl-2">
-                        <select class="form-select" name="outType">
-                            <option value="">Loại xuất kho</option>
-                            <option th:each="entry : ${outTypeLabels}"
+                        <select class="form-select" name="adjustmentType">
+                            <option value="">Loại điều chỉnh</option>
+                            <option th:each="entry : ${adjustmentTypeLabels}"
                                     th:value="${entry.key}"
                                     th:text="${entry.value}"
-                                    th:selected="${filterOutType == entry.key}">
+                                    th:selected="${filterAdjustmentType == entry.key}">
                             </option>
                         </select>
                     </div>
@@ -250,7 +256,7 @@
         <div class="stock-card p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="fs-6 mb-0">
-                    Danh sách xuất kho
+                    Danh sách phiếu điều chỉnh
                     <span class="badge bg-success-subtle text-success ms-2"
                           th:text="${totalItems + ' phiếu'}">0 phiếu</span>
                 </h2>
@@ -260,11 +266,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                     <tr>
-                        <th>Mã phiếu xuất</th>
-                        <th>Ngày xuất</th>
-                        <th>Loại xuất</th>
-                        <th>Chi nhánh xuất</th>
-                        <th>Chi nhánh nhận</th>
+                        <th>Mã phiếu</th>
+                        <th>Ngày lập</th>
+                        <th>Loại điều chỉnh</th>
                         <th>Người tạo</th>
                         <th>Số mặt hàng</th>
                         <th>Giá trị ước tính</th>
@@ -274,12 +278,12 @@
                     </thead>
 
                     <tbody>
-                    <tr th:each="item : ${stockOuts}">
-                        <td class="fw-semibold text-success" th:text="${item.stockOutCode}">SO-000001</td>
+                    <tr th:each="item : ${adjustments}">
+                        <td class="fw-semibold text-success" th:text="${item.code}">PDC-000001</td>
                         <td th:text="${item.dateDisplay}">01/06/2026 14:10</td>
                         <td>
                             <span class="badge bg-secondary-subtle text-secondary"
-                                  th:text="${item.outTypeDisplay}">Chuyển chi nhánh</span>
+                                  th:text="${item.adjustmentTypeDisplay}">Hủy hàng</span>
                         </td>
                         <td th:text="${item.createdByName}">Nguyễn Văn Minh</td>
                         <td>
@@ -294,7 +298,7 @@
                             <span class="status-badge"
                                   th:classappend="${' ' + item.statusCssClass}"
                                   th:text="${item.statusName}">
-                                Nháp
+                                Chờ duyệt
                             </span>
                         </td>
                         <td class="text-end">
@@ -306,9 +310,9 @@
                         </td>
                     </tr>
 
-                    <tr th:if="${#lists.isEmpty(stockOuts)}">
-                        <td colspan="10" class="text-center text-secondary py-4">
-                            Không tìm thấy phiếu xuất kho nào.
+                    <tr th:if="${#lists.isEmpty(adjustments)}">
+                        <td colspan="8" class="text-center text-secondary py-4">
+                            Không tìm thấy phiếu điều chỉnh kho nào.
                         </td>
                     </tr>
                     </tbody>
@@ -321,7 +325,7 @@
                     Hiển thị
                     <span th:text="${currentPage * pageSize + 1}">1</span>
                     -
-                    <span th:text="${currentPage * pageSize + stockOuts.size()}">5</span>
+                    <span th:text="${currentPage * pageSize + adjustments.size()}">5</span>
                     trong tổng số
                     <span th:text="${totalItems}">0</span>
                     phiếu
@@ -331,7 +335,7 @@
                     <ul class="pagination mb-0">
                         <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, status=${filterStatus}, page=${currentPage - 1}, size=${pageSize})}">
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, adjustmentType=${filterAdjustmentType}, status=${filterStatus}, page=${currentPage - 1}, size=${pageSize})}">
                                 Trước
                             </a>
                         </li>
@@ -341,14 +345,14 @@
                             th:classappend="${pageNumber == currentPage} ? ' active'">
                             <a class="page-link"
                                th:text="${pageNumber + 1}"
-                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, status=${filterStatus}, page=${pageNumber}, size=${pageSize})}">
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, adjustmentType=${filterAdjustmentType}, status=${filterStatus}, page=${pageNumber}, size=${pageSize})}">
                                 1
                             </a>
                         </li>
 
                         <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, outType=${filterOutType}, branchId=${filterBranchId}, status=${filterStatus}, page=${currentPage + 1}, size=${pageSize})}">
+                               th:href="@{${basePath}(keyword=${keyword}, fromDate=${fromDate}, toDate=${toDate}, adjustmentType=${filterAdjustmentType}, status=${filterStatus}, page=${currentPage + 1}, size=${pageSize})}">
                                 Sau
                             </a>
                         </li>
