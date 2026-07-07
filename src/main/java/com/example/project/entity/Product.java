@@ -49,9 +49,9 @@ public class Product {
     @JoinColumn(name = "producerID")
     private Producer producerID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "originID")
-    private Origin originID;
+    @Size(max = 50)
+    @Column(name = "origin", length = 50)
+    private String origin;
 
     @Size(max = 100)
     @Column(name = "registrationNumber", length = 100)

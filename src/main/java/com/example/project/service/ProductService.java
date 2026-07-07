@@ -17,7 +17,6 @@ import com.example.project.entity.*;
 import com.example.project.repository.BatchRepository;
 import com.example.project.repository.InvoicedetailRepository;
 import com.example.project.repository.MedicineapiRepository;
-import com.example.project.repository.OriginRepository;
 import com.example.project.repository.PositionRepository;
 import com.example.project.repository.ProducerRepository;
 import com.example.project.repository.ProductRepository;
