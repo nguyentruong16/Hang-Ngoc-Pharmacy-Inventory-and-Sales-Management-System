@@ -30,7 +30,7 @@ public class ProductCreateRequest {
     private String barcode;
     private Integer typeId;
     private Integer producerId;
-    private Integer originId;
+    private String origin;
     private String registrationNumber;
     private Integer minStock;
     private Integer maxStock;

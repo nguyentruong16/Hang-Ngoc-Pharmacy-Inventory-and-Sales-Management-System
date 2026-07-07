@@ -125,17 +125,17 @@
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="info-label">Xuất xứ</label>
-                        <input type="text" class="form-control ac-field" data-field="origin" data-target="originId"
-                               autocomplete="off" placeholder="Gõ để tìm xuất xứ...">
-                        <input type="hidden" th:field="*{originId}">
+                        <input type="text" class="form-control ac-field" data-field="origin"
+                               autocomplete="off" th:field="*{origin}" placeholder="Gõ để tìm xuất xứ...">
                     </div>
 
-                    <!-- Autocomplete sources for the Producer/Origin comboboxes (value = name, data-id = id). -->
+                    <!-- Autocomplete source for the Producer combobox (value = name, data-id = id). -->
                     <datalist id="producerOptions">
                         <option th:each="p : ${producers}" th:value="${p.name}" th:attr="data-id=${p.id}"></option>
                     </datalist>
+                    <!-- Autocomplete source for Xuất xứ — free text, no id (country names from java.util.Locale). -->
                     <datalist id="originOptions">
-                        <option th:each="o : ${origins}" th:value="${o.name}" th:attr="data-id=${o.id}"></option>
+                        <option th:each="o : ${origins}" th:value="${o}"></option>
                     </datalist>
 
                     <div class="col-12 col-md-3">
@@ -399,7 +399,7 @@
     }
 
     // --- Custom autocomplete (theme-consistent). Sources are arrays of {label, id}.
-    //     Free-text fields (ingredients) have id = null; ID-backed comboboxes (producer/origin)
+    //     Free-text fields (ingredients/origin) have id = null; ID-backed comboboxes (producer)
     //     carry the real id and write it into a hidden target input on selection. ---
     const AC = { apiName: [], strength: [], producer: [], origin: [] };
     let acMenu = null, acInput = null, acItems = [], acIndex = -1;
@@ -447,7 +447,7 @@
     function showAc(input) {
         const source = AC[input.dataset.field] || [];
         const q = acNorm(input.value);
-        const matches = source.filter(x => acNorm(x.label).includes(q)).slice(0, 8);
+        const matches = source.filter(x => acNorm(x.label).includes(q));
         const menu = ensureAcMenu();
         acInput = input; acItems = matches; acIndex = -1;
         if (matches.length === 0) { hideAc(); return; }
