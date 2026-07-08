@@ -39,7 +39,7 @@ public class OwnerUserService {
         final String roleFilter = RoleConstants.isValid(role) ? role : null;
         final Boolean statusFilter = resolveStatusFilter(status);
 
-        List<Accountpermission> permissions = accountpermissionRepository.findAllWithAccountAndBranch();
+        List<Accountpermission> permissions = accountpermissionRepository.findAllWithAccount();
 
         Map<Integer, List<Accountpermission>> permissionMap = permissions.stream()
                 .filter(ap -> ap.getAccountID() != null)
@@ -90,7 +90,7 @@ public class OwnerUserService {
     public OwnerUserStatsResponse getStats() {
         List<Account> accounts = accountRepository.findAll();
 
-        List<Accountpermission> permissions = accountpermissionRepository.findAllWithAccountAndBranch();
+        List<Accountpermission> permissions = accountpermissionRepository.findAllWithAccount();
 
         Set<Integer> pharmacistAccountIds = permissions.stream()
                 .filter(ap -> ap.getAccountID() != null)
@@ -235,8 +235,6 @@ public class OwnerUserService {
             roleDisplay = "Chưa phân quyền";
         }
 
-        String branchNames = "Toàn hệ thống";
-
         boolean active = Boolean.TRUE.equals(account.getStatus());
 
         boolean isOwner = permissions.stream()
@@ -253,7 +251,6 @@ public class OwnerUserService {
                 account.getName(),
                 account.getUsername(),
                 roleDisplay,
-                branchNames,
                 account.getPhoneNumber(),
                 account.getEmail(),
                 active,

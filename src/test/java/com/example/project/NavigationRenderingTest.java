@@ -84,17 +84,17 @@ class NavigationRenderingTest {
         return new PermissionPageView(List.of(), 0, 10, 0L, 0, null);
     }
 
-    private static RequestPostProcessor as(String role, String displayName, Integer branchId) {
+    private static RequestPostProcessor as(String role, String displayName) {
         AccountPrincipal principal = new AccountPrincipal(
                 1, displayName, role.toLowerCase(), displayName + "@example.com", "pw", true,
-                List.of(new SimpleGrantedAuthority("ROLE_" + role)), role, branchId);
+                List.of(new SimpleGrantedAuthority("ROLE_" + role)), role);
         return authentication(new UsernamePasswordAuthenticationToken(
                 principal, "pw", principal.getAuthorities()));
     }
 
     @Test
     void ownerSeesPermissionsPageWithRealChrome() throws Exception {
-        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", null)))
+        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner")))
                 .andExpect(status().isOk())
                 .andExpect(view().name("owner/permissions"))
                 .andExpect(content().string(containsString("Bảng phân quyền")))           // title + sidebar link
@@ -113,7 +113,7 @@ class NavigationRenderingTest {
         when(ownerPermissionService.getPermissionPage(any(), anyInt(), anyInt()))
                 .thenReturn(pageView);
 
-        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", null)))
+        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Nguyễn Văn A")))    // account row
                 .andExpect(content().string(containsString("pharmacist01")))    // username/email column
@@ -129,7 +129,7 @@ class NavigationRenderingTest {
         when(ownerPermissionService.getPermissionPage(any(), anyInt(), anyInt()))
                 .thenReturn(pageView);
 
-        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner", null)))
+        mvc.perform(get("/owner/permissions").with(as("OWNER", "Olivia Owner")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Chủ nhà thuốc (duy nhất)"))) // locked badge
                 // A locked row must NOT render an editable role dropdown/save form.
@@ -138,13 +138,13 @@ class NavigationRenderingTest {
 
     @Test
     void nonOwnerIsForbiddenFromOwnerArea() throws Exception {
-        mvc.perform(get("/owner/permissions").with(as("PHARMACIST", "Phong Pharmacist", 2)))
+        mvc.perform(get("/owner/permissions").with(as("PHARMACIST", "Phong Pharmacist")))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void pharmacistSeesOwnRolePageWithVietnameseLabel() throws Exception {
-        mvc.perform(get("/pharmacist/customers").with(as("PHARMACIST", "Phong Pharmacist", 2)))
+        mvc.perform(get("/pharmacist/customers").with(as("PHARMACIST", "Phong Pharmacist")))
                 .andExpect(status().isOk())
                 .andExpect(view().name("placeholder"))
                 .andExpect(content().string(containsString("Khách hàng")));  // translated menu label
@@ -152,7 +152,7 @@ class NavigationRenderingTest {
 
     @Test
     void permissionPageEchoesSearch() throws Exception {
-        mvc.perform(get("/owner/permissions").param("search", "pharmacist01").with(as("OWNER", "Olivia Owner", null)))
+        mvc.perform(get("/owner/permissions").param("search", "pharmacist01").with(as("OWNER", "Olivia Owner")))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("search", "pharmacist01"));
     }
@@ -166,7 +166,7 @@ class NavigationRenderingTest {
 
     @Test
     void dashboardBridgeRedirectsToRoleDashboard() throws Exception {
-        mvc.perform(get("/dashboard").with(as("PHARMACIST", "Phong Pharmacist", 2)))
+        mvc.perform(get("/dashboard").with(as("PHARMACIST", "Phong Pharmacist")))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/pharmacist/dashboard"));
     }

@@ -69,7 +69,6 @@ public class PurchaseinvoiceService {
                                                                         String fromDate,
                                                                         String toDate,
                                                                         Integer supplierId,
-                                                                        Integer branchId,
                                                                         String paymentStatus,
                                                                         Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
@@ -411,11 +410,6 @@ public class PurchaseinvoiceService {
                 .stream()
                 .sorted(Comparator.comparing(supplier -> supplier.getName() == null ? "" : supplier.getName()))
                 .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Object> listBranches() {
-        return List.of();
     }
 
     /** The fixed set of statuses a PurchaseInvoice can be in, for the filter dropdown. */

@@ -72,9 +72,6 @@ public class SidebarMenuService {
         if (menu == null || uri == null) {
             return null;
         }
-        if (uri.startsWith("/owner/branch-list/branch-detail")) {
-            uri = "/owner/branch-list";
-        }
         if (uri.startsWith("/owner/producers/create-producer")
                 || uri.startsWith("/owner/producers/update-producer")) {
             uri = "/owner/producers";
@@ -140,8 +137,8 @@ public class SidebarMenuService {
                         i("Thiết lập tài chính", "/owner/financial-setting", "ti ti-settings")),
 
                 menuGroup("Kho", "ti ti-archive",
-                        i("Xuất kho", "/owner/stock-outs", "ti ti-archive"),
-                        i("Tạo phiếu hủy xuất kho", "/owner/stock-outs/destroy/create", "ti ti-trash")),
+                        i("Xuất kho", "/owner/stock-adjustments", "ti ti-archive"),
+                        i("Tạo phiếu hủy xuất kho", "/owner/stock-adjustments/create", "ti ti-trash")),
 
                 menuGroup("Giao dịch", "ti ti-file-invoice",
                         i("Danh sách hóa đơn", "/owner/invoices", "ti ti-file-invoice"),
@@ -182,7 +179,7 @@ public class SidebarMenuService {
                         i("Danh sách phiếu nhập", "/pharmacist/purchase-invoices", "ti ti-receipt")),
 
                 linkGroup("Kho", "ti ti-archive",
-                        i("Tạo phiếu điều chỉnh kho", "/pharmacist/stock-outs/create", "ti ti-archive")),
+                        i("Tạo phiếu điều chỉnh kho", "/pharmacist/stock-adjustments/create", "ti ti-archive")),
 
                 menuGroup("Giao dịch", "ti ti-file-invoice",
                         i("Danh sách hóa đơn", "/pharmacist/invoices", "ti ti-file-invoice"),

@@ -58,7 +58,6 @@ class ProfileServiceTest {
         assertEquals("lan.nguyen@pharmamanager.vn", result.getEmail());
         assertEquals("0987654321", result.getPhoneNumber());
         assertEquals("Kế toán", result.getRole());
-        assertEquals("Toàn hệ thống", result.getBranchName()); // single store — no per-branch name any more
         assertTrue(result.getStatus());
 
         verify(accountRepository).findById(accountId);
@@ -102,7 +101,6 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Chưa phân quyền", result.getRole());
-        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
@@ -130,7 +128,6 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Dược sĩ, Dược sĩ trưởng", result.getRole());
-        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
@@ -159,7 +156,6 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Dược sĩ", result.getRole());
-        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
@@ -188,7 +184,6 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Chưa phân quyền", result.getRole());
-        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test
@@ -215,7 +210,6 @@ class ProfileServiceTest {
         ProfileViewResponse result = profileService.getProfile(accountId);
 
         assertEquals("Thu ngân", result.getRole());
-        assertEquals("Toàn hệ thống", result.getBranchName());
     }
 
     @Test

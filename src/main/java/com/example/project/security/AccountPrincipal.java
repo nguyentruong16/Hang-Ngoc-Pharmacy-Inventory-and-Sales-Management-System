@@ -23,7 +23,6 @@ public class AccountPrincipal implements UserDetails {
     private final boolean enabled;
     private final Collection<? extends GrantedAuthority> authorities;
     private final String primaryRole;
-    private final Integer branchId;
 
     public AccountPrincipal(
             Integer accountId,
@@ -33,8 +32,7 @@ public class AccountPrincipal implements UserDetails {
             String password,
             boolean enabled,
             Collection<? extends GrantedAuthority> authorities,
-            String primaryRole,
-            Integer branchId) {
+            String primaryRole) {
         this.accountId = accountId;
         this.displayName = displayName;
         this.username = username;
@@ -43,7 +41,6 @@ public class AccountPrincipal implements UserDetails {
         this.enabled = enabled;
         this.authorities = authorities;
         this.primaryRole = primaryRole;
-        this.branchId = branchId;
     }
 
     public Integer getAccountId() {
@@ -61,11 +58,6 @@ public class AccountPrincipal implements UserDetails {
     /** Bare role name (e.g. {@code "OWNER"}) of the user's primary AccountPermission row. */
     public String getPrimaryRole() {
         return primaryRole;
-    }
-
-    /** Always {@code null}; kept only for compile compatibility. */
-    public Integer getBranchId() {
-        return branchId;
     }
 
     @Override

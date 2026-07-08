@@ -14,6 +14,5 @@ public class ProfileViewResponse {
     private String email;
     private String phoneNumber;
     private String role;
-    private String branchName;
     private Boolean status;
 }
