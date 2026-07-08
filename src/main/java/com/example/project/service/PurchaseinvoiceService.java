@@ -69,7 +69,6 @@ public class PurchaseinvoiceService {
                                                                         String fromDate,
                                                                         String toDate,
                                                                         Integer supplierId,
-                                                                        Integer branchId,
                                                                         String paymentStatus,
                                                                         Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
