@@ -33,22 +33,44 @@ public class StockadjustmentService {
     private static final String DIRECTION_IN = "IN";
     private static final String DIRECTION_OUT = "OUT";
 
+    private static final String TYPE_COUNT_INCREASE = "COUNT_INCREASE";
+    private static final String TYPE_COUNT_DECREASE = "COUNT_DECREASE";
+
+    /**
+     * Stock-count status strings we read/write. The Stock Count screen (another teammate) owns the
+     * canonical spelling; we mirror only the two we need and match them accent-insensitively, so a
+     * spelling difference is a one-line fix here.
+     */
+    private static final String COUNT_STATUS_APPROVED = "Đã duyệt";
+    private static final String COUNT_STATUS_ADJUSTED = "Đã điều chỉnh";
+
+    /** Adjustment types a user may pick when creating a slip by hand (COUNT_* comes from stock count). */
+    private static final List<String> CREATABLE_TYPES = List.of("DESTROY", "INTERNAL_USE", "SAMPLE", "GIFT");
+
     private final StockadjustmentRepository stockadjustmentRepository;
     private final StockadjustmentdetailRepository stockadjustmentdetailRepository;
     private final AccountRepository accountRepository;
     private final BatchRepository batchRepository;
     private final ProductunitRepository productunitRepository;
+    // Stock Count is owned by another module — we consume it read-only via these bare repositories
+    // (findAll / findById / save) and never add query methods to their files.
+    private final StockcountRepository stockcountRepository;
+    private final StockcountdetailRepository stockcountdetailRepository;
 
     public StockadjustmentService(StockadjustmentRepository stockadjustmentRepository,
                                   StockadjustmentdetailRepository stockadjustmentdetailRepository,
                                   AccountRepository accountRepository,
                                   BatchRepository batchRepository,
-                                  ProductunitRepository productunitRepository) {
+                                  ProductunitRepository productunitRepository,
+                                  StockcountRepository stockcountRepository,
+                                  StockcountdetailRepository stockcountdetailRepository) {
         this.stockadjustmentRepository = stockadjustmentRepository;
         this.stockadjustmentdetailRepository = stockadjustmentdetailRepository;
         this.accountRepository = accountRepository;
         this.batchRepository = batchRepository;
         this.productunitRepository = productunitRepository;
+        this.stockcountRepository = stockcountRepository;
+        this.stockcountdetailRepository = stockcountdetailRepository;
     }
 
     // ------------------------------------------------------------------ list / search
@@ -101,11 +123,22 @@ public class StockadjustmentService {
                 .filter(adj -> YearMonth.from(toLocalDate(adj.getDate())).equals(currentMonth))
                 .count();
 
+        long draftCount = countByStatusName(adjustments, StockAdjustmentStatus.DRAFT);
         long pendingCount = countByStatusName(adjustments, StockAdjustmentStatus.PENDING);
         long approvedCount = countByStatusName(adjustments, StockAdjustmentStatus.APPROVED);
         long rejectedCount = countByStatusName(adjustments, StockAdjustmentStatus.REJECTED);
 
-        return new StockAdjustmentStatsResponse(monthlyCount, pendingCount, approvedCount, rejectedCount);
+        return new StockAdjustmentStatsResponse(monthlyCount, draftCount, pendingCount, approvedCount, rejectedCount);
+    }
+
+    /** Adjustment types a user may create by hand, as an ordered code → Vietnamese-label map. */
+    public Map<String, String> creatableTypeLabels() {
+        Map<String, String> all = adjustmentTypeLabels();
+        Map<String, String> labels = new LinkedHashMap<>();
+        for (String type : CREATABLE_TYPES) {
+            labels.put(type, all.get(type));
+        }
+        return labels;
     }
 
     /** The fixed set of statuses, in workflow order, for the filter dropdown. */
@@ -211,8 +244,11 @@ public class StockadjustmentService {
     // ------------------------------------------------------------------ approve / reject
 
     /**
-     * Owner approves a pending slip: records the approver and <strong>applies the stock effect</strong>
-     * (deduct for outbound types, add for COUNT_INCREASE) in the same transaction.
+     * Owner approves a pending slip: records the approver and marks it {@code Duyệt}.
+     *
+     * <p><strong>Không đổi tồn kho.</strong> The adjustment slip is only a request/confirmation step;
+     * the real {@code batch.storageQuantity} change happens on a separate screen (owned by another
+     * module). So this method never touches stock.</p>
      */
     @Transactional
     public void approve(Integer adjustmentId, Integer approverAccountId) {
@@ -226,11 +262,11 @@ public class StockadjustmentService {
         Account approver = accountRepository.findById(approverAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
-        applyStockEffect(adjustmentId);
-
         adjustment.setStatus(StockAdjustmentStatus.APPROVED);
         adjustment.setApprovedBy(approver);
         adjustment.setApprovedAt(Instant.now());
+        // A slip built from a stock count marks that count "Đã điều chỉnh" once approved.
+        markStockCountAdjusted(adjustment.getStockCountID());
         // TODO(finance): auto-create an Expense (and link expenseID) for DESTROY with lineCost total > 0.
         //   Deferred — the Expense entity/vocabulary (expenseCode, expenseType, status) is owned by the
         //   finance module; wire it here once that contract is agreed.
@@ -257,41 +293,6 @@ public class StockadjustmentService {
         stockadjustmentRepository.save(adjustment);
     }
 
-    /**
-     * Applies each line to its batch: outbound lines deduct (blocking negative stock), inbound lines
-     * add. Uses {@code baseQtyDeducted} (already in base units) and the line {@code direction}.
-     */
-    private void applyStockEffect(Integer adjustmentId) {
-        List<Stockadjustmentdetail> details =
-                stockadjustmentdetailRepository.findByStockOutIdWithRelations(adjustmentId);
-
-        for (Stockadjustmentdetail detail : details) {
-            Batch batchRef = detail.getBatchID();
-            if (batchRef == null || batchRef.getId() == null) {
-                continue;
-            }
-
-            Batch batch = batchRepository.findById(batchRef.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lô hàng cần điều chỉnh"));
-
-            int current = batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity();
-            int delta = detail.getBaseQtyDeducted() == null ? 0 : detail.getBaseQtyDeducted();
-
-            if (DIRECTION_IN.equalsIgnoreCase(detail.getDirection())) {
-                batch.setStorageQuantity(current + delta);
-            } else {
-                if (delta > current) {
-                    throw new IllegalArgumentException(
-                            "Tồn kho không đủ để điều chỉnh lô " + displayBatch(batch)
-                                    + " (tồn hiện tại: " + current + ")");
-                }
-                batch.setStorageQuantity(current - delta);
-            }
-
-            batchRepository.save(batch);
-        }
-    }
-
     // ------------------------------------------------------------------ create
 
     @Transactional(readOnly = true)
@@ -305,16 +306,132 @@ public class StockadjustmentService {
                 .toList();
     }
 
+    // ------------------------------------------------------------------ stock count source (read-only)
+
     /**
-     * Creates a DESTROY adjustment. When {@code autoApprove} is true (the Owner is creating), the
-     * slip is approved immediately and the stock effect is applied; otherwise it is left
-     * {@link StockAdjustmentStatus#PENDING} for the Owner to approve.
+     * Approved ("Đã duyệt") stock counts that can drive an adjustment: those with at least one
+     * adjustable line and not already consumed by a non-rejected adjustment slip. Read-only —
+     * consumes the Stock Count module through its bare repositories.
+     */
+    @Transactional(readOnly = true)
+    public List<StockAdjustmentCountOptionResponse> listApprovedStockCounts() {
+        Set<Integer> consumedCountIds = stockadjustmentRepository.findAllWithRelations().stream()
+                .filter(adj -> adj.getStockCountID() != null && adj.getStockCountID().getId() != null)
+                .filter(adj -> !isStatus(getStatusName(adj), StockAdjustmentStatus.REJECTED))
+                .map(adj -> adj.getStockCountID().getId())
+                .collect(Collectors.toSet());
+
+        Map<Integer, List<Stockcountdetail>> detailsByCount = stockcountdetailRepository.findAll().stream()
+                .filter(detail -> detail.getStockCountID() != null && detail.getStockCountID().getId() != null)
+                .collect(Collectors.groupingBy(detail -> detail.getStockCountID().getId()));
+
+        return stockcountRepository.findAll().stream()
+                .filter(count -> isStatus(count.getStatus(), COUNT_STATUS_APPROVED))
+                .filter(count -> !consumedCountIds.contains(count.getId()))
+                .map(count -> new StockAdjustmentCountOptionResponse(
+                        count.getId(),
+                        count.getStockCountCode(),
+                        formatInstant(count.getCountDate()),
+                        (int) detailsByCount.getOrDefault(count.getId(), List.of()).stream()
+                                .filter(this::isAdjustableCountDetail)
+                                .count(),
+                        count.getNote()))
+                .filter(option -> option.getDiscrepancyLineCount() > 0)
+                .sorted(Comparator.comparing(StockAdjustmentCountOptionResponse::getStockCountId,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    /**
+     * The prospective adjustment lines for one approved stock count: one per detail whose actual
+     * quantity differs from the system quantity (and has a batch). Surplus → COUNT_INCREASE/IN,
+     * shortage → COUNT_DECREASE/OUT. Read-only preview; the create flow rebuilds these server-side.
+     */
+    @Transactional(readOnly = true)
+    public List<StockAdjustmentCountLineResponse> loadStockCountLines(Integer stockCountId) {
+        Stockcount count = stockcountRepository.findById(stockCountId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu kiểm kê"));
+        if (!isStatus(count.getStatus(), COUNT_STATUS_APPROVED)) {
+            throw new IllegalArgumentException("Chỉ chọn được phiếu kiểm kê đã duyệt");
+        }
+
+        return stockcountdetailRepository.findAll().stream()
+                .filter(detail -> detail.getStockCountID() != null
+                        && stockCountId.equals(detail.getStockCountID().getId()))
+                .filter(this::isAdjustableCountDetail)
+                .map(this::toCountLine)
+                .toList();
+    }
+
+    /** A detail is adjustable when it has a batch and a non-zero, non-null discrepancy. */
+    private boolean isAdjustableCountDetail(Stockcountdetail detail) {
+        if (detail.getBatchID() == null || detail.getBatchID().getId() == null) {
+            return false;
+        }
+        Integer systemQty = detail.getSystemQty();
+        Integer actualQty = detail.getActualQty();
+        return systemQty != null && actualQty != null && !systemQty.equals(actualQty);
+    }
+
+    private StockAdjustmentCountLineResponse toCountLine(Stockcountdetail detail) {
+        Batch batch = detail.getBatchID();
+        Product product = batch.getProductID() != null ? batch.getProductID() : detail.getProductID();
+        Productunit unit = resolveCandidateUnit(batch, product);
+
+        int discrepancy = detail.getActualQty() - detail.getSystemQty();
+        boolean surplus = discrepancy > 0;
+        int quantity = Math.abs(discrepancy);
+
+        BigDecimal unitCost = resolveUnitCost(batch);
+        BigDecimal lineCost = unitCost.multiply(BigDecimal.valueOf(quantity));
+
+        return new StockAdjustmentCountLineResponse(
+                batch.getId(),
+                product != null ? product.getProductID() : null,
+                product != null ? product.getName() : "Không rõ",
+                batch.getLotNumber(),
+                batch.getExpirationDate(),
+                formatLocalDate(batch.getExpirationDate()),
+                unit != null ? unit.getUnitName() : "Đơn vị",
+                detail.getSystemQty(),
+                detail.getActualQty(),
+                quantity,
+                surplus ? TYPE_COUNT_INCREASE : TYPE_COUNT_DECREASE,
+                surplus ? DIRECTION_IN : DIRECTION_OUT,
+                unitCost,
+                lineCost);
+    }
+
+    /**
+     * Creates an adjustment slip. Two sources:
+     * <ul>
+     *   <li><b>MANUAL</b> — one slip of a {@link #CREATABLE_TYPES} type from the batches the user picked;</li>
+     *   <li><b>STOCK_COUNT</b> — up to two slips ({@code COUNT_INCREASE} for surplus lines,
+     *       {@code COUNT_DECREASE} for shortage lines) rebuilt server-side from an approved stock count.</li>
+     * </ul>
+     *
+     * <p>Resulting status (both sources):
+     * <ul>
+     *   <li>{@code asDraft} → {@link StockAdjustmentStatus#DRAFT};</li>
+     *   <li>otherwise the Owner ({@code isOwner}) auto-approves to {@link StockAdjustmentStatus#APPROVED};</li>
+     *   <li>otherwise a Pharmacist submits to {@link StockAdjustmentStatus#PENDING} for approval.</li>
+     * </ul>
+     *
+     * <p>No status change ever touches stock — the slip is a confirmation step only. Returns the id of
+     * the (first) created slip so the caller can redirect to it.</p>
      */
     @Transactional
-    public Integer createDestroyAdjustment(StockAdjustmentCreateRequest request,
-                                           Integer currentAccountId,
-                                           boolean autoApprove) {
+    public Integer createAdjustment(StockAdjustmentCreateRequest request,
+                                    Integer currentAccountId,
+                                    boolean isOwner,
+                                    boolean asDraft) {
+        if (isStockCountSource(request)) {
+            return createFromStockCount(request, currentAccountId, isOwner, asDraft);
+        }
+
         validateRequest(request);
+
+        String adjustmentType = resolveCreatableType(request.getAdjustmentType());
 
         Account creator = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
@@ -343,16 +460,21 @@ public class StockadjustmentService {
         }
         validateSelectedBatches(selectedBatches, itemMap);
 
+        String status = asDraft
+                ? StockAdjustmentStatus.DRAFT
+                : (isOwner ? StockAdjustmentStatus.APPROVED : StockAdjustmentStatus.PENDING);
+        boolean approvedNow = StockAdjustmentStatus.APPROVED.equals(status);
+
         Stockadjustment adjustment = new Stockadjustment();
         adjustment.setStockAdjustmentCode(generateCode());
-        adjustment.setAdjustmentType("DESTROY");
+        adjustment.setAdjustmentType(adjustmentType);
         adjustment.setDate(Instant.now());
         adjustment.setCreatedBy(creator);
         adjustment.setReason(request.getReason().trim());
         adjustment.setExpenseID(null);
-        adjustment.setStatus(autoApprove ? StockAdjustmentStatus.APPROVED : StockAdjustmentStatus.PENDING);
+        adjustment.setStatus(status);
         adjustment.setNote(trimToNull(request.getNote()));
-        if (autoApprove) {
+        if (approvedNow) {
             adjustment.setApprovedBy(creator);
             adjustment.setApprovedAt(Instant.now());
         }
@@ -383,11 +505,175 @@ public class StockadjustmentService {
             stockadjustmentdetailRepository.save(detail);
         }
 
-        if (autoApprove) {
-            applyStockEffect(savedAdjustment.getId());
+        return savedAdjustment.getId();
+    }
+
+    private boolean isStockCountSource(StockAdjustmentCreateRequest request) {
+        return "STOCK_COUNT".equalsIgnoreCase(request.getSourceMode());
+    }
+
+    /**
+     * STOCK_COUNT source: rebuild the COUNT lines from the chosen approved stock count and materialise
+     * them into up to two slips — one all-{@code COUNT_INCREASE}, one all-{@code COUNT_DECREASE} — each
+     * linked to the count. Client-posted lines are ignored (quantities are trusted only from the count).
+     * If the slips are auto-approved (Owner), the count is flipped to {@code Đã điều chỉnh} here.
+     */
+    private Integer createFromStockCount(StockAdjustmentCreateRequest request,
+                                         Integer currentAccountId,
+                                         boolean isOwner,
+                                         boolean asDraft) {
+        if (request.getStockCountId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn phiếu kiểm kê");
+        }
+        if (request.getReason() == null || request.getReason().isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do điều chỉnh");
         }
 
+        Account creator = accountRepository.findById(currentAccountId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
+
+        Stockcount count = stockcountRepository.findById(request.getStockCountId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu kiểm kê"));
+        if (!isStatus(count.getStatus(), COUNT_STATUS_APPROVED)) {
+            throw new IllegalArgumentException("Phiếu kiểm kê không ở trạng thái Đã duyệt");
+        }
+
+        boolean alreadyConsumed = stockadjustmentRepository.findAllWithRelations().stream()
+                .anyMatch(adj -> adj.getStockCountID() != null
+                        && request.getStockCountId().equals(adj.getStockCountID().getId())
+                        && !isStatus(getStatusName(adj), StockAdjustmentStatus.REJECTED));
+        if (alreadyConsumed) {
+            throw new IllegalArgumentException("Phiếu kiểm kê này đã có phiếu điều chỉnh");
+        }
+
+        List<StockAdjustmentCountLineResponse> lines = loadStockCountLines(request.getStockCountId());
+        if (lines.isEmpty()) {
+            throw new IllegalArgumentException("Phiếu kiểm kê không có dòng chênh lệch để điều chỉnh");
+        }
+
+        List<StockAdjustmentCountLineResponse> increaseLines = lines.stream()
+                .filter(line -> TYPE_COUNT_INCREASE.equals(line.getAdjustmentType()))
+                .toList();
+        List<StockAdjustmentCountLineResponse> decreaseLines = lines.stream()
+                .filter(line -> TYPE_COUNT_DECREASE.equals(line.getAdjustmentType()))
+                .toList();
+
+        String status = asDraft
+                ? StockAdjustmentStatus.DRAFT
+                : (isOwner ? StockAdjustmentStatus.APPROVED : StockAdjustmentStatus.PENDING);
+
+        Integer firstId = null;
+        if (!increaseLines.isEmpty()) {
+            firstId = persistCountSlip(TYPE_COUNT_INCREASE, increaseLines, count, creator, status, request);
+        }
+        if (!decreaseLines.isEmpty()) {
+            Integer id = persistCountSlip(TYPE_COUNT_DECREASE, decreaseLines, count, creator, status, request);
+            firstId = firstId != null ? firstId : id;
+        }
+
+        if (StockAdjustmentStatus.APPROVED.equals(status)) {
+            markStockCountAdjusted(count);
+        }
+        return firstId;
+    }
+
+    private Integer persistCountSlip(String adjustmentType,
+                                     List<StockAdjustmentCountLineResponse> lines,
+                                     Stockcount count,
+                                     Account creator,
+                                     String status,
+                                     StockAdjustmentCreateRequest request) {
+        boolean approvedNow = StockAdjustmentStatus.APPROVED.equals(status);
+
+        Stockadjustment adjustment = new Stockadjustment();
+        adjustment.setStockAdjustmentCode(generateCode());
+        adjustment.setAdjustmentType(adjustmentType);
+        adjustment.setDate(Instant.now());
+        adjustment.setCreatedBy(creator);
+        adjustment.setReason(request.getReason().trim());
+        adjustment.setStockCountID(count);
+        adjustment.setExpenseID(null);
+        adjustment.setStatus(status);
+        adjustment.setNote(trimToNull(request.getNote()));
+        if (approvedNow) {
+            adjustment.setApprovedBy(creator);
+            adjustment.setApprovedAt(Instant.now());
+        }
+
+        Stockadjustment savedAdjustment = stockadjustmentRepository.save(adjustment);
+
+        for (StockAdjustmentCountLineResponse line : lines) {
+            Batch batch = batchRepository.findById(line.getBatchId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lô hàng của phiếu kiểm kê"));
+            Product product = batch.getProductID();
+            Productunit unit = resolveUnit(batch, product);
+
+            Stockadjustmentdetail detail = new Stockadjustmentdetail();
+            detail.setStockAdjustmentID(savedAdjustment);
+            detail.setProductID(product);
+            detail.setProductUnitID(unit);
+            detail.setBatchID(batch);
+            detail.setDirection(line.getDirection());
+            detail.setQuantity(line.getQuantity());
+            detail.setBaseQtyDeducted(line.getQuantity());
+            detail.setUnitCostPrice(line.getUnitCostPrice());
+            detail.setLineCost(line.getLineCost());
+            detail.setNote(null);
+
+            stockadjustmentdetailRepository.save(detail);
+        }
         return savedAdjustment.getId();
+    }
+
+    /** Flips a linked count {@code Đã duyệt → Đã điều chỉnh}. No-op if it is not currently approved. */
+    private void markStockCountAdjusted(Stockcount count) {
+        if (count == null) {
+            return;
+        }
+        if (isStatus(count.getStatus(), COUNT_STATUS_APPROVED)) {
+            count.setStatus(COUNT_STATUS_ADJUSTED);
+            stockcountRepository.save(count);
+        }
+    }
+
+    /**
+     * Sends a {@link StockAdjustmentStatus#DRAFT} slip forward: the Owner auto-approves it, a
+     * Pharmacist moves it to {@link StockAdjustmentStatus#PENDING}. Neither path changes stock —
+     * the slip is only a confirmation step.
+     */
+    @Transactional
+    public void submit(Integer adjustmentId, Integer currentAccountId, boolean isOwner) {
+        Stockadjustment adjustment = stockadjustmentRepository.findByIdWithRelations(adjustmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu điều chỉnh kho"));
+
+        if (!isStatus(getStatusName(adjustment), StockAdjustmentStatus.DRAFT)) {
+            throw new IllegalArgumentException("Chỉ có thể gửi duyệt phiếu đang ở trạng thái nháp");
+        }
+
+        Account actor = accountRepository.findById(currentAccountId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
+
+        if (isOwner) {
+            adjustment.setStatus(StockAdjustmentStatus.APPROVED);
+            adjustment.setApprovedBy(actor);
+            adjustment.setApprovedAt(Instant.now());
+            markStockCountAdjusted(adjustment.getStockCountID());
+        } else {
+            adjustment.setStatus(StockAdjustmentStatus.PENDING);
+        }
+
+        stockadjustmentRepository.save(adjustment);
+    }
+
+    private String resolveCreatableType(String rawType) {
+        if (rawType == null || rawType.isBlank()) {
+            return "DESTROY";
+        }
+        String type = rawType.trim().toUpperCase(Locale.ROOT);
+        if (!CREATABLE_TYPES.contains(type)) {
+            throw new IllegalArgumentException("Loại điều chỉnh không hợp lệ");
+        }
+        return type;
     }
 
     private void validateRequest(StockAdjustmentCreateRequest request) {
@@ -629,14 +915,17 @@ public class StockadjustmentService {
     }
 
     private String statusCssClass(String statusName) {
-        String normalized = normalize(statusName);
-        if (normalized.contains(normalize(StockAdjustmentStatus.APPROVED))) {
+        // Exact matches only: "Chờ duyệt" contains "duyệt", so a substring test would misclassify it.
+        if (isStatus(statusName, StockAdjustmentStatus.APPROVED)) {
             return "status-approved";
         }
-        if (normalized.contains(normalize(StockAdjustmentStatus.REJECTED))) {
+        if (isStatus(statusName, StockAdjustmentStatus.REJECTED)) {
             return "status-rejected";
         }
-        if (normalized.contains(normalize(StockAdjustmentStatus.PENDING))) {
+        if (isStatus(statusName, StockAdjustmentStatus.PENDING)) {
+            return "status-pending";
+        }
+        if (isStatus(statusName, StockAdjustmentStatus.DRAFT)) {
             return "status-draft";
         }
         return "status-default";

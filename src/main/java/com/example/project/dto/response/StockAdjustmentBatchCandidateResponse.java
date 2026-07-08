@@ -1,5 +1,6 @@
 package com.example.project.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -17,6 +18,9 @@ public class StockAdjustmentBatchCandidateResponse {
 
     private String lotNumber;
 
+    // Inlined into JS via Thymeleaf, whose serializer has no Java-8-time module. The client only uses
+    // the preformatted display string, so keep the raw LocalDate out of JSON serialization.
+    @JsonIgnore
     private LocalDate expirationDate;
     private String expirationDateDisplay;
 
