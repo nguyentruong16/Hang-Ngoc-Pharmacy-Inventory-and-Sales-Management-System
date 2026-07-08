@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Cập nhật dự trù mua hàng | PharmaManager</title>
+    <title th:text="${pageTitle + ' | PharmaManager'}">Cập nhật dự trù mua hàng | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -492,6 +492,41 @@
             color: #059669;
         }
 
+        .plan-status-badge.status-completed-view {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .view-only-banner {
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            color: #1e40af;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .view-only-text {
+            font-size: 13px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .product-lines-header.view-only-header,
+        .product-line.view-only-line {
+            grid-template-columns:
+                28px
+                minmax(0, 2fr)
+                42px
+                minmax(52px, 0.7fr)
+                56px
+                minmax(0, 1.2fr)
+                minmax(68px, 0.85fr)
+                minmax(72px, 0.9fr);
+        }
+
         @media (max-width: 991.98px) {
             .product-lines-header { display: none; }
             .product-line {
@@ -511,16 +546,21 @@
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
+        <div th:if="${viewOnly}" class="view-only-banner">
+            <i class="ti ti-info-circle me-1"></i>
+            Dự trù mua hàng đã hoàn thành. Bạn chỉ có thể xem thông tin, không thể chỉnh sửa hoặc xóa.
+        </div>
+
         <form id="procurementUpdateForm"
-              th:action="${basePath + '/update-procurementplan/' + procurementPlan.id}"
+              th:action="${viewOnly ? '#' : basePath + '/update-procurementplan/' + procurementPlan.id}"
               th:object="${procurementPlanForm}"
-              method="post"
+              th:method="${viewOnly ? 'get' : 'post'}"
               novalidate>
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <div class="row g-4">
                 <div class="col-12 col-lg-9">
                     <div class="owner-card">
-                        <div class="p-4 border-bottom">
+                        <div th:unless="${viewOnly}" class="p-4 border-bottom">
                             <div class="product-search-wrap">
                                 <div class="product-search-field">
                                     <i class="ti ti-search product-search-icon"></i>
@@ -536,9 +576,9 @@
                             </div>
                         </div>
 
-                        <div id="productLinesHeader" class="product-lines-header hidden">
+                        <div id="productLinesHeader" class="product-lines-header hidden" th:classappend="${viewOnly} ? ' view-only-header' : ''">
                             <div></div>
-                            <div></div>
+                            <div th:unless="${viewOnly}"></div>
                             <div>Hàng hóa</div>
                             <div class="text-center">Tồn</div>
                             <div>Đơn vị thuốc</div>
@@ -574,16 +614,21 @@
                         <div class="plan-info-row mb-0">
                             <span class="plan-info-label">Trạng thái</span>
                             <div>
-                                <input type="hidden" th:field="*{status}" id="procurementStatusInput">
-                                <label class="status-check-toggle">
-                                    <input type="checkbox"
-                                           id="statusCompletedToggle"
-                                           th:checked="${procurementPlanForm.status == 'Đã hoàn thành'}">
-                                    <span class="status-check-box" title="Đánh dấu hoàn thành">
-                                        <i class="ti ti-check"></i>
-                                    </span>
-                                    <span class="status-check-text" id="statusCheckText">Đang thực hiện</span>
-                                </label>
+                                <span th:if="${viewOnly}"
+                                      class="plan-status-badge status-completed-view"
+                                      th:text="${procurementPlan.status}">Đã hoàn thành</span>
+                                <div th:unless="${viewOnly}">
+                                    <input type="hidden" th:field="*{status}" id="procurementStatusInput">
+                                    <label class="status-check-toggle">
+                                        <input type="checkbox"
+                                               id="statusCompletedToggle"
+                                               th:checked="${procurementPlanForm.status == 'Đã hoàn thành'}">
+                                        <span class="status-check-box" title="Đánh dấu hoàn thành">
+                                            <i class="ti ti-check"></i>
+                                        </span>
+                                        <span class="status-check-text" id="statusCheckText">Đang thực hiện</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -606,16 +651,18 @@
                             <textarea id="procurementNote"
                                       class="order-note-input"
                                       th:field="*{note}"
+                                      th:readonly="${viewOnly}"
                                       rows="4"
                                       placeholder="Ghi chú dự trù"></textarea>
                         </div>
                     </div>
 
                     <div class="owner-card p-4">
-                        <button type="submit" class="btn btn-owner-primary w-100 mb-2">
+                        <button th:unless="${viewOnly}" type="submit" class="btn btn-owner-primary w-100 mb-2">
                             Cập nhật dự trù mua hàng
                         </button>
-                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">Hủy</a>
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100"
+                           th:text="${viewOnly} ? 'Quay lại danh sách' : 'Hủy'">Hủy</a>
                     </div>
                 </div>
             </div>
@@ -628,6 +675,7 @@
     const suppliers = /*[[${suppliers}]]*/ [];
     const initialDetails = /*[[${procurementPlanForm.details}]]*/ [];
     const initialProducts = /*[[${initialProducts}]]*/ [];
+    const viewOnly = /*[[${viewOnly}]]*/ false;
     const initialCompleted = /*[[${procurementPlan.status == 'Đã hoàn thành'}]]*/ false;
     const COMPLETED_STATUS = 'Đã hoàn thành';
     const COMPLETED_CONFIRM_MESSAGE = 'Sau khi đánh dấu "Đã hoàn thành", dự trù mua hàng sẽ không thể cập nhật hoặc xóa. Bạn có chắc chắn muốn tiếp tục?';
@@ -697,6 +745,9 @@
     function reindexDetailLines() {
         document.querySelectorAll('#detailLines .product-line').forEach((row, index) => {
             row.querySelector('.line-index').textContent = index + 1;
+            if (viewOnly) {
+                return;
+            }
             row.querySelectorAll('[data-field]').forEach(input => {
                 const field = input.getAttribute('data-field');
                 const name = 'details[' + index + '].' + field;
@@ -717,10 +768,48 @@
         const unit = detail.unit || '';
         const price = detail.estimatedPrice != null ? detail.estimatedPrice : '';
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
-        const supplierOptionsHtml = suppliers.map(supplier =>
-            '<option value="' + supplier.id + '"' +
-            (String(supplierId) === String(supplier.id) ? ' selected' : '') +
-            '>' + escapeHtml(supplier.name) + '</option>'
+        const supplier = suppliers.find(item => String(item.id) === String(supplierId));
+        const supplierName = supplier ? supplier.name : '—';
+
+        if (viewOnly) {
+            const lineTotal = Number(quantity) * Number(price || 0);
+            return `
+            <div class="product-line view-only-line"
+                 data-quantity="${quantity}"
+                 data-price="${price !== '' ? price : 0}">
+                <div><span class="line-index">${index + 1}</span></div>
+                <div class="product-info-block">
+                    <div class="product-title">
+                        <span class="product-title-code">${escapeHtml(product.code)}</span>
+                        ${escapeHtml(product.name)}
+                    </div>
+                </div>
+                <div>
+                    <span class="stock-display">${currentStock}</span>
+                </div>
+                <div>
+                    <span class="view-only-text">${escapeHtml(unit || '—')}</span>
+                </div>
+                <div>
+                    <span class="view-only-text">${quantity}</span>
+                </div>
+                <div>
+                    <span class="view-only-text">${escapeHtml(supplierName)}</span>
+                </div>
+                <div class="text-end">
+                    <span class="view-only-text">${price !== '' ? formatLineMoney(price) + 'đ' : '—'}</span>
+                </div>
+                <div class="text-end">
+                    <span class="line-total-text">${formatLineMoney(lineTotal)}</span>
+                </div>
+            </div>
+        `;
+        }
+
+        const supplierOptionsHtml = suppliers.map(supplierItem =>
+            '<option value="' + supplierItem.id + '"' +
+            (String(supplierId) === String(supplierItem.id) ? ' selected' : '') +
+            '>' + escapeHtml(supplierItem.name) + '</option>'
         ).join('');
 
         return `
@@ -804,6 +893,13 @@
         let totalAmount = 0;
 
         rows.forEach(row => {
+            if (viewOnly) {
+                const quantity = Number(row.dataset.quantity) || 0;
+                const price = Number(row.dataset.price) || 0;
+                totalAmount += quantity * price;
+                return;
+            }
+
             const quantity = numberValue(row.querySelector('.quantity-input'));
             const price = numberValue(row.querySelector('.price-input'));
             const lineTotal = quantity * price;
@@ -928,10 +1024,11 @@
         searchInput.focus();
     }
 
-    document.querySelector('.btn-barcode').addEventListener('click', function () {
+    document.querySelector('.btn-barcode')?.addEventListener('click', function () {
         document.getElementById('productSearchInput').focus();
     });
 
+    if (!viewOnly) {
     document.getElementById('productSearchInput').addEventListener('input', function (event) {
         const value = event.target.value;
         if (!value.trim()) {
@@ -974,6 +1071,7 @@
     document.addEventListener('click', function (event) {
         if (!event.target.closest('.product-search-wrap')) hideSearchResults();
     });
+    }
 
     (initialDetails || [])
         .filter(detail => detail && detail.productId != null)
@@ -993,6 +1091,7 @@
     toggleEmptyState();
     calculateSummary();
 
+    if (!viewOnly) {
     (function initStatusToggle() {
         const DEFAULT_STATUS = 'Đang thực hiện';
         const toggle = document.getElementById('statusCompletedToggle');
@@ -1025,6 +1124,7 @@
             }
         });
     })();
+    }
 </script>
 
 </body>
