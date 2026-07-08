@@ -3,6 +3,7 @@ package com.example.project.dto.request;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -36,6 +37,11 @@ public class ProductCreateRequest {
     private Integer maxStock;
     private Boolean status;
     private String note;
+
+    /** New photo to upload (optional); ignored when empty. Never populated on the Edit GET — see {@link #existingImageUrl}. */
+    private MultipartFile imageFile;
+    /** Current photo URL, for the Edit form's preview only; not bound back on submit. */
+    private String existingImageUrl;
 
     private List<ProductUnitCreateRequest> units = new ArrayList<>();
     private List<ProductIngredientCreateRequest> ingredients = new ArrayList<>();

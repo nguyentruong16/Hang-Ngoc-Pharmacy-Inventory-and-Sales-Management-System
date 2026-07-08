@@ -82,7 +82,7 @@
         </div>
 
         <form th:action="${isEdit} ? @{/owner/products/{id}/edit(id=${productId})} : @{/owner/products/create}"
-              th:object="${form}" method="post" id="createForm">
+              th:object="${form}" method="post" id="createForm" enctype="multipart/form-data">
 
             <!-- 1. Thông tin cơ bản -->
             <div class="stock-card p-4 mb-4">
@@ -156,6 +156,13 @@
                             <option th:value="true">Đang kinh doanh</option>
                             <option th:value="false">Ngừng kinh doanh</option>
                         </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="info-label">Ảnh sản phẩm</label>
+                        <input type="file" class="form-control" name="imageFile" accept="image/*">
+                        <div class="form-text">Tuỳ chọn. Chọn ảnh mới sẽ thay thế ảnh hiện có.</div>
+                        <img th:if="${form.existingImageUrl}" th:src="${form.existingImageUrl}"
+                             alt="Ảnh hiện tại" class="mt-2 rounded" style="max-height:96px">
                     </div>
                     <div class="col-12">
                         <label class="info-label">Ghi chú / Quy cách</label>
