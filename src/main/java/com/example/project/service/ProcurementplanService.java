@@ -24,8 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -41,6 +41,7 @@ import java.util.Set;
 public class ProcurementplanService {
     private static final String DEFAULT_STATUS = "Đang thực hiện";
     private static final String COMPLETED_STATUS = "Đã hoàn thành";
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Set<String> ALLOWED_STATUSES = Set.of(DEFAULT_STATUS, COMPLETED_STATUS);
 
     private final ProcurementplanRepository procurementplanRepository;
@@ -292,7 +293,7 @@ public class ProcurementplanService {
         List<ProcurementPlanDetailCreateRequest> details = normalizeDetails(request);
         validateCreateRequest(details);
 
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
         Procurementplan plan = new Procurementplan();
         plan.setProcurementCode(generateProcurementCode());
         plan.setDate(now);
@@ -317,7 +318,7 @@ public class ProcurementplanService {
 
         plan.setNote(trimToNull(request.getNote()));
         plan.setStatus(normalizeStatus(request.getStatus()));
-        plan.setDate(Instant.now());
+        plan.setDate(LocalDateTime.now(VN_ZONE));
         procurementplanRepository.save(plan);
 
         procurementplandetailRepository.deleteByProcurementID_Id(id);
@@ -430,15 +431,11 @@ public class ProcurementplanService {
         if (plan.getDate() == null) {
             return false;
         }
-        LocalDate date = toLocalDate(plan.getDate());
+        LocalDate date = plan.getDate().toLocalDate();
         if (from != null && date.isBefore(from)) {
             return false;
         }
         return to == null || !date.isAfter(to);
-    }
-
-    private LocalDate toLocalDate(Instant instant) {
-        return instant.atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     private LocalDate parseDate(String value) {

@@ -400,7 +400,7 @@
           <tbody>
             <tr th:each="plan : ${procurementPlans}">
               <td class="sup-name" th:text="${plan.procurementCode}">DT-00001</td>
-              <td th:text="${plan.date != null ? #dates.format(new java.util.Date(plan.date.toEpochMilli()), 'dd/MM/yyyy HH:mm') : '—'}">
+              <td th:text="${plan.date != null ? #temporals.format(plan.date, 'dd/MM/yyyy HH:mm') : '—'}">
                 01/06/2026 10:15
               </td>
               <td>

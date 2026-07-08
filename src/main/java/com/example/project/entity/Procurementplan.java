@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -25,7 +25,7 @@ public class Procurementplan {
 
     @NotNull
     @Column(name = "date", nullable = false)
-    private Instant date;
+    private LocalDateTime date;
 
     @Size(max = 50)
     @NotNull
@@ -37,6 +37,6 @@ public class Procurementplan {
 
     @NotNull
     @Column(name = "createdAt", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
 }
