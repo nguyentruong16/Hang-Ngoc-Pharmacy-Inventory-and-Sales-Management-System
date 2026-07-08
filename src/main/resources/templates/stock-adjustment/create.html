@@ -34,6 +34,39 @@
             border-radius: 12px;
         }
 
+        /* "Chọn" button (open modal): green fill on hover with white text/icon. */
+        #openCountModalBtn:hover,
+        #openCountModalBtn:focus {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
+
+        /* Self-contained modal for picking a stock count (no Bootstrap JS dependency). */
+        .count-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1080;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .count-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(16, 24, 40, .45);
+        }
+
+        .count-modal-dialog {
+            position: relative;
+            z-index: 1;
+            width: min(880px, 92vw);
+            max-height: 88vh;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
         .btn-destroy-primary:hover {
             background: #047857;
             border-color: #047857;
@@ -163,16 +196,22 @@
 
         <div class="mb-4">
             <h1 class="fs-4 mb-1">Tạo phiếu điều chỉnh kho</h1>
-            <p class="text-secondary mb-0">Chọn loại điều chỉnh, sau đó thêm các lô hàng cần điều chỉnh từ tồn kho hiện có</p>
+            <p class="text-secondary mb-0">Chọn nguồn điều chỉnh, sau đó chọn hàng hóa (thủ công) hoặc một phiếu kiểm kê đã duyệt.</p>
         </div>
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <form th:action="${basePath + '/create'}" th:object="${form}" method="post">
+        <form th:action="${basePath + '/create'}" th:object="${form}" method="post" id="adjustmentForm">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <div class="row g-4">
                 <div class="col-12 col-xl-9">
+
+                    <!-- Source is folded into the "Loại / Nguồn điều chỉnh" dropdown; these hidden fields
+                         carry the resolved source (and chosen count) to the server. -->
+                    <input type="hidden" name="sourceMode" id="sourceModeInput"
+                           th:value="${form.sourceMode != null ? form.sourceMode : 'MANUAL'}" value="MANUAL">
+                    <input type="hidden" name="stockCountId" id="stockCountIdInput" th:value="${form.stockCountId}">
 
                     <div class="destroy-card p-4 mb-4">
                         <div class="section-title mb-4">
@@ -215,14 +254,34 @@
                                 </div>
                             </div>
 
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Loại điều chỉnh <span class="text-danger">*</span></label>
-                                <select class="form-select" th:field="*{adjustmentType}" required>
+                            <div class="col-12 col-md-6" id="typeField">
+                                <label class="form-label">Loại / Nguồn điều chỉnh <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{adjustmentType}" id="adjustmentTypeSelect" required>
                                     <option value="">-- Chọn loại điều chỉnh --</option>
-                                    <option th:each="entry : ${creatableTypeLabels}"
-                                            th:value="${entry.key}"
-                                            th:text="${entry.value}">Hủy hàng</option>
+                                    <optgroup label="Điều chỉnh thủ công">
+                                        <option th:each="entry : ${creatableTypeLabels}"
+                                                th:value="${entry.key}"
+                                                th:text="${entry.value}">Hủy hàng</option>
+                                    </optgroup>
+                                    <optgroup label="Theo kiểm kê">
+                                        <option value="STOCK_COUNT">Theo phiếu kiểm kê</option>
+                                    </optgroup>
                                 </select>
+                            </div>
+
+                            <div class="col-12 col-md-6" id="countPickerField" style="display: none;">
+                                <label class="form-label">Phiếu kiểm kê (đã duyệt) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control auto-field" id="chosenCountDisplay"
+                                           placeholder="Chưa chọn phiếu kiểm kê" readonly tabindex="-1">
+                                    <button type="button" class="btn btn-outline-success" id="openCountModalBtn"
+                                            onclick="openCountModal()">
+                                        <i class="ti ti-clipboard-search me-1"></i>Chọn
+                                    </button>
+                                </div>
+                                <div th:if="${#lists.isEmpty(approvedStockCounts)}" class="form-text text-warning">
+                                    <i class="ti ti-alert-triangle me-1"></i>Chưa có phiếu kiểm kê đã duyệt nào khả dụng.
+                                </div>
                             </div>
 
                             <div class="col-12 col-md-6">
@@ -319,6 +378,47 @@
                     </div>
                     </div><!-- /#itemsSection -->
 
+                    <!-- STOCK_COUNT source: read-only preview of the lines derived from the chosen count. -->
+                    <div id="countPreviewSection" style="display: none;">
+                        <div class="destroy-card">
+                            <div class="p-4 border-bottom">
+                                <div class="section-title">
+                                    <i class="ti ti-list-check text-success me-1"></i>
+                                    Dòng điều chỉnh từ phiếu kiểm kê
+                                    <span class="badge bg-success-subtle text-success ms-2" id="countLineCountBadge">0</span>
+                                </div>
+                                <p class="text-secondary small mb-0 mt-1">
+                                    Danh sách chỉ để xem — hệ thống tự dựng số lượng theo chênh lệch và tách phiếu Tăng/Giảm khi tạo.
+                                </p>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Mã hàng</th>
+                                        <th>Tên hàng hóa</th>
+                                        <th>Số lô</th>
+                                        <th>Hạn dùng</th>
+                                        <th>Tồn hệ thống</th>
+                                        <th>Thực tế</th>
+                                        <th>Chênh lệch</th>
+                                        <th>Loại</th>
+                                        <th>Giá trị</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="countPreviewBody">
+                                    <tr id="countEmptyRow">
+                                        <td colspan="9" class="text-center text-secondary py-4">
+                                            Chọn phiếu kiểm kê để xem các dòng điều chỉnh.
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div><!-- /#countPreviewSection -->
+
                 </div>
 
                 <div class="col-12 col-xl-3">
@@ -331,18 +431,13 @@
                         </div>
 
                         <div class="summary-row">
-                            <span class="text-secondary">Tổng số lượng hủy</span>
+                            <span class="text-secondary">Tổng số lượng</span>
                             <strong id="totalQuantityDisplay">0</strong>
                         </div>
 
                         <div class="summary-row">
                             <span class="text-secondary">Tổng giá trị ước tính</span>
                             <strong class="text-danger" id="totalValueDisplay">0đ</strong>
-                        </div>
-
-                        <div class="summary-row">
-                            <span class="text-secondary">Trạng thái sau khi tạo</span>
-                            <span class="status-badge status-warning">Chờ xử lý</span>
                         </div>
                     </div>
 
@@ -384,11 +479,11 @@
                     </div>
 
                     <div class="destroy-card p-4">
-                        <!-- Owner: submit auto-approves and deducts stock immediately. -->
+                        <!-- Owner: submit auto-approves the slip (a confirmation only; stock is unchanged). -->
                         <button th:if="${#strings.startsWith(basePath, '/owner')}"
                                 type="submit" name="action" value="submit"
                                 class="btn btn-destroy-primary w-100 mb-3"
-                                onclick="return confirm('Tạo và duyệt phiếu này? Tồn kho sẽ được cập nhật ngay.');">
+                                onclick="return confirm('Tạo và duyệt phiếu điều chỉnh này?');">
                             <i class="ti ti-circle-check me-1"></i>
                             Tạo &amp; duyệt
                         </button>
@@ -415,6 +510,66 @@
                 </div>
             </div>
         </form>
+
+        <!-- Self-contained modal listing approved stock counts. Its buttons set the hidden
+             stockCountId in the form via JS; it needs no Bootstrap JS. -->
+        <div id="countModal" class="count-modal" style="display: none;">
+            <div class="count-modal-backdrop" onclick="closeCountModal()"></div>
+            <div class="count-modal-dialog destroy-card">
+                <div class="p-4 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="section-title mb-0">
+                        <i class="ti ti-clipboard-check text-success me-1"></i>
+                        Chọn phiếu kiểm kê đã duyệt
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeCountModal()">
+                        <i class="ti ti-x"></i>
+                    </button>
+                </div>
+
+                <div class="p-4">
+                    <input type="text" class="form-control mb-3" id="countModalSearch"
+                           placeholder="Tìm theo mã phiếu, ngày, ghi chú" oninput="filterCountModalRows()">
+
+                    <div class="table-responsive" style="max-height: 55vh; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Mã phiếu</th>
+                                <th>Ngày kiểm kê</th>
+                                <th>Số dòng lệch</th>
+                                <th>Ghi chú</th>
+                                <th class="text-end">Chọn</th>
+                            </tr>
+                            </thead>
+                            <tbody id="countModalBody">
+                            <tr th:each="sc : ${approvedStockCounts}" class="count-modal-row"
+                                th:attr="data-search=${#strings.toLowerCase(sc.stockCountCode + ' ' + sc.countDateDisplay + ' ' + (sc.note != null ? sc.note : ''))}">
+                                <td class="fw-semibold text-success" th:text="${sc.stockCountCode}"></td>
+                                <td th:text="${sc.countDateDisplay}"></td>
+                                <td>
+                                    <span class="badge bg-warning-subtle text-warning"
+                                          th:text="${sc.discrepancyLineCount + ' dòng'}"></span>
+                                </td>
+                                <td class="text-secondary" th:text="${sc.note != null ? sc.note : '—'}"></td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-destroy-primary"
+                                            th:attr="data-count-id=${sc.stockCountId},data-count-code=${sc.stockCountCode}"
+                                            onclick="chooseCount(this)">
+                                        <i class="ti ti-check me-1"></i>Chọn
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr id="countModalEmpty" th:if="${#lists.isEmpty(approvedStockCounts)}">
+                                <td colspan="5" class="text-center text-secondary py-4">
+                                    Chưa có phiếu kiểm kê đã duyệt nào khả dụng.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 </main>
@@ -665,12 +820,185 @@
         }
     }
 
-    /** Item selection makes sense only after a type is chosen; all creatable types deduct stock. */
+    // ------------------------------------------------ source mode (folded into the type dropdown)
+
+    let countLines = [];
+
+    function currentMode() {
+        return document.getElementById('sourceModeInput').value || 'MANUAL';
+    }
+
+    /** The type dropdown is the single source of truth; "STOCK_COUNT" flips us to the count flow. */
+    function syncModeFromType() {
+        const isCount = document.getElementById('adjustmentTypeSelect').value === 'STOCK_COUNT';
+        document.getElementById('sourceModeInput').value = isCount ? 'STOCK_COUNT' : 'MANUAL';
+    }
+
+    function onTypeChanged() {
+        syncModeFromType();
+        applySourceMode();
+        if (currentMode() === 'STOCK_COUNT') {
+            loadCountLines();
+        }
+        saveDraftLocal();
+    }
+
+    /** Shows the right sections/fields for the active source mode. */
+    function applySourceMode() {
+        const isCount = currentMode() === 'STOCK_COUNT';
+
+        document.getElementById('countPickerField').style.display = isCount ? '' : 'none';
+
+        if (isCount) {
+            document.getElementById('itemsSection').style.display = 'none';
+            document.getElementById('typePrompt').style.display = 'none';
+            document.getElementById('countPreviewSection').style.display = '';
+        } else {
+            document.getElementById('countPreviewSection').style.display = 'none';
+            toggleItemsSection();
+        }
+        recomputeChecks();
+    }
+
+    /** Manual mode: item selection makes sense only after a real (non-STOCK_COUNT) type is chosen. */
     function toggleItemsSection() {
-        const type = document.querySelector('[name="adjustmentType"]').value;
-        const show = !!type;
+        if (currentMode() === 'STOCK_COUNT') {
+            return;
+        }
+        const type = document.getElementById('adjustmentTypeSelect').value;
+        const show = !!type && type !== 'STOCK_COUNT';
         document.getElementById('itemsSection').style.display = show ? '' : 'none';
         document.getElementById('typePrompt').style.display = show ? 'none' : '';
+    }
+
+    // ------------------------------------------------ stock-count picker modal
+
+    function openCountModal() {
+        document.getElementById('countModal').style.display = 'flex';
+        const search = document.getElementById('countModalSearch');
+        search.value = '';
+        filterCountModalRows();
+        search.focus();
+    }
+
+    function closeCountModal() {
+        document.getElementById('countModal').style.display = 'none';
+    }
+
+    function filterCountModalRows() {
+        const keyword = normalizeText(document.getElementById('countModalSearch').value);
+        document.querySelectorAll('#countModalBody .count-modal-row').forEach(row => {
+            const haystack = normalizeText(row.getAttribute('data-search') || '');
+            row.style.display = (!keyword || haystack.includes(keyword)) ? '' : 'none';
+        });
+    }
+
+    function chooseCount(button) {
+        document.getElementById('stockCountIdInput').value = button.getAttribute('data-count-id');
+        document.getElementById('chosenCountDisplay').value = button.getAttribute('data-count-code');
+        closeCountModal();
+        loadCountLines();
+        saveDraftLocal();
+    }
+
+    function countTypeLabel(type) {
+        return type === 'COUNT_INCREASE' ? 'Tăng (kiểm kê)' : 'Giảm (kiểm kê)';
+    }
+
+    /** Fetches the read-only COUNT lines for the selected count and renders the preview. */
+    function loadCountLines() {
+        const stockCountId = document.getElementById('stockCountIdInput').value;
+        countLines = [];
+
+        if (!stockCountId) {
+            renderCountPreview();
+            return;
+        }
+
+        fetch(`${basePath}/stock-counts/${stockCountId}/lines`, {headers: {'Accept': 'application/json'}})
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('load failed');
+                }
+                return res.json();
+            })
+            .then(lines => {
+                countLines = Array.isArray(lines) ? lines : [];
+                renderCountPreview();
+            })
+            .catch(() => {
+                countLines = [];
+                document.getElementById('countPreviewBody').innerHTML =
+                    '<tr><td colspan="9" class="text-center text-danger py-4">Không tải được dòng kiểm kê.</td></tr>';
+                updateCountSummary();
+            });
+    }
+
+    function renderCountPreview() {
+        const body = document.getElementById('countPreviewBody');
+
+        if (!countLines.length) {
+            body.innerHTML = '<tr id="countEmptyRow"><td colspan="9" class="text-center text-secondary py-4">'
+                + 'Phiếu kiểm kê chưa có dòng chênh lệch để điều chỉnh.</td></tr>';
+            updateCountSummary();
+            return;
+        }
+
+        body.innerHTML = countLines.map(line => {
+            const discrepancy = Number(line.actualQty) - Number(line.systemQty);
+            const sign = discrepancy > 0 ? '+' : '';
+            const badgeClass = line.adjustmentType === 'COUNT_INCREASE'
+                ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+            return `
+                <tr>
+                    <td class="fw-semibold text-success">${line.productId ?? ''}</td>
+                    <td>${line.productName || ''}</td>
+                    <td><span class="badge bg-secondary-subtle text-secondary">${line.lotNumber || 'Không có'}</span></td>
+                    <td><span class="badge bg-warning-subtle text-warning">${line.expirationDateDisplay || 'Không có'}</span></td>
+                    <td>${line.systemQty}</td>
+                    <td>${line.actualQty}</td>
+                    <td class="fw-semibold">${sign}${discrepancy}</td>
+                    <td><span class="badge ${badgeClass}">${countTypeLabel(line.adjustmentType)}</span></td>
+                    <td class="fw-semibold">${formatMoney(line.lineCost || 0)}</td>
+                </tr>`;
+        }).join('');
+
+        updateCountSummary();
+    }
+
+    function updateCountSummary() {
+        const totalQuantity = countLines.reduce((sum, line) => sum + Number(line.quantity || 0), 0);
+        const totalValue = countLines.reduce((sum, line) => sum + Number(line.lineCost || 0), 0);
+
+        document.getElementById('countLineCountBadge').textContent = countLines.length;
+        document.getElementById('totalItemsDisplay').textContent = countLines.length;
+        document.getElementById('totalQuantityDisplay').textContent = totalQuantity;
+        document.getElementById('totalValueDisplay').textContent = formatMoney(totalValue);
+
+        recomputeChecks();
+    }
+
+    /** Mode-aware checklist update (manual delegates to calculateSummary). */
+    function recomputeChecks() {
+        if (currentMode() === 'STOCK_COUNT') {
+            const hasLines = countLines.length > 0;
+            const hasCount = !!document.getElementById('stockCountIdInput').value;
+            setCheck('checkItemsIcon', hasCount && hasLines);
+            setCheck('checkQuantityIcon', hasLines);
+            setCheck('checkReasonIcon', document.querySelector('[name="reason"]').value.trim().length > 0);
+            setCheck('checkExpiryIcon', hasLines);
+        } else {
+            calculateSummary();
+        }
+    }
+
+    function onFormChanged() {
+        if (currentMode() === 'STOCK_COUNT') {
+            recomputeChecks();
+        } else {
+            calculateSummary();
+        }
+        saveDraftLocal();
     }
 
     // ---------------------------------------------------------------- draft autosave (crash recovery)
@@ -685,6 +1013,8 @@
             });
         });
         return {
+            stockCountId: document.getElementById('stockCountIdInput').value || '',
+            stockCountCode: document.getElementById('chosenCountDisplay').value || '',
             adjustmentType: document.querySelector('[name="adjustmentType"]').value,
             reason: document.querySelector('[name="reason"]').value,
             note: document.querySelector('[name="note"]').value,
@@ -725,6 +1055,19 @@
             document.querySelector('[name="adjustmentType"]').value = draft.adjustmentType;
             applied = true;
         }
+        if (draft.stockCountId) {
+            const idStr = String(draft.stockCountId);
+            document.getElementById('stockCountIdInput').value = idStr;
+            let code = draft.stockCountCode;
+            if (!code) {
+                const btn = document.querySelector(`#countModalBody [data-count-id="${idStr}"]`);
+                if (btn) {
+                    code = btn.getAttribute('data-count-code');
+                }
+            }
+            document.getElementById('chosenCountDisplay').value = code || idStr;
+            applied = true;
+        }
         if (draft.reason) {
             document.querySelector('[name="reason"]').value = draft.reason;
             applied = true;
@@ -751,8 +1094,9 @@
     }
 
     function restoreDraft() {
-        // After a server validation error the form is resent with its items -> authoritative.
-        if (serverForm && serverForm.items && serverForm.items.length > 0) {
+        // After a server validation error the form is resent with its values -> authoritative.
+        if (serverForm && ((serverForm.items && serverForm.items.length > 0)
+                || serverForm.stockCountId || serverForm.sourceMode)) {
             applyDraft(serverForm);
             return;
         }
@@ -769,27 +1113,38 @@
         document.getElementById('todayDisplay').value = today();
 
         restoreDraft();
-        toggleItemsSection();
         filterCandidateOptions();
-        calculateSummary();
+        syncModeFromType();
+        applySourceMode();
+        if (currentMode() === 'STOCK_COUNT') {
+            loadCountLines();
+        }
         saveDraftLocal();
 
-        const form = document.querySelector('form');
+        const form = document.getElementById('adjustmentForm');
 
-        // Autosave any edit (type / reason / note / per-row quantity & reason) and refresh checks.
-        form.addEventListener('input', function () {
-            calculateSummary();
-            saveDraftLocal();
+        // Autosave any edit and refresh checks (mode-aware).
+        form.addEventListener('input', onFormChanged);
+
+        // The type dropdown drives the whole flow (a real type vs "Theo phiếu kiểm kê").
+        document.getElementById('adjustmentTypeSelect').addEventListener('change', onTypeChanged);
+
+        // Close the picker modal on Escape.
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeCountModal();
+            }
         });
 
-        // Show/hide the item picker as soon as the adjustment type changes.
-        document.querySelector('[name="adjustmentType"]').addEventListener('change', function () {
-            toggleItemsSection();
-            saveDraftLocal();
+        // Block submit in stock-count mode until a count is chosen; otherwise drop the crash-recovery copy.
+        form.addEventListener('submit', function (event) {
+            if (currentMode() === 'STOCK_COUNT' && !document.getElementById('stockCountIdInput').value) {
+                event.preventDefault();
+                alert('Vui lòng chọn phiếu kiểm kê.');
+                return;
+            }
+            clearDraftLocal();
         });
-
-        // A real save/submit persists to the DB, so the local crash-recovery copy is no longer needed.
-        form.addEventListener('submit', clearDraftLocal);
     });
 </script>
 

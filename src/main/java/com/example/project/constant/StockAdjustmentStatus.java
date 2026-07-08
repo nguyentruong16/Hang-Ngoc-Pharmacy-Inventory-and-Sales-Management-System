@@ -15,7 +15,8 @@ import java.util.List;
  *   <li>{@link #DRAFT} — a work-in-progress slip the creator has not sent yet.</li>
  *   <li>{@link #PENDING} — a slip a Pharmacist has submitted and is awaiting the Owner's approval.</li>
  *   <li>{@link #APPROVED} — approved by the Owner (this also covers an Owner-created slip, which is
- *       auto-approved on submit). Stock is moved only when a slip reaches this state.</li>
+ *       auto-approved on submit). This is only a confirmation — it does NOT change stock; the real
+ *       {@code batch.storageQuantity} change happens on a separate screen owned by another module.</li>
  *   <li>{@link #REJECTED} — the Owner declined a pending slip.</li>
  * </ul>
  */

@@ -2,16 +2,20 @@ package com.example.project.controller;
 
 import com.example.project.context.CurrentUserContext;
 import com.example.project.dto.request.StockAdjustmentCreateRequest;
+import com.example.project.dto.response.StockAdjustmentCountLineResponse;
 import com.example.project.dto.response.StockAdjustmentDetailPageResponse;
 import com.example.project.dto.response.StockAdjustmentListItemResponse;
 import com.example.project.service.StockadjustmentService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 /**
  * Stock Adjustment screens (list / detail / create / approve / reject).
@@ -88,11 +92,21 @@ public class StockadjustmentController {
         model.addAttribute("form", new StockAdjustmentCreateRequest());
         model.addAttribute("candidates", stockadjustmentService.listAvailableBatches(keyword));
         model.addAttribute("creatableTypeLabels", stockadjustmentService.creatableTypeLabels());
+        model.addAttribute("approvedStockCounts", stockadjustmentService.listApprovedStockCounts());
         model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
         model.addAttribute("keyword", keyword);
         model.addAttribute("basePath", resolveBasePath(request));
 
         return "stock-adjustment/create";
+    }
+
+    /** JSON: the prospective COUNT lines of an approved stock count, for the create screen's dropdown. */
+    @GetMapping(value = {OWNER_BASE + "/stock-counts/{stockCountId}/lines",
+            PHARMACIST_BASE + "/stock-counts/{stockCountId}/lines"},
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public List<StockAdjustmentCountLineResponse> stockCountLines(@PathVariable Integer stockCountId) {
+        return stockadjustmentService.loadStockCountLines(stockCountId);
     }
 
     @PostMapping({OWNER_BASE + "/create", PHARMACIST_BASE + "/create"})
@@ -126,6 +140,7 @@ public class StockadjustmentController {
             model.addAttribute("form", form);
             model.addAttribute("candidates", stockadjustmentService.listAvailableBatches(null));
             model.addAttribute("creatableTypeLabels", stockadjustmentService.creatableTypeLabels());
+            model.addAttribute("approvedStockCounts", stockadjustmentService.listApprovedStockCounts());
             model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
             model.addAttribute("keyword", null);
             model.addAttribute("basePath", basePath);
