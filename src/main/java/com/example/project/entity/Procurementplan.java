@@ -35,10 +35,6 @@ public class Procurementplan {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplierID")
-    private Supplier supplierID;
-
     @NotNull
     @Column(name = "createdAt", nullable = false)
     private Instant createdAt;
