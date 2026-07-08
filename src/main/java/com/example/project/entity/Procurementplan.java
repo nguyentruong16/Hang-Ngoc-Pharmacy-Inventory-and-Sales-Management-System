@@ -27,17 +27,10 @@ public class Procurementplan {
     @Column(name = "date", nullable = false)
     private Instant date;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requestedBy")
-    private Account requestedBy;
-
     @Size(max = 50)
     @NotNull
     @Column(name = "status", nullable = false, length = 50)
     private String status;
-
-    @Column(name = "approveAt")
-    private Instant approveAt;
 
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
