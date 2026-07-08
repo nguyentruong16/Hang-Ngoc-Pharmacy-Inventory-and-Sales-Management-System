@@ -1,17 +1,24 @@
 package com.example.project.controller;
 
+import com.example.project.dto.request.ProcurementPlanCreateRequest;
+import com.example.project.dto.response.ProcurementProductSearchResponse;
 import com.example.project.dto.response.ProcurementplanResponse;
 import com.example.project.service.ProcurementplanService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -57,6 +64,57 @@ public class ProcurementplanController {
         model.addAttribute("pageTitle", "Danh sách dự trù mua hàng");
         model.addAttribute("basePath", basePath);
         return "owner/procurement-plan-list";
+    }
+
+    @GetMapping("/owner/procurements/products/search")
+    @ResponseBody
+    public List<ProcurementProductSearchResponse> searchProducts(@RequestParam(name = "keyword") String keyword,
+                                                                 @RequestParam(name = "limit", defaultValue = "12") int limit) {
+        return procurementplanService.searchProducts(keyword, limit);
+    }
+
+    @GetMapping("/owner/procurements/create-procurementplan")
+    public String createProcurementPlanForm(HttpServletRequest request, Model model) {
+        if (!model.containsAttribute("procurementPlanForm")) {
+            model.addAttribute("procurementPlanForm", new ProcurementPlanCreateRequest());
+        }
+
+        addCreatePageData(request, model);
+        model.addAttribute("pageTitle", "Tạo dự trù mua hàng");
+        return "owner/create-procurementplan";
+    }
+
+    @PostMapping("/owner/procurements/create-procurementplan")
+    public String createProcurementPlan(@Valid @ModelAttribute("procurementPlanForm") ProcurementPlanCreateRequest form,
+                                        BindingResult bindingResult,
+                                        HttpServletRequest request,
+                                        Model model,
+                                        RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+
+        if (bindingResult.hasErrors()) {
+            addCreatePageData(request, model);
+            model.addAttribute("pageTitle", "Tạo dự trù mua hàng");
+            return "owner/create-procurementplan";
+        }
+
+        try {
+            procurementplanService.create(form);
+            redirectAttributes.addFlashAttribute("success", "Tạo dự trù mua hàng thành công");
+            return "redirect:" + basePath;
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("errorMessage", exception.getMessage());
+            addCreatePageData(request, model);
+            model.addAttribute("pageTitle", "Tạo dự trù mua hàng");
+            return "owner/create-procurementplan";
+        }
+    }
+
+    private void addCreatePageData(HttpServletRequest request, Model model) {
+        ProcurementPlanCreateRequest form = (ProcurementPlanCreateRequest) model.getAttribute("procurementPlanForm");
+        model.addAttribute("initialProducts", procurementplanService.listProductsForDetails(form));
+        model.addAttribute("suppliers", procurementplanService.listSuppliers());
+        model.addAttribute("basePath", resolveBasePath(request));
     }
 
     private String resolveBasePath(HttpServletRequest request) {

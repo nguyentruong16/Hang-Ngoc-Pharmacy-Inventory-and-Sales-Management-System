@@ -118,6 +118,23 @@
     }
     .btn-search.reset:hover { background: #f9fafb; color: #111827; }
 
+    .btn-create {
+      height: 40px;
+      padding: 0 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--sup-green);
+      color: #fff;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-create:hover { background: var(--sup-green-dark); color: #fff; }
+
     .sup-table { width: 100%; border-collapse: collapse; min-width: 720px; }
     .sup-table th {
       padding: 10px 14px;
@@ -205,6 +222,9 @@
     <div class="main-card">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách dự trù mua hàng</h2>
+        <a th:if="${currentRole == 'OWNER'}" th:href="${basePath + '/create-procurementplan'}" class="btn-create">
+          <i class="ti ti-plus"></i>Tạo dự trù mua hàng
+        </a>
       </div>
 
       <form th:action="${basePath}" method="get">

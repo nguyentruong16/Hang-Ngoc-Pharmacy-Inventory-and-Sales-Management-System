@@ -87,7 +87,8 @@ public class SidebarMenuService {
                 || uri.startsWith("/owner/positions/update-position")) {
             uri = "/owner/positions";
         }
-        if (uri.startsWith("/owner/procurements/")) {
+        if (uri.startsWith("/owner/procurements/create-procurementplan")
+                || uri.startsWith("/owner/procurements/view-detail")) {
             uri = "/owner/procurements";
         }
         String best = null;
