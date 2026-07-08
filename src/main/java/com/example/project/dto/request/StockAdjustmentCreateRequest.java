@@ -7,12 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Form backing the "create stock adjustment" screen. Carries the slip-level reason/note plus the
- * per-batch lines the user picked. The adjustment type (currently DESTROY) is decided server-side.
+ * Form backing the "create stock adjustment" screen. Carries the slip-level adjustment type,
+ * reason/note plus the per-batch lines the user picked.
  */
 @Getter
 @Setter
 public class StockAdjustmentCreateRequest {
+
+    /** One of DESTROY / INTERNAL_USE / SAMPLE / GIFT (COUNT_* comes from stock count only). */
+    private String adjustmentType;
 
     private String reason;
 

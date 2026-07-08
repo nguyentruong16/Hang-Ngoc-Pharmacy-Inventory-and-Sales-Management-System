@@ -33,6 +33,9 @@ public class StockadjustmentService {
     private static final String DIRECTION_IN = "IN";
     private static final String DIRECTION_OUT = "OUT";
 
+    /** Adjustment types a user may pick when creating a slip by hand (COUNT_* comes from stock count). */
+    private static final List<String> CREATABLE_TYPES = List.of("DESTROY", "INTERNAL_USE", "SAMPLE", "GIFT");
+
     private final StockadjustmentRepository stockadjustmentRepository;
     private final StockadjustmentdetailRepository stockadjustmentdetailRepository;
     private final AccountRepository accountRepository;
@@ -101,11 +104,22 @@ public class StockadjustmentService {
                 .filter(adj -> YearMonth.from(toLocalDate(adj.getDate())).equals(currentMonth))
                 .count();
 
+        long draftCount = countByStatusName(adjustments, StockAdjustmentStatus.DRAFT);
         long pendingCount = countByStatusName(adjustments, StockAdjustmentStatus.PENDING);
         long approvedCount = countByStatusName(adjustments, StockAdjustmentStatus.APPROVED);
         long rejectedCount = countByStatusName(adjustments, StockAdjustmentStatus.REJECTED);
 
-        return new StockAdjustmentStatsResponse(monthlyCount, pendingCount, approvedCount, rejectedCount);
+        return new StockAdjustmentStatsResponse(monthlyCount, draftCount, pendingCount, approvedCount, rejectedCount);
+    }
+
+    /** Adjustment types a user may create by hand, as an ordered code → Vietnamese-label map. */
+    public Map<String, String> creatableTypeLabels() {
+        Map<String, String> all = adjustmentTypeLabels();
+        Map<String, String> labels = new LinkedHashMap<>();
+        for (String type : CREATABLE_TYPES) {
+            labels.put(type, all.get(type));
+        }
+        return labels;
     }
 
     /** The fixed set of statuses, in workflow order, for the filter dropdown. */
@@ -306,15 +320,24 @@ public class StockadjustmentService {
     }
 
     /**
-     * Creates a DESTROY adjustment. When {@code autoApprove} is true (the Owner is creating), the
-     * slip is approved immediately and the stock effect is applied; otherwise it is left
-     * {@link StockAdjustmentStatus#PENDING} for the Owner to approve.
+     * Creates an adjustment slip of one of the {@link #CREATABLE_TYPES}.
+     *
+     * <p>Resulting status:
+     * <ul>
+     *   <li>{@code asDraft} → {@link StockAdjustmentStatus#DRAFT} (nothing moves yet);</li>
+     *   <li>otherwise the Owner ({@code isOwner}) auto-approves to {@link StockAdjustmentStatus#APPROVED}
+     *       and the stock effect is applied immediately;</li>
+     *   <li>otherwise a Pharmacist submits to {@link StockAdjustmentStatus#PENDING} for approval.</li>
+     * </ul>
      */
     @Transactional
-    public Integer createDestroyAdjustment(StockAdjustmentCreateRequest request,
-                                           Integer currentAccountId,
-                                           boolean autoApprove) {
+    public Integer createAdjustment(StockAdjustmentCreateRequest request,
+                                    Integer currentAccountId,
+                                    boolean isOwner,
+                                    boolean asDraft) {
         validateRequest(request);
+
+        String adjustmentType = resolveCreatableType(request.getAdjustmentType());
 
         Account creator = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
@@ -343,16 +366,21 @@ public class StockadjustmentService {
         }
         validateSelectedBatches(selectedBatches, itemMap);
 
+        String status = asDraft
+                ? StockAdjustmentStatus.DRAFT
+                : (isOwner ? StockAdjustmentStatus.APPROVED : StockAdjustmentStatus.PENDING);
+        boolean approvedNow = StockAdjustmentStatus.APPROVED.equals(status);
+
         Stockadjustment adjustment = new Stockadjustment();
         adjustment.setStockAdjustmentCode(generateCode());
-        adjustment.setAdjustmentType("DESTROY");
+        adjustment.setAdjustmentType(adjustmentType);
         adjustment.setDate(Instant.now());
         adjustment.setCreatedBy(creator);
         adjustment.setReason(request.getReason().trim());
         adjustment.setExpenseID(null);
-        adjustment.setStatus(autoApprove ? StockAdjustmentStatus.APPROVED : StockAdjustmentStatus.PENDING);
+        adjustment.setStatus(status);
         adjustment.setNote(trimToNull(request.getNote()));
-        if (autoApprove) {
+        if (approvedNow) {
             adjustment.setApprovedBy(creator);
             adjustment.setApprovedAt(Instant.now());
         }
@@ -383,11 +411,50 @@ public class StockadjustmentService {
             stockadjustmentdetailRepository.save(detail);
         }
 
-        if (autoApprove) {
+        if (approvedNow) {
             applyStockEffect(savedAdjustment.getId());
         }
 
         return savedAdjustment.getId();
+    }
+
+    /**
+     * Sends a {@link StockAdjustmentStatus#DRAFT} slip forward: the Owner auto-approves it (applying
+     * the stock effect), a Pharmacist moves it to {@link StockAdjustmentStatus#PENDING}.
+     */
+    @Transactional
+    public void submit(Integer adjustmentId, Integer currentAccountId, boolean isOwner) {
+        Stockadjustment adjustment = stockadjustmentRepository.findByIdWithRelations(adjustmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu điều chỉnh kho"));
+
+        if (!isStatus(getStatusName(adjustment), StockAdjustmentStatus.DRAFT)) {
+            throw new IllegalArgumentException("Chỉ có thể gửi duyệt phiếu đang ở trạng thái nháp");
+        }
+
+        Account actor = accountRepository.findById(currentAccountId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
+
+        if (isOwner) {
+            applyStockEffect(adjustmentId);
+            adjustment.setStatus(StockAdjustmentStatus.APPROVED);
+            adjustment.setApprovedBy(actor);
+            adjustment.setApprovedAt(Instant.now());
+        } else {
+            adjustment.setStatus(StockAdjustmentStatus.PENDING);
+        }
+
+        stockadjustmentRepository.save(adjustment);
+    }
+
+    private String resolveCreatableType(String rawType) {
+        if (rawType == null || rawType.isBlank()) {
+            return "DESTROY";
+        }
+        String type = rawType.trim().toUpperCase(Locale.ROOT);
+        if (!CREATABLE_TYPES.contains(type)) {
+            throw new IllegalArgumentException("Loại điều chỉnh không hợp lệ");
+        }
+        return type;
     }
 
     private void validateRequest(StockAdjustmentCreateRequest request) {
@@ -629,14 +696,17 @@ public class StockadjustmentService {
     }
 
     private String statusCssClass(String statusName) {
-        String normalized = normalize(statusName);
-        if (normalized.contains(normalize(StockAdjustmentStatus.APPROVED))) {
+        // Exact matches only: "Chờ duyệt" contains "duyệt", so a substring test would misclassify it.
+        if (isStatus(statusName, StockAdjustmentStatus.APPROVED)) {
             return "status-approved";
         }
-        if (normalized.contains(normalize(StockAdjustmentStatus.REJECTED))) {
+        if (isStatus(statusName, StockAdjustmentStatus.REJECTED)) {
             return "status-rejected";
         }
-        if (normalized.contains(normalize(StockAdjustmentStatus.PENDING))) {
+        if (isStatus(statusName, StockAdjustmentStatus.PENDING)) {
+            return "status-pending";
+        }
+        if (isStatus(statusName, StockAdjustmentStatus.DRAFT)) {
             return "status-draft";
         }
         return "status-default";

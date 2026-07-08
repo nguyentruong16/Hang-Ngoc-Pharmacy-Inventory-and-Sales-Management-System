@@ -87,6 +87,8 @@ public class StockadjustmentController {
                              Model model) {
         model.addAttribute("form", new StockAdjustmentCreateRequest());
         model.addAttribute("candidates", stockadjustmentService.listAvailableBatches(keyword));
+        model.addAttribute("creatableTypeLabels", stockadjustmentService.creatableTypeLabels());
+        model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
         model.addAttribute("keyword", keyword);
         model.addAttribute("basePath", resolveBasePath(request));
 
@@ -95,28 +97,58 @@ public class StockadjustmentController {
 
     @PostMapping({OWNER_BASE + "/create", PHARMACIST_BASE + "/create"})
     public String create(@ModelAttribute("form") StockAdjustmentCreateRequest form,
+                         @RequestParam(name = "action", required = false) String action,
                          HttpServletRequest request,
                          RedirectAttributes redirectAttributes,
                          Model model) {
         String basePath = resolveBasePath(request);
+        boolean isOwner = currentUserContext.isOwner();
+        boolean asDraft = "draft".equals(action);
         try {
-            Integer adjustmentId = stockadjustmentService.createDestroyAdjustment(
+            Integer adjustmentId = stockadjustmentService.createAdjustment(
                     form,
                     currentUserContext.getCurrentAccountId(),
-                    currentUserContext.isOwner());
+                    isOwner,
+                    asDraft);
 
-            redirectAttributes.addFlashAttribute("successMessage",
-                    currentUserContext.isOwner()
-                            ? "Tạo phiếu điều chỉnh kho thành công"
-                            : "Tạo phiếu điều chỉnh kho thành công, đang chờ duyệt");
+            String message;
+            if (asDraft) {
+                message = "Đã lưu nháp phiếu điều chỉnh kho";
+            } else if (isOwner) {
+                message = "Tạo phiếu điều chỉnh kho thành công (đã tự động duyệt, tồn kho đã cập nhật)";
+            } else {
+                message = "Đã gửi phiếu điều chỉnh kho, đang chờ duyệt";
+            }
+            redirectAttributes.addFlashAttribute("successMessage", message);
             return "redirect:" + basePath + "/" + adjustmentId;
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
+            model.addAttribute("form", form);
             model.addAttribute("candidates", stockadjustmentService.listAvailableBatches(null));
+            model.addAttribute("creatableTypeLabels", stockadjustmentService.creatableTypeLabels());
+            model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
             model.addAttribute("keyword", null);
             model.addAttribute("basePath", basePath);
             return "stock-adjustment/create";
         }
+    }
+
+    @PostMapping({OWNER_BASE + "/{adjustmentId}/submit", PHARMACIST_BASE + "/{adjustmentId}/submit"})
+    public String submit(@PathVariable Integer adjustmentId,
+                         HttpServletRequest request,
+                         RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            stockadjustmentService.submit(adjustmentId, currentUserContext.getCurrentAccountId(),
+                    currentUserContext.isOwner());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    currentUserContext.isOwner()
+                            ? "Đã duyệt phiếu điều chỉnh kho (tồn kho đã cập nhật)"
+                            : "Đã gửi phiếu điều chỉnh kho, đang chờ duyệt");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + basePath + "/" + adjustmentId;
     }
 
     @GetMapping({OWNER_BASE + "/{adjustmentId}", PHARMACIST_BASE + "/{adjustmentId}"})
