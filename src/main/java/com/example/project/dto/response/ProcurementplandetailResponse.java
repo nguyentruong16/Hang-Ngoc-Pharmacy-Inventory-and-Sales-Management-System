@@ -18,6 +18,7 @@ public class ProcurementplandetailResponse {
     private Integer requestedQuantity;
     private String unit;
     private BigDecimal estimatedPrice;
+    private Integer supplierId;
     private String note;
     private Integer currentStock;
     private String reason;
@@ -30,6 +31,7 @@ public class ProcurementplandetailResponse {
                 procurementplandetail.getRequestedQuantity(),
                 procurementplandetail.getUnit(),
                 procurementplandetail.getEstimatedPrice(),
+                procurementplandetail.getSupplierID() != null ? procurementplandetail.getSupplierID().getId() : null,
                 procurementplandetail.getNote(),
                 procurementplandetail.getCurrentStock(),
                 procurementplandetail.getReason()
