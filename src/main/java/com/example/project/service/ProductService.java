@@ -81,6 +81,7 @@ public class ProductService {
     private final ReturndetailRepository returndetailRepository;
     private final PositionRepository positionRepository;
     private final CurrentUserContext currentUserContext;
+    private final ProductImageStorageService productImageStorageService;
 
     /** Country names for the "Xuất xứ" autocomplete — sourced from the JDK's ISO-3166 locale data instead of a hardcoded DB table. */
     private static final List<String> COUNTRY_NAMES = Arrays.stream(Locale.getISOCountries())
@@ -99,7 +100,8 @@ public class ProductService {
                           StockadjustmentdetailRepository stockadjustmentdetailRepository,
                           ReturndetailRepository returndetailRepository,
                           PositionRepository positionRepository,
-                          CurrentUserContext currentUserContext) {
+                          CurrentUserContext currentUserContext,
+                          ProductImageStorageService productImageStorageService) {
         this.productRepository = productRepository;
         this.batchRepository = batchRepository;
         this.productunitRepository = productunitRepository;
@@ -111,6 +113,7 @@ public class ProductService {
         this.returndetailRepository = returndetailRepository;
         this.positionRepository = positionRepository;
         this.currentUserContext = currentUserContext;
+        this.productImageStorageService = productImageStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -218,6 +221,7 @@ public class ProductService {
         response.setCode(product.getCode());
         response.setName(product.getName());
         response.setBarcode(product.getBarcode());
+        response.setImageUrl(product.getImage());
         response.setTypeName(product.getTypeID() != null ? product.getTypeID().getName() : "—");
         response.setProducerName(product.getProducerID() != null ? product.getProducerID().getName() : "—");
         response.setOriginName(product.getOrigin() != null ? product.getOrigin() : "—");
@@ -361,6 +365,9 @@ public class ProductService {
         if (request.getProducerId() != null) {
             product.setProducerID(producerRepository.getReferenceById(request.getProducerId()));
         }
+        if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
+            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode()));
+        }
         Product saved = productRepository.save(product);
 
         for (ResolvedUnit resolved : resolvedUnits) {
@@ -433,6 +440,7 @@ public class ProductService {
         form.setMaxStock(product.getMaxStock());
         form.setStatus(product.getStatus());
         form.setNote(product.getNote());
+        form.setExistingImageUrl(product.getImage());
 
         List<Productunit> units = productunitRepository.findByProductId(productId).stream()
                 .sorted(Comparator.comparing(Productunit::getRatio, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -535,6 +543,9 @@ public class ProductService {
         product.setTypeID(request.getTypeId() != null ? typeRepository.getReferenceById(request.getTypeId()) : null);
         product.setProducerID(request.getProducerId() != null
                 ? producerRepository.getReferenceById(request.getProducerId()) : null);
+        if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
+            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode()));
+        }
         productRepository.save(product);
 
         for (int i = 0; i < existingUnits.size(); i++) {

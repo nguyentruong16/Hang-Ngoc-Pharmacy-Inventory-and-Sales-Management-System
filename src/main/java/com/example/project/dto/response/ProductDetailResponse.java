@@ -22,6 +22,7 @@ public class ProductDetailResponse {
     private String code;
     private String name;
     private String barcode;
+    private String imageUrl;
     private String typeName;
     private String producerName;
     private String originName;
