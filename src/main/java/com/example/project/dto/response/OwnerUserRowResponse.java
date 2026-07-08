@@ -12,7 +12,6 @@ public class OwnerUserRowResponse {
     private String name;
     private String username;
     private String roleDisplay;
-    private String branchNames;
     private String phoneNumber;
     private String email;
     private Boolean status;

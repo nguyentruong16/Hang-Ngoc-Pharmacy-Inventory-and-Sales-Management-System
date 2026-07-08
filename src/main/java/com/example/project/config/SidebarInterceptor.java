@@ -30,7 +30,7 @@ import java.util.Set;
  *
  * <p>Model attributes added (consumed by {@code fragments/topbar} and {@code fragments/sidebar}):
  * {@code currentRole}, {@code currentRoleDisplay}, {@code currentAccountName},
- * {@code currentBranchId}, {@code sidebarMenu}, {@code activeUrl}, {@code currentRequestUri}.</p>
+ * {@code sidebarMenu}, {@code activeUrl}, {@code currentRequestUri}.</p>
  */
 public class SidebarInterceptor implements HandlerInterceptor {
 

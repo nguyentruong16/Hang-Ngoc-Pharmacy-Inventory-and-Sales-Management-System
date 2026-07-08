@@ -101,8 +101,7 @@ public class ProfileController {
                 updatedAccount.getPassword(),
                 Boolean.TRUE.equals(updatedAccount.getStatus()),
                 authentication.getAuthorities(),
-                oldPrincipal.getPrimaryRole(),
-                oldPrincipal.getBranchId()
+                oldPrincipal.getPrimaryRole()
         );
 
         UsernamePasswordAuthenticationToken newAuthentication =

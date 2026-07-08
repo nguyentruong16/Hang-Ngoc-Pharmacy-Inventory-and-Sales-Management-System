@@ -412,11 +412,6 @@ public class PurchaseinvoiceService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<Object> listBranches() {
-        return List.of();
-    }
-
     /** The fixed set of statuses a PurchaseInvoice can be in, for the filter dropdown. */
     public List<String> listPaymentStatuses() {
         return PurchaseInvoiceStatus.ALL;

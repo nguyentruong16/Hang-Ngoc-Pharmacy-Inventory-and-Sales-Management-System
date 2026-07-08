@@ -43,8 +43,6 @@ public class ProfileService {
             role = "Chưa phân quyền";
         }
 
-        String branchName = "Toàn hệ thống";
-
         return new ProfileViewResponse(
                 account.getId(),
                 account.getName(),
@@ -52,7 +50,6 @@ public class ProfileService {
                 account.getEmail(),
                 account.getPhoneNumber(),
                 role,
-                branchName,
                 account.getStatus()
         );
     }

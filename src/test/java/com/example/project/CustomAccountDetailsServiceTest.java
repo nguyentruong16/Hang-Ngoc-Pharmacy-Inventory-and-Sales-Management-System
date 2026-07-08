@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
@@ -53,7 +52,6 @@ class CustomAccountDetailsServiceTest {
         AccountPrincipal principal = service.loadUserByLoginId("u");
 
         assertEquals("PHARMACIST", principal.getPrimaryRole());
-        assertNull(principal.getBranchId()); // single store — no branch concept any more
         Set<String> authorities = principal.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
