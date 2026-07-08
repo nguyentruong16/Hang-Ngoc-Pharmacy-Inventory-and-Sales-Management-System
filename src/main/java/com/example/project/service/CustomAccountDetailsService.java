@@ -74,8 +74,7 @@ public class CustomAccountDetailsService {
                 account.getPassword(),
                 true,
                 authorities,
-                role,
-                null
+                role
         );
     }
 

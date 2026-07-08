@@ -37,7 +37,6 @@ public class PurchaseInvoicePageController {
                                        @RequestParam(name = "fromDate", required = false) String fromDate,
                                        @RequestParam(name = "toDate", required = false) String toDate,
                                        @RequestParam(name = "supplierId", required = false) Integer supplierId,
-                                       @RequestParam(name = "branchId", required = false) Integer branchId,
                                        @RequestParam(name = "paymentStatus", required = false) String paymentStatus,
                                        @RequestParam(name = "page", defaultValue = "0") int page,
                                        @RequestParam(name = "size", defaultValue = "5") int size,
@@ -57,7 +56,6 @@ public class PurchaseInvoicePageController {
                         fromDate,
                         toDate,
                         supplierId,
-                        branchId,
                         paymentStatus,
                         PageRequest.of(page, size)
                 );
@@ -67,14 +65,12 @@ public class PurchaseInvoicePageController {
         model.addAttribute("stats", purchaseinvoiceService.getStats());
 
         model.addAttribute("suppliers", purchaseinvoiceService.listSuppliers());
-        model.addAttribute("branches", purchaseinvoiceService.listBranches());
         model.addAttribute("paymentStatuses", purchaseinvoiceService.listPaymentStatuses());
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("fromDate", fromDate);
         model.addAttribute("toDate", toDate);
         model.addAttribute("filterSupplierId", supplierId);
-        model.addAttribute("filterBranchId", branchId);
         model.addAttribute("filterPaymentStatus", paymentStatus);
 
         model.addAttribute("currentPage", invoicePage.getNumber());
@@ -150,7 +146,6 @@ public class PurchaseInvoicePageController {
 
     private void addCreatePageData(HttpServletRequest request, Model model) {
         model.addAttribute("suppliers", purchaseinvoiceService.listSuppliers());
-        model.addAttribute("branches", purchaseinvoiceService.listBranches());
         model.addAttribute("products", purchaseinvoiceService.listProducts());
         model.addAttribute("existingLotsByProduct", purchaseinvoiceService.buildExistingLotsByProduct());
         model.addAttribute("basePath", resolveBasePath(request));

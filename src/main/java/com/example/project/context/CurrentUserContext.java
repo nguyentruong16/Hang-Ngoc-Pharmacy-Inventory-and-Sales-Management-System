@@ -48,29 +48,8 @@ public class CurrentUserContext {
         return principal == null ? null : principal.getAccountId();
     }
 
-    public Integer getCurrentBranchId() {
-        AccountPrincipal principal = getPrincipal();
-        return principal == null ? null : principal.getBranchId();
-    }
-
-    /** Whether the signed-in user is the Owner (cross-branch access, F-24). */
+    /** Whether the signed-in user is the Owner. */
     public boolean isOwner() {
         return RoleConstants.OWNER.equals(getCurrentRole());
-    }
-
-    /**
-     * Branch to scope queries to, or {@code null} = no restriction (all branches).
-     *
-     * <p><strong>Branch isolation convention:</strong> branch-scoped queries MUST read the
-     * active branch through this accessor, never via {@link #getCurrentBranchId()} directly. The
-     * Owner is cross-branch, so this returns {@code null} for the Owner (and for anonymous), which
-     * callers must treat as "do not filter by branch". A typical repository query is then
-     * {@code where (:branchId is null or e.branchID.id = :branchId)}.</p>
-     */
-    public Integer getBranchFilter() {
-        if (isOwner()) {
-            return null;
-        }
-        return getCurrentBranchId();
     }
 }

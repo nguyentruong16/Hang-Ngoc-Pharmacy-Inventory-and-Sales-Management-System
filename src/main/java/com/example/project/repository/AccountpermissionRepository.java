@@ -36,14 +36,6 @@ public interface AccountpermissionRepository extends JpaRepository<Accountpermis
            """)
     List<Accountpermission> findAllWithAccount();
 
-    /**
-     * Giữ tên method cũ để các service cũ không bị lỗi compile.
-     * DB mới không còn Branch nên method này chỉ fetch Account.
-     */
-    default List<Accountpermission> findAllWithAccountAndBranch() {
-        return findAllWithAccount();
-    }
-
     @Query("select coalesce(max(ap.id), 0) from Accountpermission ap")
     Integer findMaxId();
 
