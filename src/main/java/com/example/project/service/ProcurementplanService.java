@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +35,9 @@ import java.util.Set;
 
 @Service
 public class ProcurementplanService {
-    private static final String DEFAULT_STATUS = "Nháp";
+    private static final String DEFAULT_STATUS = "Đang thực hiện";
+    private static final String COMPLETED_STATUS = "Đã hoàn thành";
+    private static final Set<String> ALLOWED_STATUSES = Set.of(DEFAULT_STATUS, COMPLETED_STATUS);
 
     private final ProcurementplanRepository procurementplanRepository;
     private final ProcurementplandetailRepository procurementplandetailRepository;
@@ -77,6 +80,39 @@ public class ProcurementplanService {
     @Transactional(readOnly = true)
     public long countAll() {
         return procurementplanRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public ProcurementplanResponse getById(Integer id) {
+        return procurementplanRepository.findById(id)
+                .map(ProcurementplanResponse::from)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
+    }
+
+    @Transactional(readOnly = true)
+    public ProcurementPlanCreateRequest buildUpdateForm(Integer id) {
+        Procurementplan plan = procurementplanRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
+        ensureNotCompleted(plan);
+
+        ProcurementPlanCreateRequest form = new ProcurementPlanCreateRequest();
+        form.setNote(plan.getNote());
+        form.setStatus(plan.getStatus());
+
+        List<ProcurementPlanDetailCreateRequest> details = new ArrayList<>();
+        for (Procurementplandetail detail : procurementplandetailRepository.findByProcurementID_Id(id)) {
+            ProcurementPlanDetailCreateRequest item = new ProcurementPlanDetailCreateRequest();
+            item.setProductId(detail.getProductID().getProductID());
+            item.setRequestedQuantity(detail.getRequestedQuantity());
+            item.setUnit(detail.getUnit());
+            item.setEstimatedPrice(detail.getEstimatedPrice());
+            if (detail.getSupplierID() != null) {
+                item.setSupplierId(detail.getSupplierID().getId());
+            }
+            details.add(item);
+        }
+        form.setDetails(details);
+        return form;
     }
 
     @Transactional(readOnly = true)
@@ -217,7 +253,43 @@ public class ProcurementplanService {
         plan.setCreatedAt(now);
 
         Procurementplan savedPlan = procurementplanRepository.save(plan);
+        saveDetails(savedPlan, details);
 
+        return savedPlan.getId();
+    }
+
+    @Transactional
+    public void update(Integer id, ProcurementPlanCreateRequest request) {
+        Procurementplan plan = procurementplanRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
+        ensureNotCompleted(plan);
+
+        List<ProcurementPlanDetailCreateRequest> details = normalizeDetails(request);
+        validateCreateRequest(details);
+
+        plan.setNote(trimToNull(request.getNote()));
+        plan.setStatus(normalizeStatus(request.getStatus()));
+        procurementplanRepository.save(plan);
+
+        procurementplandetailRepository.deleteByProcurementID_Id(id);
+        saveDetails(plan, details);
+    }
+
+    @Transactional
+    public void delete(Integer id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Không tìm thấy dự trù mua hàng");
+        }
+
+        Procurementplan plan = procurementplanRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
+        ensureNotCompleted(plan);
+
+        procurementplandetailRepository.deleteByProcurementID_Id(id);
+        procurementplanRepository.deleteById(id);
+    }
+
+    private void saveDetails(Procurementplan plan, List<ProcurementPlanDetailCreateRequest> details) {
         for (ProcurementPlanDetailCreateRequest item : details) {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
@@ -229,7 +301,7 @@ public class ProcurementplanService {
             }
 
             Procurementplandetail detail = new Procurementplandetail();
-            detail.setProcurementID(savedPlan);
+            detail.setProcurementID(plan);
             detail.setProductID(product);
             detail.setRequestedQuantity(item.getRequestedQuantity());
             detail.setUnit(trimToNull(item.getUnit()));
@@ -239,8 +311,6 @@ public class ProcurementplanService {
 
             procurementplandetailRepository.save(detail);
         }
-
-        return savedPlan.getId();
     }
 
     private List<ProcurementPlanDetailCreateRequest> normalizeDetails(ProcurementPlanCreateRequest request) {
@@ -284,5 +354,23 @@ public class ProcurementplanService {
             return null;
         }
         return value.trim();
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return DEFAULT_STATUS;
+        }
+
+        String normalized = status.trim();
+        if (!ALLOWED_STATUSES.contains(normalized)) {
+            throw new IllegalArgumentException("Trạng thái dự trù không hợp lệ");
+        }
+        return normalized;
+    }
+
+    private void ensureNotCompleted(Procurementplan plan) {
+        if (COMPLETED_STATUS.equals(plan.getStatus())) {
+            throw new IllegalArgumentException("Dự trù mua hàng đã hoàn thành, không thể chỉnh sửa hoặc xóa");
+        }
     }
 }

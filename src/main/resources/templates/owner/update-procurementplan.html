@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Tạo dự trù mua hàng | PharmaManager</title>
+    <title>Cập nhật dự trù mua hàng | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -415,6 +415,83 @@
             color: #9ca3af;
         }
 
+        .plan-info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .plan-info-label {
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .plan-info-value {
+            font-weight: 600;
+            color: #111827;
+            text-align: right;
+        }
+
+        .plan-status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #e8f7f1;
+            color: #059669;
+        }
+
+        .status-check-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            margin: 0;
+        }
+
+        .status-check-toggle input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+        }
+
+        .status-check-box {
+            width: 34px;
+            height: 34px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: transparent;
+            font-size: 18px;
+            transition: all .15s ease;
+            flex-shrink: 0;
+        }
+
+        .status-check-toggle input:checked + .status-check-box {
+            border-color: #059669;
+            background: #059669;
+            color: #fff;
+        }
+
+        .status-check-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .status-check-toggle input:checked ~ .status-check-text {
+            color: #059669;
+        }
+
         @media (max-width: 991.98px) {
             .product-lines-header { display: none; }
             .product-line {
@@ -434,10 +511,12 @@
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <form th:action="${basePath + '/create-procurementplan'}"
+        <form id="procurementUpdateForm"
+              th:action="${basePath + '/update-procurementplan/' + procurementPlan.id}"
               th:object="${procurementPlanForm}"
               method="post"
               novalidate>
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <div class="row g-4">
                 <div class="col-12 col-lg-9">
                     <div class="owner-card">
@@ -487,6 +566,29 @@
 
                 <div class="col-12 col-lg-3 procurement-sidebar">
                     <div class="owner-card p-4 mb-4">
+                        <h2 class="fs-6 mb-3">Thông tin dự trù</h2>
+                        <div class="plan-info-row">
+                            <span class="plan-info-label">Mã dự trù</span>
+                            <span class="plan-info-value" th:text="${procurementPlan.procurementCode}">DT-000001</span>
+                        </div>
+                        <div class="plan-info-row mb-0">
+                            <span class="plan-info-label">Trạng thái</span>
+                            <div>
+                                <input type="hidden" th:field="*{status}" id="procurementStatusInput">
+                                <label class="status-check-toggle">
+                                    <input type="checkbox"
+                                           id="statusCompletedToggle"
+                                           th:checked="${procurementPlanForm.status == 'Đã hoàn thành'}">
+                                    <span class="status-check-box" title="Đánh dấu hoàn thành">
+                                        <i class="ti ti-check"></i>
+                                    </span>
+                                    <span class="status-check-text" id="statusCheckText">Đang thực hiện</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="owner-card p-4 mb-4">
                         <h2 class="fs-6 mb-3">Tổng hợp</h2>
                         <div class="summary-row mb-0">
                             <span class="text-secondary">Số mặt hàng</span>
@@ -511,7 +613,7 @@
 
                     <div class="owner-card p-4">
                         <button type="submit" class="btn btn-owner-primary w-100 mb-2">
-                            Tạo dự trù mua hàng
+                            Cập nhật dự trù mua hàng
                         </button>
                         <a th:href="${basePath}" class="btn btn-outline-secondary w-100">Hủy</a>
                     </div>
@@ -526,6 +628,9 @@
     const suppliers = /*[[${suppliers}]]*/ [];
     const initialDetails = /*[[${procurementPlanForm.details}]]*/ [];
     const initialProducts = /*[[${initialProducts}]]*/ [];
+    const initialCompleted = /*[[${procurementPlan.status == 'Đã hoàn thành'}]]*/ false;
+    const COMPLETED_STATUS = 'Đã hoàn thành';
+    const COMPLETED_CONFIRM_MESSAGE = 'Sau khi đánh dấu "Đã hoàn thành", dự trù mua hàng sẽ không thể cập nhật hoặc xóa. Bạn có chắc chắn muốn tiếp tục?';
 
     const productMap = {};
     initialProducts.forEach(product => productMap[product.productID] = product);
@@ -887,6 +992,39 @@
 
     toggleEmptyState();
     calculateSummary();
+
+    (function initStatusToggle() {
+        const DEFAULT_STATUS = 'Đang thực hiện';
+        const toggle = document.getElementById('statusCompletedToggle');
+        const statusInput = document.getElementById('procurementStatusInput');
+        const statusText = document.getElementById('statusCheckText');
+        if (!toggle || !statusInput || !statusText) return;
+
+        function syncStatus() {
+            const completed = toggle.checked;
+            statusInput.value = completed ? COMPLETED_STATUS : DEFAULT_STATUS;
+            statusText.textContent = completed ? COMPLETED_STATUS : DEFAULT_STATUS;
+        }
+
+        toggle.addEventListener('change', syncStatus);
+        syncStatus();
+    })();
+
+    (function initCompletedSubmitConfirm() {
+        const form = document.getElementById('procurementUpdateForm');
+        const toggle = document.getElementById('statusCompletedToggle');
+        if (!form || !toggle) return;
+
+        form.addEventListener('submit', function (event) {
+            if (initialCompleted || !toggle.checked) {
+                return;
+            }
+
+            if (!window.confirm(COMPLETED_CONFIRM_MESSAGE)) {
+                event.preventDefault();
+            }
+        });
+    })();
 </script>
 
 </body>

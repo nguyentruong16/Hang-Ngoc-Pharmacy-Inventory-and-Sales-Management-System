@@ -14,6 +14,8 @@ public class ProcurementPlanCreateRequest {
 
     private String note;
 
+    private String status;
+
     @Valid
     @NotEmpty(message = "Dự trù mua hàng phải có ít nhất một sản phẩm")
     private List<ProcurementPlanDetailCreateRequest> details = new ArrayList<>();

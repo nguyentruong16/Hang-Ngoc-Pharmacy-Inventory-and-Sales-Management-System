@@ -182,11 +182,40 @@
       color: #059669;
     }
 
+    .status-badge.status-completed {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+
     .pagination .page-link { color: var(--sup-green); border-color: var(--sup-border); font-size: 13px; }
     .pagination .page-item.active .page-link { background: var(--sup-green); border-color: var(--sup-green); color: #fff; }
     .pagination .page-item.disabled .page-link { color: #d1d5db; }
 
     .empty-row td { color: var(--sup-muted); font-size: 13px; padding: 40px 0; }
+
+    .btn-delete {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      background: #fff;
+      color: #dc2626;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      font-size: 16px;
+    }
+    .btn-delete:hover { background: #fef2f2; border-color: #fca5a5; }
+
+    .update-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sup-green);
+      text-decoration: none;
+    }
+    .update-link:hover { color: var(--sup-green-dark); text-decoration: underline; }
 
     @media (max-width: 767px) {
       .filter-row { flex-direction: column; align-items: stretch; }
@@ -205,6 +234,12 @@
     <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
       <i class="ti ti-circle-check me-2"></i>
       <span th:text="${success}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+      <i class="ti ti-alert-circle me-2"></i>
+      <span th:text="${errorMessage}"></span>
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
@@ -253,6 +288,8 @@
               <th>Ngày dự trù</th>
               <th>Trạng thái</th>
               <th>Ghi chú</th>
+              <th th:if="${currentRole == 'OWNER'}" style="text-align:center;">Cập nhật</th>
+              <th th:if="${currentRole == 'OWNER'}" style="text-align:center;">Xóa</th>
             </tr>
           </thead>
           <tbody>
@@ -262,15 +299,38 @@
                 01/06/2026 10:15
               </td>
               <td>
-                <span class="status-badge" th:text="${plan.status != null ? plan.status : '—'}">
+                <span class="status-badge"
+                      th:classappend="${plan.status == 'Đã hoàn thành'} ? ' status-completed' : ''"
+                      th:text="${plan.status != null ? plan.status : '—'}">
                   Chờ duyệt
                 </span>
               </td>
               <td class="sup-note" th:text="${plan.note != null and !#strings.isEmpty(plan.note) ? plan.note : '—'}">Ghi chú</td>
+              <td th:if="${currentRole == 'OWNER'}" style="text-align:center;">
+                <a th:if="${plan.status != 'Đã hoàn thành'}"
+                   class="update-link"
+                   th:href="${basePath + '/update-procurementplan/' + plan.id}">
+                  Cập nhật
+                </a>
+                <span th:if="${plan.status == 'Đã hoàn thành'}" class="text-secondary">—</span>
+              </td>
+              <td th:if="${currentRole == 'OWNER'}" style="text-align:center;">
+                <form th:if="${plan.status != 'Đã hoàn thành'}"
+                      th:action="${basePath + '/delete/' + plan.id}"
+                      method="post"
+                      class="d-inline"
+                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa dự trù mua hàng này không?');">
+                  <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                  <button type="submit" class="btn-delete" title="Xóa dự trù">
+                    <i class="ti ti-trash"></i>
+                  </button>
+                </form>
+                <span th:if="${plan.status == 'Đã hoàn thành'}" class="text-secondary">—</span>
+              </td>
             </tr>
 
             <tr th:if="${#lists.isEmpty(procurementPlans)}" class="empty-row">
-              <td colspan="4" style="text-align:center;">
+              <td th:colspan="${currentRole == 'OWNER' ? 6 : 4}" style="text-align:center;">
                 Không tìm thấy dự trù mua hàng nào.
               </td>
             </tr>

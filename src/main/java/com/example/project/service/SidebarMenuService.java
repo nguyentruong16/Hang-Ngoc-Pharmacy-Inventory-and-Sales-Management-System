@@ -88,6 +88,7 @@ public class SidebarMenuService {
             uri = "/owner/positions";
         }
         if (uri.startsWith("/owner/procurements/create-procurementplan")
+                || uri.startsWith("/owner/procurements/update-procurementplan")
                 || uri.startsWith("/owner/procurements/view-detail")) {
             uri = "/owner/procurements";
         }

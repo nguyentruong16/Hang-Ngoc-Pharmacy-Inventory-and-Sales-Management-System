@@ -15,6 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -79,7 +80,7 @@ public class ProcurementplanController {
             model.addAttribute("procurementPlanForm", new ProcurementPlanCreateRequest());
         }
 
-        addCreatePageData(request, model);
+        addFormPageData(request, model);
         model.addAttribute("pageTitle", "Tạo dự trù mua hàng");
         return "owner/create-procurementplan";
     }
@@ -93,7 +94,7 @@ public class ProcurementplanController {
         String basePath = resolveBasePath(request);
 
         if (bindingResult.hasErrors()) {
-            addCreatePageData(request, model);
+            addFormPageData(request, model);
             model.addAttribute("pageTitle", "Tạo dự trù mua hàng");
             return "owner/create-procurementplan";
         }
@@ -104,13 +105,84 @@ public class ProcurementplanController {
             return "redirect:" + basePath;
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
-            addCreatePageData(request, model);
+            addFormPageData(request, model);
             model.addAttribute("pageTitle", "Tạo dự trù mua hàng");
             return "owner/create-procurementplan";
         }
     }
 
-    private void addCreatePageData(HttpServletRequest request, Model model) {
+    @GetMapping("/owner/procurements/update-procurementplan/{id}")
+    public String updateProcurementPlanForm(@PathVariable Integer id,
+                                            HttpServletRequest request,
+                                            Model model,
+                                            RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            if (!model.containsAttribute("procurementPlanForm")) {
+                model.addAttribute("procurementPlanForm", procurementplanService.buildUpdateForm(id));
+            }
+
+            model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            addFormPageData(request, model);
+            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            return "owner/update-procurementplan";
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            return "redirect:" + basePath;
+        }
+    }
+
+    @PostMapping("/owner/procurements/update-procurementplan/{id}")
+    public String updateProcurementPlan(@PathVariable Integer id,
+                                        @Valid @ModelAttribute("procurementPlanForm") ProcurementPlanCreateRequest form,
+                                        BindingResult bindingResult,
+                                        HttpServletRequest request,
+                                        Model model,
+                                        RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            addFormPageData(request, model);
+            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            return "owner/update-procurementplan";
+        }
+
+        try {
+            procurementplanService.update(id, form);
+            String successMessage = "Cập nhật dự trù mua hàng thành công";
+            if ("Đã hoàn thành".equals(form.getStatus())) {
+                successMessage = "Cập nhật dự trù mua hàng thành công. Dự trù đã hoàn thành nên không thể cập nhật hoặc xóa.";
+            }
+            redirectAttributes.addFlashAttribute("success", successMessage);
+            return "redirect:" + basePath;
+        } catch (IllegalArgumentException exception) {
+            if (exception.getMessage() != null
+                    && exception.getMessage().contains("đã hoàn thành")) {
+                redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+                return "redirect:" + basePath;
+            }
+            model.addAttribute("errorMessage", exception.getMessage());
+            model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            addFormPageData(request, model);
+            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            return "owner/update-procurementplan";
+        }
+    }
+
+    @PostMapping("/owner/procurements/delete/{id}")
+    public String deleteProcurementPlan(@PathVariable Integer id,
+                                        RedirectAttributes redirectAttributes) {
+        try {
+            procurementplanService.delete(id);
+            redirectAttributes.addFlashAttribute("success", "Xóa dự trù mua hàng thành công");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:/owner/procurements";
+    }
+
+    private void addFormPageData(HttpServletRequest request, Model model) {
         ProcurementPlanCreateRequest form = (ProcurementPlanCreateRequest) model.getAttribute("procurementPlanForm");
         model.addAttribute("initialProducts", procurementplanService.listProductsForDetails(form));
         model.addAttribute("suppliers", procurementplanService.listSuppliers());
