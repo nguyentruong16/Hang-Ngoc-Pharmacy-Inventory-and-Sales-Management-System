@@ -65,6 +65,16 @@
       background: var(--sup-green-bg);
       color: var(--sup-green);
     }
+    .kpi-card.kpi-in-progress .kpi-icon {
+      background: #ecfdf5;
+      color: #059669;
+    }
+    .kpi-card.kpi-in-progress .kpi-sub { color: #059669; }
+    .kpi-card.kpi-completed .kpi-icon {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+    .kpi-card.kpi-completed .kpi-sub { color: #2563eb; }
 
     .main-card {
       background: #fff;
@@ -92,9 +102,25 @@
       outline: none;
       transition: border-color .15s;
     }
-    .filter-input:focus {
+    .filter-input:focus,
+    .filter-select:focus {
       border-color: #6ee7b7;
       box-shadow: 0 0 0 3px rgba(5,150,105,.1);
+    }
+    .filter-select {
+      flex: 0 1 180px;
+      height: 40px;
+      border: 1px solid var(--sup-border);
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 13px;
+      color: #374151;
+      outline: none;
+      transition: border-color .15s;
+      background: #fff;
+    }
+    .filter-date {
+      flex: 0 1 160px;
     }
     .btn-search {
       height: 40px;
@@ -210,12 +236,57 @@
     .btn-delete:hover { background: #fef2f2; border-color: #fca5a5; }
 
     .update-link {
-      font-size: 13px;
-      font-weight: 600;
+      width: 34px;
+      height: 34px;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      background: #ecfdf5;
       color: var(--sup-green);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       text-decoration: none;
+      font-size: 16px;
     }
-    .update-link:hover { color: var(--sup-green-dark); text-decoration: underline; }
+    .update-link:hover {
+      background: #d1fae5;
+      border-color: #6ee7b7;
+      color: var(--sup-green-dark);
+    }
+
+    .view-link {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #2563eb;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 16px;
+    }
+    .view-link:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+
+    .btn-delete-locked {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f9fafb;
+      color: #9ca3af;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: not-allowed;
+      padding: 0;
+      font-size: 15px;
+    }
 
     @media (max-width: 767px) {
       .filter-row { flex-direction: column; align-items: stretch; }
@@ -252,6 +323,22 @@
           <div class="kpi-sub">Tất cả phiếu dự trù</div>
         </div>
       </div>
+      <div class="col-12 col-md-4">
+        <div class="kpi-card kpi-in-progress">
+          <span class="kpi-icon"><i class="ti ti-clock"></i></span>
+          <div class="kpi-label">Chưa hoàn thành</div>
+          <div class="kpi-number" th:text="${inProgressProcurementPlans}">0</div>
+          <div class="kpi-sub">Đang thực hiện</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="kpi-card kpi-completed">
+          <span class="kpi-icon"><i class="ti ti-circle-check"></i></span>
+          <div class="kpi-label">Đã hoàn thành</div>
+          <div class="kpi-number" th:text="${completedProcurementPlans}">0</div>
+          <div class="kpi-sub">Phiếu đã xử lý xong</div>
+        </div>
+      </div>
     </div>
 
     <div class="main-card">
@@ -271,6 +358,24 @@
                  name="search"
                  th:value="${search}"
                  placeholder="Tìm theo mã dự trù">
+          <input type="date"
+                 class="filter-input filter-date"
+                 name="fromDate"
+                 th:value="${fromDate}"
+                 title="Từ ngày">
+          <input type="date"
+                 class="filter-input filter-date"
+                 name="toDate"
+                 th:value="${toDate}"
+                 title="Đến ngày">
+          <select class="filter-select" name="status">
+            <option value="">Trạng thái</option>
+            <option th:each="item : ${statuses}"
+                    th:value="${item}"
+                    th:text="${item}"
+                    th:selected="${filterStatus == item}">
+            </option>
+          </select>
           <button type="submit" class="btn-search primary">
             <i class="ti ti-search"></i>Tìm kiếm
           </button>
@@ -285,10 +390,10 @@
           <thead>
             <tr>
               <th>Mã dự trù</th>
-              <th>Ngày dự trù</th>
+              <th>Ngày chỉnh sửa cuối</th>
               <th>Trạng thái</th>
               <th>Ghi chú</th>
-              <th th:if="${currentRole == 'OWNER'}" style="text-align:center;">Cập nhật</th>
+              <th th:if="${currentRole == 'OWNER'}" style="text-align:center;">Thao tác</th>
               <th th:if="${currentRole == 'OWNER'}" style="text-align:center;">Xóa</th>
             </tr>
           </thead>
@@ -309,10 +414,16 @@
               <td th:if="${currentRole == 'OWNER'}" style="text-align:center;">
                 <a th:if="${plan.status != 'Đã hoàn thành'}"
                    class="update-link"
-                   th:href="${basePath + '/update-procurementplan/' + plan.id}">
-                  Cập nhật
+                   th:href="${basePath + '/update-procurementplan/' + plan.id}"
+                   title="Cập nhật dự trù">
+                  <i class="ti ti-edit"></i>
                 </a>
-                <span th:if="${plan.status == 'Đã hoàn thành'}" class="text-secondary">—</span>
+                <a th:if="${plan.status == 'Đã hoàn thành'}"
+                   class="view-link"
+                   th:href="${basePath + '/update-procurementplan/' + plan.id}"
+                   title="Xem chi tiết dự trù">
+                  <i class="ti ti-eye"></i>
+                </a>
               </td>
               <td th:if="${currentRole == 'OWNER'}" style="text-align:center;">
                 <form th:if="${plan.status != 'Đã hoàn thành'}"
@@ -325,7 +436,11 @@
                     <i class="ti ti-trash"></i>
                   </button>
                 </form>
-                <span th:if="${plan.status == 'Đã hoàn thành'}" class="text-secondary">—</span>
+                <span th:if="${plan.status == 'Đã hoàn thành'}"
+                      class="btn-delete-locked"
+                      title="Dự trù đã hoàn thành, không thể xóa">
+                  <i class="ti ti-lock"></i>
+                </span>
               </td>
             </tr>
 
@@ -349,18 +464,18 @@
           <ul class="pagination mb-0">
             <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
+                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, status=${filterStatus}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
             </li>
             <li class="page-item"
                 th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
                 th:classappend="${p == currentPage} ? ' active'">
               <a class="page-link"
                  th:text="${p + 1}"
-                 th:href="@{${basePath}(search=${search}, page=${p}, size=${pageSize})}">1</a>
+                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, status=${filterStatus}, page=${p}, size=${pageSize})}">1</a>
             </li>
             <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
+                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, status=${filterStatus}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
             </li>
           </ul>
         </nav>

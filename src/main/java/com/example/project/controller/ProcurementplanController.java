@@ -39,6 +39,9 @@ public class ProcurementplanController {
 
     @GetMapping("/owner/procurements")
     public String procurementPlanList(@RequestParam(name = "search", required = false) String search,
+                                      @RequestParam(name = "fromDate", required = false) String fromDate,
+                                      @RequestParam(name = "toDate", required = false) String toDate,
+                                      @RequestParam(name = "status", required = false) String status,
                                       @RequestParam(name = "page", defaultValue = "0") int page,
                                       @RequestParam(name = "size", defaultValue = "5") int size,
                                       HttpServletRequest request,
@@ -51,13 +54,21 @@ public class ProcurementplanController {
             size = 5;
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        Page<ProcurementplanResponse> procurementPage = procurementplanService.list(search, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date")
+                .and(Sort.by(Sort.Direction.DESC, "id")));
+        Page<ProcurementplanResponse> procurementPage = procurementplanService.list(
+                search, fromDate, toDate, status, pageable);
         String basePath = resolveBasePath(request);
 
         model.addAttribute("procurementPlans", procurementPage.getContent());
         model.addAttribute("totalProcurementPlans", procurementplanService.countAll());
+        model.addAttribute("completedProcurementPlans", procurementplanService.countCompleted());
+        model.addAttribute("inProgressProcurementPlans", procurementplanService.countInProgress());
+        model.addAttribute("statuses", procurementplanService.listStatuses());
         model.addAttribute("search", search);
+        model.addAttribute("fromDate", fromDate);
+        model.addAttribute("toDate", toDate);
+        model.addAttribute("filterStatus", status);
         model.addAttribute("currentPage", procurementPage.getNumber());
         model.addAttribute("totalPages", procurementPage.getTotalPages());
         model.addAttribute("pageSize", size);
@@ -118,13 +129,17 @@ public class ProcurementplanController {
                                             RedirectAttributes redirectAttributes) {
         String basePath = resolveBasePath(request);
         try {
+            ProcurementplanResponse procurementPlan = procurementplanService.getById(id);
+            boolean viewOnly = procurementplanService.isCompleted(id);
+
             if (!model.containsAttribute("procurementPlanForm")) {
                 model.addAttribute("procurementPlanForm", procurementplanService.buildUpdateForm(id));
             }
 
-            model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            model.addAttribute("procurementPlan", procurementPlan);
+            model.addAttribute("viewOnly", viewOnly);
             addFormPageData(request, model);
-            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            model.addAttribute("pageTitle", viewOnly ? "Xem chi tiết dự trù mua hàng" : "Cập nhật dự trù mua hàng");
             return "owner/update-procurementplan";
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
@@ -143,8 +158,11 @@ public class ProcurementplanController {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            model.addAttribute("viewOnly", procurementplanService.isCompleted(id));
             addFormPageData(request, model);
-            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            model.addAttribute("pageTitle", procurementplanService.isCompleted(id)
+                    ? "Xem chi tiết dự trù mua hàng"
+                    : "Cập nhật dự trù mua hàng");
             return "owner/update-procurementplan";
         }
 
@@ -164,8 +182,11 @@ public class ProcurementplanController {
             }
             model.addAttribute("errorMessage", exception.getMessage());
             model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            model.addAttribute("viewOnly", procurementplanService.isCompleted(id));
             addFormPageData(request, model);
-            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            model.addAttribute("pageTitle", procurementplanService.isCompleted(id)
+                    ? "Xem chi tiết dự trù mua hàng"
+                    : "Cập nhật dự trù mua hàng");
             return "owner/update-procurementplan";
         }
     }
