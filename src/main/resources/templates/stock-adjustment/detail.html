@@ -50,6 +50,11 @@
         }
 
         .status-draft {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .status-pending {
             background: #fef3c7;
             color: #d97706;
         }
@@ -382,6 +387,19 @@
                 </div>
 
                 <div class="stock-card p-4">
+                    <!-- Draft: the creator sends it forward (Owner → approved, Pharmacist → pending). -->
+                    <form th:if="${detail.statusName == 'Nháp'}"
+                          th:action="${basePath + '/' + detail.id + '/submit'}"
+                          method="post"
+                          class="mb-3"
+                          onsubmit="return confirm('Gửi duyệt phiếu này?');">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-stock-primary w-100">
+                            <i class="ti ti-send me-1"></i>
+                            <span th:text="${#strings.startsWith(basePath, '/owner')} ? 'Duyệt phiếu (từ nháp)' : 'Gửi duyệt'">Gửi duyệt</span>
+                        </button>
+                    </form>
+
                     <th:block th:if="${#strings.startsWith(basePath, '/owner') and detail.statusName == 'Chờ duyệt'}">
                         <form th:action="${basePath + '/' + detail.id + '/approve'}"
                               method="post"
