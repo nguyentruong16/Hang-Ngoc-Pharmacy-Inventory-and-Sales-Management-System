@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>Tạo dự trù mua hàng | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+    <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+
+    <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+    <style>
+        .owner-page-content { padding-top: 96px !important; padding-bottom: 48px; }
+        @media (max-width: 991.98px) { .owner-page-content { padding-top: 84px !important; } }
+
+        .owner-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .btn-owner-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .btn-owner-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
+
+        .form-control, .form-select { border-radius: 10px; min-height: 42px; }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .procurement-sidebar .owner-card {
+            padding: 12px !important;
+        }
+
+        .procurement-sidebar .owner-card.mb-4 {
+            margin-bottom: 10px !important;
+        }
+
+        .procurement-sidebar .summary-row {
+            margin-bottom: 8px;
+        }
+
+        .procurement-sidebar h2.fs-6 {
+            margin-bottom: 10px !important;
+        }
+
+        .procurement-sidebar .text-secondary.small {
+            margin-bottom: 10px !important;
+        }
+
+        .procurement-sidebar .btn.mb-2 {
+            margin-bottom: 8px !important;
+        }
+
+        .product-search-wrap {
+            position: relative;
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .product-search-field {
+            position: relative;
+            flex: 1;
+        }
+
+        .btn-barcode {
+            width: 48px;
+            min-height: 48px;
+            border: none;
+            border-radius: 10px;
+            background: #2563eb;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .btn-barcode:hover {
+            background: #1d4ed8;
+        }
+
+        .product-search-input {
+            padding-left: 42px;
+            min-height: 48px;
+            font-size: 15px;
+        }
+
+        .product-search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .product-search-results {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, .12);
+            max-height: 320px;
+            overflow-y: auto;
+            z-index: 20;
+            display: none;
+        }
+
+        .product-search-results.show { display: block; }
+
+        .product-search-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .product-search-item:last-child { border-bottom: none; }
+        .product-search-item:hover, .product-search-item.active { background: #ecfdf5; }
+
+        .product-search-loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .product-search-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #d1d5db;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: product-search-spin .7s linear infinite;
+        }
+
+        @keyframes product-search-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .product-search-meta {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .product-search-code { font-size: 12px; color: #6b7280; font-weight: 600; }
+        .product-search-name { font-size: 14px; color: #111827; font-weight: 600; }
+        .product-search-stock { font-size: 12px; color: #059669; white-space: nowrap; }
+
+        .product-lines-header,
+        .product-line {
+            display: grid;
+            grid-template-columns:
+                28px 28px
+                minmax(0, 2fr)
+                42px
+                minmax(52px, 0.7fr)
+                56px
+                minmax(0, 1.2fr)
+                minmax(68px, 0.85fr)
+                minmax(72px, 0.9fr);
+            gap: 6px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .product-lines-header {
+            padding: 8px 12px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 10px;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            white-space: nowrap;
+        }
+
+        .product-lines-header.hidden { display: none; }
+
+        .product-line {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .product-line:last-child { border-bottom: none; }
+
+        .line-index {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: #f3f4f6;
+            color: #374151;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .btn-line-delete {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+            border-radius: 6px;
+            padding: 0;
+            font-size: 16px;
+        }
+
+        .btn-line-delete:hover { background: #fef2f2; color: #dc2626; }
+
+        .product-info-block {
+            min-width: 0;
+        }
+
+        .product-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.35;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-title-code {
+            color: #374151;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .product-meta {
+            display: none;
+        }
+
+        .stock-display {
+            display: block;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        .supplier-select {
+            width: 100%;
+            min-width: 0;
+            min-height: 32px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 11px;
+            padding: 0 6px;
+            outline: none;
+        }
+
+        .supplier-select:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, .1);
+        }
+
+        .product-line > * {
+            min-width: 0;
+        }
+
+        .unit-badge-input {
+            width: 100%;
+            min-width: 0;
+            min-height: 30px;
+            border: 1px solid #93c5fd;
+            border-radius: 6px;
+            background: #f0f9ff;
+            color: #1e40af;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            padding: 0 6px;
+            outline: none;
+        }
+
+        .unit-badge-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, .12);
+        }
+
+        .field-input {
+            width: 100%;
+            min-width: 0;
+            min-height: 32px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 0 8px;
+            font-size: 13px;
+            text-align: center;
+            outline: none;
+            background: #fff;
+        }
+
+        .field-input:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, .1);
+        }
+
+        .field-input.price-input {
+            width: 100%;
+            min-width: 0;
+            border: none;
+            border-bottom: 1px solid #9ca3af;
+            border-radius: 0;
+            background: transparent;
+            text-align: right;
+            font-weight: 500;
+            padding: 0 2px;
+            min-height: 32px;
+            font-size: 12px;
+        }
+
+        .field-input.price-input:focus {
+            border-bottom-color: #2563eb;
+            box-shadow: none;
+        }
+
+        .line-total-text {
+            display: block;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            white-space: nowrap;
+            overflow: visible;
+        }
+
+        .btn-line-more {
+            display: none;
+        }
+
+        .empty-product-state {
+            padding: 48px 24px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .empty-product-state i {
+            font-size: 42px;
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        .order-note-wrap {
+            position: relative;
+        }
+
+        .order-note-icon {
+            position: absolute;
+            left: 14px;
+            top: 14px;
+            color: #9ca3af;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .order-note-input {
+            width: 100%;
+            min-height: 100px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px 14px 12px 42px;
+            font-size: 14px;
+            color: #374151;
+            outline: none;
+            background: #fff;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .order-note-input:focus {
+            border-color: #6ee7b7;
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, .1);
+        }
+
+        .order-note-input::placeholder {
+            color: #9ca3af;
+        }
+
+        @media (max-width: 991.98px) {
+            .product-lines-header { display: none; }
+            .product-line {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content owner-page-content">
+    <div class="container-fluid">
+
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <form th:action="${basePath + '/create-procurementplan'}"
+              th:object="${procurementPlanForm}"
+              method="post"
+              novalidate>
+            <div class="row g-4">
+                <div class="col-12 col-lg-9">
+                    <div class="owner-card">
+                        <div class="p-4 border-bottom">
+                            <div class="product-search-wrap">
+                                <div class="product-search-field">
+                                    <i class="ti ti-search product-search-icon"></i>
+                                    <input type="text" id="productSearchInput"
+                                           class="form-control product-search-input"
+                                           placeholder="Tìm hàng theo tên, mã hoặc barcode"
+                                           autocomplete="off">
+                                    <div id="productSearchResults" class="product-search-results"></div>
+                                </div>
+                                <button type="button" class="btn-barcode" title="Quét barcode">
+                                    <i class="ti ti-barcode"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="productLinesHeader" class="product-lines-header hidden">
+                            <div></div>
+                            <div></div>
+                            <div>Hàng hóa</div>
+                            <div class="text-center">Tồn</div>
+                            <div>Đơn vị thuốc</div>
+                            <div>Số lượng</div>
+                            <div>Nhà cung cấp</div>
+                            <div class="text-end">Giá ước tính</div>
+                            <div class="text-end">Thành tiền</div>
+                        </div>
+
+                        <div id="detailLines"></div>
+
+                        <div id="emptyProductState" class="empty-product-state">
+                            <div><i class="ti ti-package"></i></div>
+                            <div class="fw-semibold mb-1">Chưa có hàng hóa nào</div>
+                            <div class="small">Nhập tên hoặc mã hàng ở ô tìm kiếm phía trên để thêm vào dự trù</div>
+                        </div>
+
+                        <div class="p-4 pt-0">
+                            <div class="text-danger small"
+                                 th:if="${#fields.hasErrors('details')}"
+                                 th:errors="*{details}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-3 procurement-sidebar">
+                    <div class="owner-card p-4 mb-4">
+                        <h2 class="fs-6 mb-3">Tổng hợp</h2>
+                        <div class="summary-row mb-0">
+                            <span class="text-secondary">Số mặt hàng</span>
+                            <strong id="itemCountDisplay">0</strong>
+                        </div>
+                        <div class="summary-row mb-0">
+                            <span class="text-secondary">Tổng giá trị dự kiến</span>
+                            <strong class="text-success" id="totalAmountDisplay">0đ</strong>
+                        </div>
+                    </div>
+
+                    <div class="owner-card p-4 mb-4">
+                        <div class="order-note-wrap">
+                            <i class="ti ti-pencil order-note-icon"></i>
+                            <textarea id="procurementNote"
+                                      class="order-note-input"
+                                      th:field="*{note}"
+                                      rows="4"
+                                      placeholder="Ghi chú dự trù"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="owner-card p-4">
+                        <button type="submit" class="btn btn-owner-primary w-100 mb-2">
+                            Tạo dự trù mua hàng
+                        </button>
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">Hủy</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const basePath = /*[[${basePath}]]*/ '/owner/procurements';
+    const suppliers = /*[[${suppliers}]]*/ [];
+    const initialDetails = /*[[${procurementPlanForm.details}]]*/ [];
+    const initialProducts = /*[[${initialProducts}]]*/ [];
+
+    const productMap = {};
+    initialProducts.forEach(product => productMap[product.productID] = product);
+
+    let activeSearchIndex = -1;
+    let lastSearchItems = [];
+    let searchTimer = null;
+    let searchAbortController = null;
+    let searchRequestId = 0;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function formatMoney(value) {
+        return Number(value || 0).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function formatLineMoney(value) {
+        return Number(value || 0).toLocaleString('vi-VN');
+    }
+
+    function numberValue(input) {
+        if (!input) return 0;
+        const value = Number(input.value);
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    function getStock(productId) {
+        const cached = productMap[productId];
+        if (cached && cached.currentStock != null) {
+            return cached.currentStock;
+        }
+        return 0;
+    }
+
+    function cacheSearchProducts(items) {
+        (items || []).forEach(product => {
+            productMap[product.productID] = product;
+        });
+    }
+
+    function buildDetailFromProduct(product, overrides = {}) {
+        return {
+            productId: product.productID,
+            requestedQuantity: overrides.requestedQuantity != null ? overrides.requestedQuantity : 1,
+            unit: overrides.unit != null ? overrides.unit : (product.unit || ''),
+            estimatedPrice: overrides.estimatedPrice != null ? overrides.estimatedPrice : product.estimatedPrice,
+            supplierId: overrides.supplierId != null ? overrides.supplierId : null,
+            currentStock: overrides.currentStock != null ? overrides.currentStock : getStock(product.productID)
+        };
+    }
+
+    function toggleEmptyState() {
+        const hasLines = document.querySelectorAll('#detailLines .product-line').length > 0;
+        document.getElementById('emptyProductState').style.display = hasLines ? 'none' : 'block';
+        document.getElementById('productLinesHeader').classList.toggle('hidden', !hasLines);
+    }
+
+    function reindexDetailLines() {
+        document.querySelectorAll('#detailLines .product-line').forEach((row, index) => {
+            row.querySelector('.line-index').textContent = index + 1;
+            row.querySelectorAll('[data-field]').forEach(input => {
+                const field = input.getAttribute('data-field');
+                const name = 'details[' + index + '].' + field;
+                input.setAttribute('name', name);
+                input.setAttribute('id', name);
+            });
+        });
+        toggleEmptyState();
+        calculateSummary();
+    }
+
+    function buildLineHtml(index, detail) {
+        const product = productMap[detail.productId];
+        if (!product) return '';
+
+        const currentStock = detail.currentStock != null ? detail.currentStock : getStock(product.productID);
+        const quantity = detail.requestedQuantity != null ? detail.requestedQuantity : 1;
+        const unit = detail.unit || '';
+        const price = detail.estimatedPrice != null ? detail.estimatedPrice : '';
+        const supplierId = detail.supplierId != null ? detail.supplierId : '';
+        const supplierOptionsHtml = suppliers.map(supplier =>
+            '<option value="' + supplier.id + '"' +
+            (String(supplierId) === String(supplier.id) ? ' selected' : '') +
+            '>' + escapeHtml(supplier.name) + '</option>'
+        ).join('');
+
+        return `
+            <div class="product-line">
+                <div><span class="line-index">${index + 1}</span></div>
+                <div>
+                    <button type="button" class="btn-line-delete" onclick="removeDetailLine(this)" title="Xóa">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </div>
+                <div class="product-info-block">
+                    <input type="hidden" data-field="productId" value="${product.productID}">
+                    <div class="product-title">
+                        <span class="product-title-code">${escapeHtml(product.code)}</span>
+                        ${escapeHtml(product.name)}
+                    </div>
+                </div>
+                <div>
+                    <span class="stock-display">${currentStock}</span>
+                </div>
+                <div>
+                    <input type="text" class="unit-badge-input" data-field="unit"
+                           value="${escapeHtml(unit)}" placeholder="Đơn vị thuốc">
+                </div>
+                <div>
+                    <input type="number" min="1" class="field-input quantity-input"
+                           data-field="requestedQuantity" value="${quantity}"
+                           oninput="calculateSummary()">
+                </div>
+                <div>
+                    <select class="supplier-select" data-field="supplierId">
+                        <option value="">Chọn nhà cung cấp</option>
+                        ${supplierOptionsHtml}
+                    </select>
+                </div>
+                <div>
+                    <input type="number" min="0" step="1000" class="field-input price-input"
+                           data-field="estimatedPrice" value="${price}" placeholder="0"
+                           oninput="calculateSummary()">
+                </div>
+                <div>
+                    <span class="line-total-text">${formatLineMoney(Number(quantity) * Number(price || 0))}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function addProductLine(detail, atTop = true) {
+        const container = document.getElementById('detailLines');
+        const html = buildLineHtml(0, detail);
+        if (!html) return;
+        container.insertAdjacentHTML(atTop ? 'afterbegin' : 'beforeend', html);
+        reindexDetailLines();
+    }
+
+    function addProductById(productId, productData) {
+        const product = productData || productMap[productId];
+        if (!product) return;
+
+        const existingRow = Array.from(document.querySelectorAll('#detailLines .product-line'))
+            .find(row => Number(row.querySelector('[data-field="productId"]').value) === Number(productId));
+
+        if (existingRow) {
+            const quantityInput = existingRow.querySelector('.quantity-input');
+            quantityInput.value = numberValue(quantityInput) + 1;
+            calculateSummary();
+            existingRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            return;
+        }
+
+        addProductLine(buildDetailFromProduct(product));
+    }
+
+    function removeDetailLine(button) {
+        button.closest('.product-line').remove();
+        reindexDetailLines();
+    }
+
+    function calculateSummary() {
+        const rows = document.querySelectorAll('#detailLines .product-line');
+        let totalAmount = 0;
+
+        rows.forEach(row => {
+            const quantity = numberValue(row.querySelector('.quantity-input'));
+            const price = numberValue(row.querySelector('.price-input'));
+            const lineTotal = quantity * price;
+            totalAmount += lineTotal;
+
+            const totalDisplay = row.querySelector('.line-total-text');
+            if (totalDisplay) {
+                totalDisplay.textContent = formatLineMoney(lineTotal);
+            }
+        });
+
+        document.getElementById('itemCountDisplay').textContent = rows.length;
+        document.getElementById('totalAmountDisplay').textContent = formatMoney(totalAmount);
+    }
+
+    function renderSearchResults(items, options = {}) {
+        const results = document.getElementById('productSearchResults');
+        const { loading = false, emptyMessage = 'Không tìm thấy hàng hóa' } = options;
+
+        if (loading) {
+            results.innerHTML = `
+                <div class="product-search-item product-search-loading">
+                    <span class="product-search-spinner"></span>
+                    Đang tìm hàng...
+                </div>
+            `;
+            results.classList.add('show');
+            return;
+        }
+
+        if (!items.length) {
+            results.innerHTML = '<div class="product-search-item text-secondary">' + escapeHtml(emptyMessage) + '</div>';
+            results.classList.add('show');
+            activeSearchIndex = -1;
+            return;
+        }
+
+        results.innerHTML = items.map((product, index) => `
+            <div class="product-search-item ${index === activeSearchIndex ? 'active' : ''}"
+                 data-product-id="${product.productID}"
+                 onclick="selectSearchProduct(${product.productID})">
+                <div>
+                    <div class="product-search-code">${escapeHtml(product.code)}</div>
+                    <div class="product-search-name">${escapeHtml(product.name)}</div>
+                    <div class="product-search-meta">
+                        ${product.unit ? escapeHtml(product.unit) : 'Chưa có đơn vị thuốc'}
+                        ${product.estimatedPrice != null ? ' · ' + formatLineMoney(product.estimatedPrice) + 'đ' : ''}
+                    </div>
+                </div>
+                <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}</div>
+            </div>
+        `).join('');
+        results.classList.add('show');
+    }
+
+    function hideSearchResults() {
+        document.getElementById('productSearchResults').classList.remove('show');
+        activeSearchIndex = -1;
+        lastSearchItems = [];
+    }
+
+    async function liveSearchProducts(keyword) {
+        const normalized = keyword.trim();
+        if (!normalized) {
+            hideSearchResults();
+            return;
+        }
+
+        if (searchAbortController) {
+            searchAbortController.abort();
+        }
+        searchAbortController = new AbortController();
+        const requestId = ++searchRequestId;
+
+        renderSearchResults([], { loading: true });
+
+        try {
+            const url = basePath + '/products/search?keyword=' + encodeURIComponent(normalized) + '&limit=12';
+            const response = await fetch(url, {
+                signal: searchAbortController.signal,
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+
+            const items = await response.json();
+            if (requestId !== searchRequestId) {
+                return;
+            }
+
+            cacheSearchProducts(items);
+            lastSearchItems = items;
+            activeSearchIndex = -1;
+            renderSearchResults(items);
+        } catch (error) {
+            if (error.name === 'AbortError' || requestId !== searchRequestId) {
+                return;
+            }
+            renderSearchResults([], { emptyMessage: 'Không thể tìm hàng. Vui lòng thử lại.' });
+        }
+    }
+
+    function scheduleLiveSearch(keyword) {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+            liveSearchProducts(keyword);
+        }, 250);
+    }
+
+    function selectSearchProduct(productId) {
+        const product = productMap[productId] || lastSearchItems.find(item => Number(item.productID) === Number(productId));
+        if (!product) return;
+
+        cacheSearchProducts([product]);
+        addProductById(productId, product);
+
+        const searchInput = document.getElementById('productSearchInput');
+        searchInput.value = '';
+        hideSearchResults();
+        searchInput.focus();
+    }
+
+    document.querySelector('.btn-barcode').addEventListener('click', function () {
+        document.getElementById('productSearchInput').focus();
+    });
+
+    document.getElementById('productSearchInput').addEventListener('input', function (event) {
+        const value = event.target.value;
+        if (!value.trim()) {
+            clearTimeout(searchTimer);
+            if (searchAbortController) {
+                searchAbortController.abort();
+            }
+            hideSearchResults();
+            return;
+        }
+        scheduleLiveSearch(value);
+    });
+
+    document.getElementById('productSearchInput').addEventListener('keydown', function (event) {
+        const selectable = lastSearchItems;
+        if (!selectable.length && event.key !== 'Escape') {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            activeSearchIndex = Math.min(activeSearchIndex + 1, selectable.length - 1);
+            renderSearchResults(selectable);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            activeSearchIndex = Math.max(activeSearchIndex - 1, 0);
+            renderSearchResults(selectable);
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            if (activeSearchIndex >= 0 && selectable[activeSearchIndex]) {
+                selectSearchProduct(selectable[activeSearchIndex].productID);
+            } else if (selectable.length === 1) {
+                selectSearchProduct(selectable[0].productID);
+            }
+        } else if (event.key === 'Escape') {
+            hideSearchResults();
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.product-search-wrap')) hideSearchResults();
+    });
+
+    (initialDetails || [])
+        .filter(detail => detail && detail.productId != null)
+        .forEach(detail => {
+            const product = productMap[detail.productId];
+            if (!product) return;
+            addProductLine({
+                productId: detail.productId,
+                requestedQuantity: detail.requestedQuantity,
+                unit: detail.unit,
+                estimatedPrice: detail.estimatedPrice,
+                supplierId: detail.supplierId,
+                currentStock: product.currentStock
+            }, false);
+        });
+
+    toggleEmptyState();
+    calculateSummary();
+</script>
+
+</body>
+</html>
