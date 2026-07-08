@@ -18,9 +18,8 @@ public class ProcurementplandetailResponse {
     private Integer requestedQuantity;
     private String unit;
     private BigDecimal estimatedPrice;
-    private String note;
+    private Integer supplierId;
     private Integer currentStock;
-    private String reason;
 
     public static ProcurementplandetailResponse from(Procurementplandetail procurementplandetail) {
         return new ProcurementplandetailResponse(
@@ -30,9 +29,8 @@ public class ProcurementplandetailResponse {
                 procurementplandetail.getRequestedQuantity(),
                 procurementplandetail.getUnit(),
                 procurementplandetail.getEstimatedPrice(),
-                procurementplandetail.getNote(),
-                procurementplandetail.getCurrentStock(),
-                procurementplandetail.getReason()
+                procurementplandetail.getSupplierID() != null ? procurementplandetail.getSupplierID().getId() : null,
+                procurementplandetail.getCurrentStock()
         );
     }
 }

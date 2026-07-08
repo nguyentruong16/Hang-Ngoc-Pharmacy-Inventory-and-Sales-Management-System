@@ -38,12 +38,11 @@ public class Procurementplandetail {
     @Column(name = "estimatedPrice", precision = 15, scale = 2)
     private BigDecimal estimatedPrice;
 
-    @Column(name = "note", columnDefinition = "TEXT")
-    private String note;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplierID")
+    private Supplier supplierID;
 
     @Column(name = "currentStock")
     private Integer currentStock;
 
-    @Column(name = "reason", columnDefinition = "TEXT")
-    private String reason;
 }

@@ -39,7 +39,6 @@ public class PlaceholderController {
             "/owner/approvals",
             "/owner/notifications",
             "/owner/selling",
-            "/owner/procurements",
             "/owner/invoices",
             "/owner/incomes",
             "/owner/expenses",

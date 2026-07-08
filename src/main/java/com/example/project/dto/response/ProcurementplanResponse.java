@@ -15,11 +15,8 @@ public class ProcurementplanResponse {
     private Integer id;
     private String procurementCode;
     private Instant date;
-    private Integer requestedBy;
     private String status;
-    private Instant approveAt;
     private String note;
-    private Integer supplierId;
     private Instant createdAt;
 
     public static ProcurementplanResponse from(Procurementplan procurementplan) {
@@ -27,11 +24,8 @@ public class ProcurementplanResponse {
                 procurementplan.getId(),
                 procurementplan.getProcurementCode(),
                 procurementplan.getDate(),
-                procurementplan.getRequestedBy() != null ? procurementplan.getRequestedBy().getId() : null,
                 procurementplan.getStatus(),
-                procurementplan.getApproveAt(),
                 procurementplan.getNote(),
-                procurementplan.getSupplierID() != null ? procurementplan.getSupplierID().getId() : null,
                 procurementplan.getCreatedAt()
         );
     }
