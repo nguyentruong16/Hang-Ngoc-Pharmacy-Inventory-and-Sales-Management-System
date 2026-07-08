@@ -42,12 +42,7 @@ public class Procurementplandetail {
     @JoinColumn(name = "supplierID")
     private Supplier supplierID;
 
-    @Column(name = "note", columnDefinition = "TEXT")
-    private String note;
-
     @Column(name = "currentStock")
     private Integer currentStock;
 
-    @Column(name = "reason", columnDefinition = "TEXT")
-    private String reason;
 }
