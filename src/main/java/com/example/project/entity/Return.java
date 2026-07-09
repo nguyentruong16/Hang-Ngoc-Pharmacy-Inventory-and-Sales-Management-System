@@ -30,6 +30,10 @@ public class Return {
     @JoinColumn(name = "invoiceID", nullable = false)
     private Invoice invoiceID;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchaseID")
+    private Purchaseinvoice purchaseID;
+
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "returnedBy", nullable = false)
@@ -67,6 +71,10 @@ public class Return {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "expenseID")
     private Expense expenseID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "incomeID")
+    private Income incomeID;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shiftReportID")

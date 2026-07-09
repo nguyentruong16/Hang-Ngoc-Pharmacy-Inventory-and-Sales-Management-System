@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -14,10 +14,10 @@ import java.time.Instant;
 public class ProcurementplanResponse {
     private Integer id;
     private String procurementCode;
-    private Instant date;
+    private LocalDateTime date;
     private String status;
     private String note;
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     public static ProcurementplanResponse from(Procurementplan procurementplan) {
         return new ProcurementplanResponse(

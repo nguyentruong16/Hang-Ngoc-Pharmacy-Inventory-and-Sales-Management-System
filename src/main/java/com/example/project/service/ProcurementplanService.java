@@ -16,13 +16,17 @@ import com.example.project.repository.ProductRepository;
 import com.example.project.repository.ProductunitRepository;
 import com.example.project.repository.SupplierRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -37,6 +41,7 @@ import java.util.Set;
 public class ProcurementplanService {
     private static final String DEFAULT_STATUS = "Đang thực hiện";
     private static final String COMPLETED_STATUS = "Đã hoàn thành";
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Set<String> ALLOWED_STATUSES = Set.of(DEFAULT_STATUS, COMPLETED_STATUS);
 
     private final ProcurementplanRepository procurementplanRepository;
@@ -69,17 +74,62 @@ public class ProcurementplanService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProcurementplanResponse> list(String search, Pageable pageable) {
+    public Page<ProcurementplanResponse> list(String search,
+                                              String fromDate,
+                                              String toDate,
+                                              String status,
+                                              Pageable pageable) {
         String keyword = search == null ? "" : search.trim();
-        Page<Procurementplan> page = keyword.isEmpty()
-                ? procurementplanRepository.findAll(pageable)
-                : procurementplanRepository.findByProcurementCodeContainingIgnoreCase(keyword, pageable);
-        return page.map(ProcurementplanResponse::from);
+        LocalDate from = parseDate(fromDate);
+        LocalDate to = parseDate(toDate);
+        String normalizedStatus = status == null ? "" : status.trim();
+
+        List<ProcurementplanResponse> filtered = procurementplanRepository.findAll(
+                        Sort.by(Sort.Direction.DESC, "date").and(Sort.by(Sort.Direction.DESC, "id")))
+                .stream()
+                .filter(plan -> keyword.isEmpty()
+                        || (plan.getProcurementCode() != null
+                        && plan.getProcurementCode().toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT))))
+                .filter(plan -> matchesDate(plan, from, to))
+                .filter(plan -> normalizedStatus.isEmpty() || normalizedStatus.equals(plan.getStatus()))
+                .map(ProcurementplanResponse::from)
+                .toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+
+        List<ProcurementplanResponse> content = start >= filtered.size()
+                ? List.of()
+                : filtered.subList(start, end);
+
+        return new PageImpl<>(content, pageable, filtered.size());
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> listStatuses() {
+        return List.copyOf(ALLOWED_STATUSES);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isCompleted(Integer id) {
+        return procurementplanRepository.findById(id)
+                .map(plan -> COMPLETED_STATUS.equals(plan.getStatus()))
+                .orElse(false);
     }
 
     @Transactional(readOnly = true)
     public long countAll() {
         return procurementplanRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public long countCompleted() {
+        return procurementplanRepository.countByStatus(COMPLETED_STATUS);
+    }
+
+    @Transactional(readOnly = true)
+    public long countInProgress() {
+        return procurementplanRepository.countByStatus(DEFAULT_STATUS);
     }
 
     @Transactional(readOnly = true)
@@ -93,7 +143,6 @@ public class ProcurementplanService {
     public ProcurementPlanCreateRequest buildUpdateForm(Integer id) {
         Procurementplan plan = procurementplanRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
-        ensureNotCompleted(plan);
 
         ProcurementPlanCreateRequest form = new ProcurementPlanCreateRequest();
         form.setNote(plan.getNote());
@@ -244,7 +293,7 @@ public class ProcurementplanService {
         List<ProcurementPlanDetailCreateRequest> details = normalizeDetails(request);
         validateCreateRequest(details);
 
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
         Procurementplan plan = new Procurementplan();
         plan.setProcurementCode(generateProcurementCode());
         plan.setDate(now);
@@ -269,6 +318,7 @@ public class ProcurementplanService {
 
         plan.setNote(trimToNull(request.getNote()));
         plan.setStatus(normalizeStatus(request.getStatus()));
+        plan.setDate(LocalDateTime.now(VN_ZONE));
         procurementplanRepository.save(plan);
 
         procurementplandetailRepository.deleteByProcurementID_Id(id);
@@ -372,5 +422,26 @@ public class ProcurementplanService {
         if (COMPLETED_STATUS.equals(plan.getStatus())) {
             throw new IllegalArgumentException("Dự trù mua hàng đã hoàn thành, không thể chỉnh sửa hoặc xóa");
         }
+    }
+
+    private boolean matchesDate(Procurementplan plan, LocalDate from, LocalDate to) {
+        if (from == null && to == null) {
+            return true;
+        }
+        if (plan.getDate() == null) {
+            return false;
+        }
+        LocalDate date = plan.getDate().toLocalDate();
+        if (from != null && date.isBefore(from)) {
+            return false;
+        }
+        return to == null || !date.isAfter(to);
+    }
+
+    private LocalDate parseDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return LocalDate.parse(value);
     }
 }

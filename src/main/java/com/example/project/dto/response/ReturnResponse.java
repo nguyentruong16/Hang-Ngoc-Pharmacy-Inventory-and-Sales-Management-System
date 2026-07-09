@@ -16,6 +16,7 @@ public class ReturnResponse {
     private Integer id;
     private String returnCode;
     private Integer invoiceId;
+    private Integer purchaseId;
     private Integer returnedById;
     private Instant returnDate;
     private String returnType;
@@ -25,6 +26,7 @@ public class ReturnResponse {
     private BigDecimal totalRefund;
     private BigDecimal offsetDebtAmount;
     private Integer expenseId;
+    private Integer incomeID;
     private Integer shiftReportId;
     private String reason;
     private String status;
@@ -36,6 +38,7 @@ public class ReturnResponse {
                 returnEntity.getId(),
                 returnEntity.getReturnCode(), 
                 returnEntity.getInvoiceID() != null ? returnEntity.getInvoiceID().getId() : null,
+                returnEntity.getPurchaseID() != null ? returnEntity.getPurchaseID().getId() : null,
                 returnEntity.getReturnedBy() != null ? returnEntity.getReturnedBy().getId() : null,
                 returnEntity.getReturnDate(),
                 returnEntity.getReturnType(),
@@ -45,6 +48,7 @@ public class ReturnResponse {
                 returnEntity.getTotalRefund(),
                 returnEntity.getOffsetDebtAmount(),
                 returnEntity.getExpenseID() != null ? returnEntity.getExpenseID().getId() : null,
+                returnEntity.getIncomeID() != null ? returnEntity.getIncomeID().getId() : null,
                 returnEntity.getShiftReportID() != null ? returnEntity.getShiftReportID().getId() : null,
                 returnEntity.getReason(),
                 returnEntity.getStatus(),
