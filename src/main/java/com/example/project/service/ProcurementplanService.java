@@ -9,12 +9,14 @@ import com.example.project.entity.Procurementplandetail;
 import com.example.project.entity.Product;
 import com.example.project.entity.Productunit;
 import com.example.project.entity.Supplier;
+import com.example.project.entity.Supplierproduct;
 import com.example.project.repository.BatchRepository;
 import com.example.project.repository.ProcurementplanRepository;
 import com.example.project.repository.ProcurementplandetailRepository;
 import com.example.project.repository.ProductRepository;
 import com.example.project.repository.ProductunitRepository;
 import com.example.project.repository.SupplierRepository;
+import com.example.project.repository.SupplierproductRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +52,7 @@ public class ProcurementplanService {
     private final ProductRepository productRepository;
     private final ProductunitRepository productunitRepository;
     private final SupplierRepository supplierRepository;
+    private final SupplierproductRepository supplierproductRepository;
     private final BatchRepository batchRepository;
 
     public ProcurementplanService(ProcurementplanRepository procurementplanRepository,
@@ -56,12 +60,14 @@ public class ProcurementplanService {
                                   ProductRepository productRepository,
                                   ProductunitRepository productunitRepository,
                                   SupplierRepository supplierRepository,
+                                  SupplierproductRepository supplierproductRepository,
                                   BatchRepository batchRepository) {
         this.procurementplanRepository = procurementplanRepository;
         this.procurementplandetailRepository = procurementplandetailRepository;
         this.productRepository = productRepository;
         this.productunitRepository = productunitRepository;
         this.supplierRepository = supplierRepository;
+        this.supplierproductRepository = supplierproductRepository;
         this.batchRepository = batchRepository;
     }
 
@@ -272,6 +278,22 @@ public class ProcurementplanService {
     }
 
     @Transactional(readOnly = true)
+    public BigDecimal getSupplierCostPrice(Integer supplierId, Integer productId) {
+        if (supplierId == null || productId == null) {
+            return null;
+        }
+
+        return supplierproductRepository.findBySupplierID_IdAndProductID_ProductID(supplierId, productId)
+                .filter(this::isActiveSupplierProduct)
+                .map(Supplierproduct::getCostPrice)
+                .orElse(null);
+    }
+
+    private boolean isActiveSupplierProduct(Supplierproduct supplierProduct) {
+        return supplierProduct.getIsActive() == null || Boolean.TRUE.equals(supplierProduct.getIsActive());
+    }
+
+    @Transactional(readOnly = true)
     public List<Supplier> listSuppliers() {
         return supplierRepository.findAll()
                 .stream()
@@ -355,12 +377,34 @@ public class ProcurementplanService {
             detail.setProductID(product);
             detail.setRequestedQuantity(item.getRequestedQuantity());
             detail.setUnit(trimToNull(item.getUnit()));
-            detail.setEstimatedPrice(item.getEstimatedPrice());
+            detail.setEstimatedPrice(resolveEstimatedPrice(item));
             detail.setSupplierID(supplier);
             detail.setCurrentStock((int) batchRepository.sumStorageByProduct(product.getProductID()));
 
             procurementplandetailRepository.save(detail);
         }
+    }
+
+    private BigDecimal resolveEstimatedPrice(ProcurementPlanDetailCreateRequest item) {
+        if (item.getEstimatedPrice() != null) {
+            return item.getEstimatedPrice().setScale(2, RoundingMode.HALF_UP);
+        }
+
+        Integer supplierId = item.getSupplierId();
+        Integer productId = item.getProductId();
+        Integer quantity = item.getRequestedQuantity();
+
+        if (supplierId == null || productId == null || quantity == null || quantity <= 0) {
+            return null;
+        }
+
+        BigDecimal unitCost = getSupplierCostPrice(supplierId, productId);
+        if (unitCost == null) {
+            return null;
+        }
+
+        return unitCost.multiply(BigDecimal.valueOf(quantity.longValue()))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     private List<ProcurementPlanDetailCreateRequest> normalizeDetails(ProcurementPlanCreateRequest request) {
