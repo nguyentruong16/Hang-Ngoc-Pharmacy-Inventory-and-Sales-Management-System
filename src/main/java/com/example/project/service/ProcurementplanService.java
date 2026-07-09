@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -376,12 +377,30 @@ public class ProcurementplanService {
             detail.setProductID(product);
             detail.setRequestedQuantity(item.getRequestedQuantity());
             detail.setUnit(trimToNull(item.getUnit()));
-            detail.setEstimatedPrice(item.getEstimatedPrice());
+            detail.setEstimatedPrice(resolveEstimatedPrice(item));
             detail.setSupplierID(supplier);
             detail.setCurrentStock((int) batchRepository.sumStorageByProduct(product.getProductID()));
 
             procurementplandetailRepository.save(detail);
         }
+    }
+
+    private BigDecimal resolveEstimatedPrice(ProcurementPlanDetailCreateRequest item) {
+        Integer supplierId = item.getSupplierId();
+        Integer productId = item.getProductId();
+        Integer quantity = item.getRequestedQuantity();
+
+        if (supplierId == null || productId == null || quantity == null || quantity <= 0) {
+            return null;
+        }
+
+        BigDecimal unitCost = getSupplierCostPrice(supplierId, productId);
+        if (unitCost == null) {
+            return null;
+        }
+
+        return unitCost.multiply(BigDecimal.valueOf(quantity.longValue()))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     private List<ProcurementPlanDetailCreateRequest> normalizeDetails(ProcurementPlanCreateRequest request) {

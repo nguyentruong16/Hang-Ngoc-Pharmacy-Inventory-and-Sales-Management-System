@@ -443,7 +443,8 @@
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <form th:action="${basePath + '/create-procurementplan'}"
+        <form id="procurementCreateForm"
+              th:action="${basePath + '/create-procurementplan'}"
               th:object="${procurementPlanForm}"
               method="post"
               novalidate>
@@ -533,7 +534,7 @@
 <script th:inline="javascript">
     const basePath = /*[[${basePath}]]*/ '/owner/procurements';
     const suppliers = /*[[${suppliers}]]*/ [];
-    const initialDetails = /*[[${procurementPlanForm.details}]]*/ [];
+    const initialDetails = /*[[${initialDetailRows}]]*/ [];
     const initialProducts = /*[[${initialProducts}]]*/ [];
 
     const productMap = {};
@@ -592,32 +593,70 @@
         };
     }
 
+    function resolveUnitPriceFromDetail(detail) {
+        if (detail.unitCost != null && detail.unitCost !== '') {
+            const unitCost = Number(detail.unitCost);
+            return Number.isFinite(unitCost) ? unitCost : null;
+        }
+
+        const quantity = Number(detail.requestedQuantity) || 0;
+        const total = detail.estimatedPrice != null ? Number(detail.estimatedPrice) : null;
+        if (total != null && Number.isFinite(total) && quantity > 0) {
+            return total / quantity;
+        }
+        return null;
+    }
+
     function getLineUnitPrice(row) {
-        const input = row.querySelector('[data-field="estimatedPrice"]');
-        if (!input || input.disabled || input.value === '') {
+        const unitCost = row.dataset.unitCost;
+        if (unitCost === undefined || unitCost === '') {
             return 0;
         }
-        const value = Number(input.value);
+        const value = Number(unitCost);
         return Number.isFinite(value) ? value : 0;
+    }
+
+    function setLineUnitCost(row, unitCost) {
+        if (unitCost == null || unitCost === '') {
+            delete row.dataset.unitCost;
+        } else {
+            row.dataset.unitCost = String(unitCost);
+        }
+    }
+
+    function refreshLineAmounts(row) {
+        const quantity = numberValue(row.querySelector('.quantity-input'));
+        const unitPrice = getLineUnitPrice(row);
+        const lineTotal = quantity * unitPrice;
+
+        const totalDisplay = row.querySelector('.line-total-text');
+        if (totalDisplay) {
+            totalDisplay.textContent = formatLineMoney(lineTotal);
+        }
     }
 
     function updateLinePriceDisplay(row, price) {
         const display = row.querySelector('.price-display');
-        const hidden = row.querySelector('[data-field="estimatedPrice"]');
-        if (!display || !hidden) {
+        if (!display) {
             return;
         }
 
         if (price == null || price === '') {
             display.textContent = '—';
-            hidden.value = '';
-            hidden.disabled = true;
+            setLineUnitCost(row, null);
         } else {
             display.textContent = formatLineMoney(price);
-            hidden.value = price;
-            hidden.disabled = false;
+            setLineUnitCost(row, price);
         }
+        refreshLineAmounts(row);
         calculateSummary();
+    }
+
+    function syncLineAmountsBeforeSubmit() {
+        reindexDetailLines();
+        document.querySelectorAll('#detailLines .product-line').forEach(row => {
+            refreshLineAmounts(row);
+        });
     }
 
     async function handleSupplierChange(select) {
@@ -636,9 +675,11 @@
             return;
         }
 
+        setLineUnitCost(row, null);
         if (priceDisplay) {
             priceDisplay.textContent = '...';
         }
+        refreshLineAmounts(row);
 
         try {
             const url = basePath + '/supplier-cost-price?supplierId=' + encodeURIComponent(supplierId)
@@ -672,11 +713,11 @@
     function reindexDetailLines() {
         document.querySelectorAll('#detailLines .product-line').forEach((row, index) => {
             row.querySelector('.line-index').textContent = index + 1;
-            row.querySelectorAll('[data-field]').forEach(input => {
-                const field = input.getAttribute('data-field');
-                const name = 'details[' + index + '].' + field;
-                input.setAttribute('name', name);
-                input.setAttribute('id', name);
+            row.querySelectorAll('input[data-field], select[data-field], textarea[data-field]').forEach(field => {
+                const fieldName = field.getAttribute('data-field');
+                const name = 'details[' + index + '].' + fieldName;
+                field.setAttribute('name', name);
+                field.setAttribute('id', name);
             });
         });
         toggleEmptyState();
@@ -690,12 +731,15 @@
         const currentStock = detail.currentStock != null ? detail.currentStock : getStock(product.productID);
         const quantity = detail.requestedQuantity != null ? detail.requestedQuantity : 1;
         const unit = detail.unit || '';
-        const price = detail.estimatedPrice != null ? detail.estimatedPrice : '';
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
+        const unitPrice = resolveUnitPriceFromDetail(detail);
         const hasSupplier = supplierId !== '';
-        const showPrice = hasSupplier && price !== '';
-        const priceDisplay = showPrice ? formatLineMoney(price) : '—';
-        const priceValue = showPrice ? price : '';
+        const showUnitPrice = hasSupplier && unitPrice != null;
+        const unitPriceDisplay = showUnitPrice ? formatLineMoney(unitPrice) : '—';
+        const lineTotal = showUnitPrice
+            ? Number(quantity) * Number(unitPrice)
+            : (detail.estimatedPrice != null ? Number(detail.estimatedPrice) : 0);
+        const unitCostAttr = showUnitPrice ? ' data-unit-cost="' + unitPrice + '"' : '';
         const supplierOptionsHtml = suppliers.map(supplier =>
             '<option value="' + supplier.id + '"' +
             (String(supplierId) === String(supplier.id) ? ' selected' : '') +
@@ -703,7 +747,7 @@
         ).join('');
 
         return `
-            <div class="product-line">
+            <div class="product-line"${unitCostAttr}>
                 <div><span class="line-index">${index + 1}</span></div>
                 <div>
                     <button type="button" class="btn-line-delete" onclick="removeDetailLine(this)" title="Xóa">
@@ -730,17 +774,17 @@
                            oninput="calculateSummary()">
                 </div>
                 <div>
-                    <select class="supplier-select" data-field="supplierId">
+                    <select class="supplier-select" data-field="supplierId"
+                            onchange="handleSupplierChange(this)">
                         <option value="">Chọn nhà cung cấp</option>
                         ${supplierOptionsHtml}
                     </select>
                 </div>
                 <div class="text-end">
-                    <span class="price-display">${priceDisplay}</span>
-                    <input type="hidden" data-field="estimatedPrice" value="${priceValue}"${showPrice ? '' : ' disabled'}>
+                    <span class="price-display">${unitPriceDisplay}</span>
                 </div>
                 <div>
-                    <span class="line-total-text">${formatLineMoney(Number(quantity) * Number(showPrice ? price : 0))}</span>
+                    <span class="line-total-text">${formatLineMoney(lineTotal)}</span>
                 </div>
             </div>
         `;
@@ -786,11 +830,7 @@
             const unitPrice = getLineUnitPrice(row);
             const lineTotal = quantity * unitPrice;
             totalAmount += lineTotal;
-
-            const totalDisplay = row.querySelector('.line-total-text');
-            if (totalDisplay) {
-                totalDisplay.textContent = formatLineMoney(lineTotal);
-            }
+            refreshLineAmounts(row);
         });
 
         document.getElementById('itemCountDisplay').textContent = rows.length;
@@ -948,12 +988,6 @@
         }
     });
 
-    document.getElementById('detailLines').addEventListener('change', function (event) {
-        if (event.target.matches('.supplier-select')) {
-            handleSupplierChange(event.target);
-        }
-    });
-
     document.addEventListener('click', function (event) {
         if (!event.target.closest('.product-search-wrap')) hideSearchResults();
     });
@@ -976,6 +1010,10 @@
     initLineSupplierPrices();
     toggleEmptyState();
     calculateSummary();
+
+    document.getElementById('procurementCreateForm').addEventListener('submit', function () {
+        syncLineAmountsBeforeSubmit();
+    });
 </script>
 
 </body>

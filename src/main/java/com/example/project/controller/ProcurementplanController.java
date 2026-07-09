@@ -1,9 +1,11 @@
 package com.example.project.controller;
 
 import com.example.project.dto.request.ProcurementPlanCreateRequest;
+import com.example.project.dto.response.ProcurementPlanDetailRowView;
 import com.example.project.dto.response.ProcurementProductSearchResponse;
 import com.example.project.dto.response.ProcurementplanResponse;
 import com.example.project.dto.response.SupplierCostPriceResponse;
+import com.example.project.entity.Supplier;
 import com.example.project.service.ProcurementplanService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -11,10 +13,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.beans.propertyeditors.CustomNumberEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +28,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class ProcurementplanController {
@@ -31,6 +38,12 @@ public class ProcurementplanController {
 
     public ProcurementplanController(ProcurementplanService procurementplanService) {
         this.procurementplanService = procurementplanService;
+    }
+
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(BigDecimal.class, new CustomNumberEditor(BigDecimal.class, true));
+        binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
     }
 
     @GetMapping("/procurement-plans")
@@ -216,8 +229,37 @@ public class ProcurementplanController {
     private void addFormPageData(HttpServletRequest request, Model model) {
         ProcurementPlanCreateRequest form = (ProcurementPlanCreateRequest) model.getAttribute("procurementPlanForm");
         model.addAttribute("initialProducts", procurementplanService.listProductsForDetails(form));
-        model.addAttribute("suppliers", procurementplanService.listSuppliers());
+        model.addAttribute("initialDetailRows", buildInitialDetailRows(form));
+        model.addAttribute("suppliers", toSupplierOptions(procurementplanService.listSuppliers()));
         model.addAttribute("basePath", resolveBasePath(request));
+    }
+
+    private List<ProcurementPlanDetailRowView> buildInitialDetailRows(ProcurementPlanCreateRequest form) {
+        if (form == null || form.getDetails() == null) {
+            return List.of();
+        }
+
+        return form.getDetails().stream()
+                .filter(detail -> detail.getProductId() != null)
+                .map(detail -> new ProcurementPlanDetailRowView(
+                        detail.getProductId(),
+                        detail.getRequestedQuantity(),
+                        detail.getUnit(),
+                        detail.getEstimatedPrice(),
+                        detail.getSupplierId()
+                ))
+                .toList();
+    }
+
+    private List<Map<String, Object>> toSupplierOptions(List<Supplier> suppliers) {
+        return suppliers.stream()
+                .map(supplier -> {
+                    Map<String, Object> option = new HashMap<>();
+                    option.put("id", supplier.getId());
+                    option.put("name", supplier.getName() != null ? supplier.getName() : "");
+                    return option;
+                })
+                .toList();
     }
 
     private String resolveBasePath(HttpServletRequest request) {
