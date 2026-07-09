@@ -42,7 +42,6 @@ public class PlaceholderController {
             "/owner/invoices",
             "/owner/incomes",
             "/owner/expenses",
-            "/owner/returns",
             "/owner/shift-reports",
             "/owner/daily-reports"
     })
@@ -57,7 +56,6 @@ public class PlaceholderController {
             "/pharmacist/customers",
             "/pharmacist/shift-reports",
             "/pharmacist/notifications",
-            "/pharmacist/returns",
             "/pharmacist/incomes",
             "/pharmacist/stock-outs/create"
     })
