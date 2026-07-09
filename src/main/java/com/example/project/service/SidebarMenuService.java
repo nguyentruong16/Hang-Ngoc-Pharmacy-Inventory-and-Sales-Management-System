@@ -137,6 +137,7 @@ public class SidebarMenuService {
                         i("Thiết lập tài chính", "/owner/financial-setting", "ti ti-settings")),
 
                 menuGroup("Kho", "ti ti-archive",
+                        i("Kiểm kê kho", "/owner/stock-counts", "ti ti-clipboard-list"),
                         i("Xuất kho", "/owner/stock-adjustments", "ti ti-archive"),
                         i("Tạo phiếu hủy xuất kho", "/owner/stock-adjustments/create", "ti ti-trash")),
 
@@ -179,6 +180,7 @@ public class SidebarMenuService {
                         i("Danh sách phiếu nhập", "/pharmacist/purchase-invoices", "ti ti-receipt")),
 
                 linkGroup("Kho", "ti ti-archive",
+                        i("Kiểm kê kho", "/pharmacist/stock-counts", "ti ti-clipboard-list"),
                         i("Tạo phiếu điều chỉnh kho", "/pharmacist/stock-adjustments/create", "ti ti-archive")),
 
                 menuGroup("Giao dịch", "ti ti-file-invoice",
