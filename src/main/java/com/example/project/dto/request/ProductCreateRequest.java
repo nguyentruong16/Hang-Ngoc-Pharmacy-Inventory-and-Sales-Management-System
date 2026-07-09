@@ -42,6 +42,8 @@ public class ProductCreateRequest {
     private MultipartFile imageFile;
     /** Current photo URL, for the Edit form's preview only; not bound back on submit. */
     private String existingImageUrl;
+    /** Edit only: remove the current photo without replacing it. Ignored when {@link #imageFile} is also set. */
+    private Boolean removeImage;
 
     private List<ProductUnitCreateRequest> units = new ArrayList<>();
     private List<ProductIngredientCreateRequest> ingredients = new ArrayList<>();
