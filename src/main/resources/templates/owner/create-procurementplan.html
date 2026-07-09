@@ -73,32 +73,10 @@
 
         .product-search-wrap {
             position: relative;
-            display: flex;
-            gap: 10px;
-            align-items: stretch;
         }
 
         .product-search-field {
             position: relative;
-            flex: 1;
-        }
-
-        .btn-barcode {
-            width: 48px;
-            min-height: 48px;
-            border: none;
-            border-radius: 10px;
-            background: #2563eb;
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .btn-barcode:hover {
-            background: #1d4ed8;
         }
 
         .product-search-input {
@@ -478,9 +456,6 @@
                                            autocomplete="off">
                                     <div id="productSearchResults" class="product-search-results"></div>
                                 </div>
-                                <button type="button" class="btn-barcode" title="Quét barcode">
-                                    <i class="ti ti-barcode"></i>
-                                </button>
                             </div>
                         </div>
 
@@ -922,7 +897,7 @@
                         ${product.unit ? escapeHtml(product.unit) : 'Chưa có đơn vị thuốc'}
                     </div>
                 </div>
-                <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}</div>
+                <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}${product.stockUnit ? ' ' + escapeHtml(product.stockUnit) : ''}</div>
             </div>
         `).join('');
         results.classList.add('show');
@@ -996,10 +971,6 @@
         hideSearchResults();
         searchInput.focus();
     }
-
-    document.querySelector('.btn-barcode').addEventListener('click', function () {
-        document.getElementById('productSearchInput').focus();
-    });
 
     document.getElementById('productSearchInput').addEventListener('input', function (event) {
         const value = event.target.value;
