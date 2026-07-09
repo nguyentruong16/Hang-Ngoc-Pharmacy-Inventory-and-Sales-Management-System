@@ -185,8 +185,9 @@
                 28px 28px
                 minmax(0, 2fr)
                 42px
-                minmax(52px, 0.7fr)
+                minmax(48px, 0.6fr)
                 56px
+                minmax(52px, 0.7fr)
                 minmax(0, 1.2fr)
                 minmax(68px, 0.85fr)
                 minmax(72px, 0.9fr);
@@ -273,6 +274,17 @@
             font-size: 13px;
             font-weight: 600;
             color: #2563eb;
+        }
+
+        .stock-unit-display {
+            display: block;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 500;
+            color: #374151;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .supplier-select {
@@ -477,8 +489,9 @@
                             <div></div>
                             <div>Hàng hóa</div>
                             <div class="text-center">Tồn</div>
-                            <div>Đơn vị thuốc</div>
+                            <div class="text-center">Đơn vị tồn</div>
                             <div>Số lượng</div>
+                            <div>Đơn vị thuốc</div>
                             <div>Nhà cung cấp</div>
                             <div class="text-end">Giá từng đơn vị</div>
                             <div class="text-end">Giá ước tính</div>
@@ -579,6 +592,11 @@
             return cached.currentStock;
         }
         return 0;
+    }
+
+    function getStockUnit(productId) {
+        const cached = productMap[productId];
+        return cached && cached.stockUnit ? cached.stockUnit : '—';
     }
 
     function cacheSearchProducts(items) {
@@ -759,6 +777,7 @@
         if (!product) return '';
 
         const currentStock = detail.currentStock != null ? detail.currentStock : getStock(product.productID);
+        const stockUnit = product.stockUnit || getStockUnit(product.productID);
         const quantity = detail.requestedQuantity != null ? detail.requestedQuantity : 1;
         const unit = detail.unit || '';
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
@@ -793,13 +812,16 @@
                     <span class="stock-display">${currentStock}</span>
                 </div>
                 <div>
-                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
-                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
+                    <span class="stock-unit-display">${escapeHtml(stockUnit || '—')}</span>
                 </div>
                 <div>
                     <input type="number" min="1" class="field-input quantity-input"
                            data-field="requestedQuantity" value="${quantity}"
                            oninput="handleQuantityInput(this)">
+                </div>
+                <div>
+                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
+                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
                 </div>
                 <div>
                     <select class="supplier-select" data-field="supplierId"
