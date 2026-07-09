@@ -36,6 +36,7 @@ public class PurchaseinvoiceService {
     private final ProductRepository productRepository;
     private final BatchRepository batchRepository;
     private final ProductunitRepository productunitRepository;
+    private final SupplierproductRepository supplierproductRepository;
 
     public PurchaseinvoiceService(PurchaseinvoiceRepository purchaseinvoiceRepository,
                                   PurchasedetailRepository purchasedetailRepository,
@@ -43,7 +44,8 @@ public class PurchaseinvoiceService {
                                   AccountRepository accountRepository,
                                   ProductRepository productRepository,
                                   BatchRepository batchRepository,
-                                  ProductunitRepository productunitRepository) {
+                                  ProductunitRepository productunitRepository,
+                                  SupplierproductRepository supplierproductRepository) {
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.purchasedetailRepository = purchasedetailRepository;
         this.supplierRepository = supplierRepository;
@@ -51,6 +53,7 @@ public class PurchaseinvoiceService {
         this.productRepository = productRepository;
         this.batchRepository = batchRepository;
         this.productunitRepository = productunitRepository;
+        this.supplierproductRepository = supplierproductRepository;
     }
 
     /**
@@ -249,9 +252,33 @@ public class PurchaseinvoiceService {
             Purchasedetail savedDetail = purchasedetailRepository.save(detail);
 
             createBatchForDetail(savedInvoice, savedDetail, product);
+            upsertSupplierProductCostPrice(supplier, product, item.getImportPrice());
         }
 
         return savedInvoice.getId();
+    }
+
+    /**
+     * "Giá nhập" của phiếu nhập luôn phản ánh giá thực tế của lần giao dịch (thực hiện ngoài hệ
+     * thống), nên mỗi lần lưu phiếu sẽ ghi đè {@code SupplierProduct.costPrice} bằng giá vừa nhập
+     * — không chỉ cập nhật khi trước đó chưa có — để costPrice luôn là "giá nhập mới nhất" dùng
+     * tham khảo khi lập dự trù mua hàng. Tạo mới liên kết (supplier, product) nếu đây là lần đầu
+     * nhập sản phẩm này từ nhà cung cấp này.
+     */
+    private void upsertSupplierProductCostPrice(Supplier supplier, Product product, BigDecimal importPrice) {
+        Supplierproduct supplierProduct = supplierproductRepository
+                .findBySupplierID_IdAndProductID_ProductID(supplier.getId(), product.getProductID())
+                .orElseGet(() -> {
+                    Supplierproduct created = new Supplierproduct();
+                    created.setSupplierID(supplier);
+                    created.setProductID(product);
+                    created.setIsPreferred(false);
+                    created.setIsActive(true);
+                    return created;
+                });
+
+        supplierProduct.setCostPrice(importPrice);
+        supplierproductRepository.save(supplierProduct);
     }
 
     /** Creates the Batch (stock) row for one just-saved Purchasedetail — see class javadoc. */
@@ -400,6 +427,30 @@ public class PurchaseinvoiceService {
                         formatLocalDate(key.expirationDate()),
                         total[0]
                 )));
+
+        return result;
+    }
+
+    /**
+     * "Giá nhập" gợi ý cho trang tạo phiếu nhập, theo từng cặp (nhà cung cấp, sản phẩm) đã từng
+     * nhập — lấy từ {@code SupplierProduct.costPrice} (giá nhập gần nhất được lưu lại, xem
+     * {@link #upsertSupplierProductCostPrice}). Bake sẵn thành model attribute giống
+     * {@link #buildExistingLotsByProduct()}, JS đọc trực tiếp thay vì gọi AJAX.
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, Map<Integer, BigDecimal>> buildCostPriceBySupplierAndProduct() {
+        Map<Integer, Map<Integer, BigDecimal>> result = new LinkedHashMap<>();
+
+        for (Supplierproduct supplierProduct : supplierproductRepository.findAll()) {
+            if (supplierProduct.getSupplierID() == null
+                    || supplierProduct.getProductID() == null
+                    || supplierProduct.getCostPrice() == null) {
+                continue;
+            }
+
+            result.computeIfAbsent(supplierProduct.getSupplierID().getId(), id -> new LinkedHashMap<>())
+                    .put(supplierProduct.getProductID().getProductID(), supplierProduct.getCostPrice());
+        }
 
         return result;
     }

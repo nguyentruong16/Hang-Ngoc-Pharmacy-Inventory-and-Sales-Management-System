@@ -5,12 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SupplierproductRepository extends JpaRepository<Supplierproduct, Integer> {
 
     long countBySupplierID_Id(Integer supplierId);
 
     List<Supplierproduct> findBySupplierID_Id(Integer supplierId);
+
+    Optional<Supplierproduct> findBySupplierID_IdAndProductID_ProductID(Integer supplierId, Integer productId);
 
     @Query("SELECT COUNT(DISTINCT sp.supplierID.id) FROM Supplierproduct sp")
     long countDistinctSuppliers();

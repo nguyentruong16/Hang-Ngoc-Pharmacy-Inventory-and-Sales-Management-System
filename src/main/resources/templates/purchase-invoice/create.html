@@ -347,6 +347,7 @@
 <script th:inline="javascript">
     const products = /*[[${products}]]*/ [];
     const existingLotsByProduct = /*[[${existingLotsByProduct}]]*/ {};
+    const costPriceBySupplierAndProduct = /*[[${costPriceBySupplierAndProduct}]]*/ {};
 
     // Repopulate a row's "chọn lô có sẵn" dropdown from the row's currently selected product.
     function refreshLotPicker(row) {
@@ -389,6 +390,42 @@
         if (productSelect) productSelect.addEventListener('change', () => refreshLotPicker(row));
         if (lotPicker) lotPicker.addEventListener('change', () => fillFromLotPicker(lotPicker));
         refreshLotPicker(row);
+    }
+
+    // "Giá nhập" gợi ý = SupplierProduct.costPrice gần nhất của cặp (NCC đang chọn, sản phẩm của dòng này).
+    function suggestedCostPrice(supplierId, productId) {
+        if (!supplierId || !productId) return null;
+
+        const bySupplier = costPriceBySupplierAndProduct[supplierId];
+        if (!bySupplier) return null;
+
+        const price = bySupplier[productId];
+        return (price === undefined || price === null) ? null : price;
+    }
+
+    // Chỉ tự điền khi ô giá đang trống — không ghi đè giá người dùng đã tự nhập/sửa tay.
+    function applySuggestedPrice(row) {
+        const productSelect = row.querySelector('.product-select');
+        const priceInput = row.querySelector('.price-input');
+        if (!productSelect || !priceInput) return;
+
+        const hasValue = priceInput.value !== '' && Number(priceInput.value) > 0;
+        if (hasValue) return;
+
+        const supplierSelect = document.getElementById('supplierId');
+        const supplierId = supplierSelect ? supplierSelect.value : '';
+        const price = suggestedCostPrice(supplierId, productSelect.value);
+
+        if (price !== null) {
+            priceInput.value = price;
+            calculateSummary();
+        }
+    }
+
+    function wirePriceSuggestion(row) {
+        const productSelect = row.querySelector('.product-select');
+        if (productSelect) productSelect.addEventListener('change', () => applySuggestedPrice(row));
+        applySuggestedPrice(row);
     }
 
     function formatMoney(value) {
@@ -519,6 +556,7 @@
         tbody.appendChild(row);
         refreshRowIndexes();
         wireLotPicker(row);
+        wirePriceSuggestion(row);
         calculateSummary();
     }
 
@@ -550,7 +588,16 @@
             });
 
             wireLotPicker(row);
+            wirePriceSuggestion(row);
         });
+
+        const supplierSelect = document.getElementById('supplierId');
+        if (supplierSelect) {
+            // Đổi NCC có thể lộ ra giá gợi ý khác cho các dòng chưa có giá — áp lại cho toàn bộ.
+            supplierSelect.addEventListener('change', () => {
+                document.querySelectorAll('#detailRows tr').forEach(row => applySuggestedPrice(row));
+            });
+        }
 
         calculateSummary();
     });
