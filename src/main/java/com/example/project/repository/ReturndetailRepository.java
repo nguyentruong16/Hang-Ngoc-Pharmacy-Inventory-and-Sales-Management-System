@@ -21,4 +21,25 @@ public interface ReturndetailRepository extends JpaRepository<Returndetail, Inte
        """)
     List<Returndetail> findRecentReturnsByProduct(@Param("productId") Integer productId,
                                                   Pageable pageable);
+
+    /** All return lines with their product/unit/batch, for the list-screen item counts. */
+    @Query("""
+       select d
+       from Returndetail d
+       left join fetch d.productID
+       left join fetch d.productUnitID
+       left join fetch d.batchID
+       """)
+    List<Returndetail> findAllWithRelations();
+
+    /** The lines of one return slip, fully loaded for the detail screen. */
+    @Query("""
+       select d
+       from Returndetail d
+       left join fetch d.productID
+       left join fetch d.productUnitID
+       left join fetch d.batchID
+       where d.returnID.id = :returnId
+       """)
+    List<Returndetail> findByReturnIdWithRelations(@Param("returnId") Integer returnId);
 }

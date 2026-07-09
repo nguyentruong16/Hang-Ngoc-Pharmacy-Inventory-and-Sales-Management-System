@@ -1,24 +1,186 @@
 package com.example.project.controller;
 
-import com.example.project.dto.response.ReturnResponse;
+import com.example.project.context.CurrentUserContext;
+import com.example.project.dto.request.ReturnCreateRequest;
+import com.example.project.dto.response.ReturnInvoiceLineResponse;
+import com.example.project.dto.response.ReturnListItemResponse;
 import com.example.project.service.ReturnService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/returns")
+/**
+ * Customer-return screens (list / detail / create / approve / reject).
+ *
+ * <p>Reachable by the Owner (approver) and the Pharmacist (creator). Both share the same templates;
+ * the active base path (<code>/owner/returns</code> or <code>/pharmacist/returns</code>) is resolved
+ * per request so links stay within the caller's role prefix. Approve/reject are Owner-only (enforced
+ * by SecurityConfig on <code>/owner/**</code>).</p>
+ */
+@Controller
 public class ReturnController {
-    private final ReturnService returnService;
 
-    public ReturnController(ReturnService returnService) {
+    private static final String OWNER_BASE = "/owner/returns";
+    private static final String PHARMACIST_BASE = "/pharmacist/returns";
+
+    private final ReturnService returnService;
+    private final CurrentUserContext currentUserContext;
+
+    public ReturnController(ReturnService returnService, CurrentUserContext currentUserContext) {
         this.returnService = returnService;
+        this.currentUserContext = currentUserContext;
     }
 
-    @GetMapping
-    public List<ReturnResponse> getAll() {
-        return returnService.getAll();
+    @GetMapping({OWNER_BASE, PHARMACIST_BASE})
+    public String list(@RequestParam(name = "keyword", required = false) String keyword,
+                       @RequestParam(name = "fromDate", required = false) String fromDate,
+                       @RequestParam(name = "toDate", required = false) String toDate,
+                       @RequestParam(name = "returnType", required = false) String returnType,
+                       @RequestParam(name = "status", required = false) String status,
+                       @RequestParam(name = "page", defaultValue = "0") int page,
+                       @RequestParam(name = "size", defaultValue = "5") int size,
+                       HttpServletRequest request,
+                       Model model) {
+        if (page < 0) {
+            page = 0;
+        }
+        if (size <= 0) {
+            size = 5;
+        }
+
+        Page<ReturnListItemResponse> returnPage =
+                returnService.search(keyword, fromDate, toDate, returnType, status, PageRequest.of(page, size));
+
+        model.addAttribute("returnPage", returnPage);
+        model.addAttribute("returns", returnPage.getContent());
+        model.addAttribute("stats", returnService.getStats());
+
+        model.addAttribute("statuses", returnService.listStatuses());
+        model.addAttribute("returnTypeLabels", returnService.returnTypeLabels());
+
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("fromDate", fromDate);
+        model.addAttribute("toDate", toDate);
+        model.addAttribute("filterReturnType", returnType);
+        model.addAttribute("filterStatus", status);
+
+        model.addAttribute("currentPage", returnPage.getNumber());
+        model.addAttribute("totalPages", returnPage.getTotalPages());
+        model.addAttribute("pageSize", size);
+        model.addAttribute("totalItems", returnPage.getTotalElements());
+
+        model.addAttribute("basePath", resolveBasePath(request));
+        return "return/list";
+    }
+
+    @GetMapping({OWNER_BASE + "/create", PHARMACIST_BASE + "/create"})
+    public String createPage(HttpServletRequest request, Model model) {
+        model.addAttribute("form", new ReturnCreateRequest());
+        model.addAttribute("returnableInvoices", returnService.listReturnableInvoices(null));
+        model.addAttribute("returnTypeLabels", returnService.returnTypeLabels());
+        model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
+        model.addAttribute("basePath", resolveBasePath(request));
+        return "return/create";
+    }
+
+    /** JSON: the still-returnable lines of a chosen invoice, for the create screen. */
+    @GetMapping(value = {OWNER_BASE + "/invoices/{invoiceId}/lines",
+            PHARMACIST_BASE + "/invoices/{invoiceId}/lines"},
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public List<ReturnInvoiceLineResponse> invoiceLines(@PathVariable Integer invoiceId) {
+        return returnService.loadInvoiceLines(invoiceId);
+    }
+
+    @PostMapping({OWNER_BASE + "/create", PHARMACIST_BASE + "/create"})
+    public String create(@ModelAttribute("form") ReturnCreateRequest form,
+                         @RequestParam(name = "action", required = false) String action,
+                         HttpServletRequest request,
+                         RedirectAttributes redirectAttributes,
+                         Model model) {
+        String basePath = resolveBasePath(request);
+        boolean isOwner = currentUserContext.isOwner();
+        boolean asDraft = "draft".equals(action);
+        try {
+            Integer returnId = returnService.createReturn(
+                    form, currentUserContext.getCurrentAccountId(), isOwner, asDraft);
+
+            String message;
+            if (asDraft) {
+                message = "Đã lưu nháp phiếu trả hàng";
+            } else if (isOwner) {
+                message = "Tạo phiếu trả hàng thành công (đã duyệt, tồn kho đã cập nhật)";
+            } else {
+                message = "Đã gửi phiếu trả hàng, đang chờ duyệt";
+            }
+            redirectAttributes.addFlashAttribute("successMessage", message);
+            return "redirect:" + basePath + "/" + returnId;
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("errorMessage", exception.getMessage());
+            model.addAttribute("form", form);
+            model.addAttribute("returnableInvoices", returnService.listReturnableInvoices(null));
+            model.addAttribute("returnTypeLabels", returnService.returnTypeLabels());
+            model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
+            model.addAttribute("basePath", basePath);
+            return "return/create";
+        }
+    }
+
+    @PostMapping({OWNER_BASE + "/{returnId}/submit", PHARMACIST_BASE + "/{returnId}/submit"})
+    public String submit(@PathVariable Integer returnId,
+                         HttpServletRequest request,
+                         RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            returnService.submit(returnId, currentUserContext.isOwner());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    currentUserContext.isOwner()
+                            ? "Đã duyệt phiếu trả hàng (tồn kho đã cập nhật)"
+                            : "Đã gửi phiếu trả hàng, đang chờ duyệt");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + basePath + "/" + returnId;
+    }
+
+    @GetMapping({OWNER_BASE + "/{returnId}", PHARMACIST_BASE + "/{returnId}"})
+    public String detail(@PathVariable Integer returnId, HttpServletRequest request, Model model) {
+        model.addAttribute("detail", returnService.getDetail(returnId));
+        model.addAttribute("basePath", resolveBasePath(request));
+        return "return/detail";
+    }
+
+    @PostMapping(OWNER_BASE + "/{returnId}/approve")
+    public String approve(@PathVariable Integer returnId, RedirectAttributes redirectAttributes) {
+        try {
+            returnService.approve(returnId);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã duyệt phiếu trả hàng (tồn kho đã cập nhật)");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + OWNER_BASE + "/" + returnId;
+    }
+
+    @PostMapping(OWNER_BASE + "/{returnId}/reject")
+    public String reject(@PathVariable Integer returnId, RedirectAttributes redirectAttributes) {
+        try {
+            returnService.reject(returnId);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối phiếu trả hàng");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + OWNER_BASE + "/" + returnId;
+    }
+
+    private String resolveBasePath(HttpServletRequest request) {
+        return request.getRequestURI().startsWith(PHARMACIST_BASE) ? PHARMACIST_BASE : OWNER_BASE;
     }
 }
