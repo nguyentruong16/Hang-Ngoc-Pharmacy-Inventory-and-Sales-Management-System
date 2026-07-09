@@ -52,6 +52,19 @@
         .ac-item:hover, .ac-item.active { background: #d1fae5; color: #059669; }
         .ac-empty { padding: 7px 12px; font-size: 12px; color: #9ca3af; }
 
+        /* Fixed-size box for the image preview so large photos don't overflow the form — the whole
+           image always fits inside (object-fit: contain), never cropped or stretched, regardless of
+           its original dimensions/aspect ratio. */
+        .image-preview-box {
+            width: 200px;
+            height: 150px;
+            object-fit: contain;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+            padding: 4px;
+        }
+
         @media (max-width: 991.98px) { .product-page-content { padding-top: 84px !important; } }
     </style>
 </head>
@@ -159,10 +172,15 @@
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="info-label">Ảnh sản phẩm</label>
-                        <input type="file" class="form-control" name="imageFile" accept="image/*">
+                        <input type="file" class="form-control" id="imageFileInput" name="imageFile" accept="image/*">
                         <div class="form-text">Tuỳ chọn. Chọn ảnh mới sẽ thay thế ảnh hiện có.</div>
-                        <img th:if="${form.existingImageUrl}" th:src="${form.existingImageUrl}"
-                             alt="Ảnh hiện tại" class="mt-2 rounded" style="max-height:96px">
+                        <div class="form-check mt-1" th:if="${isEdit and !#strings.isEmpty(form.existingImageUrl)}">
+                            <input class="form-check-input" type="checkbox" name="removeImage" value="true" id="removeImageCheck">
+                            <label class="form-check-label small" for="removeImageCheck">Xoá ảnh hiện tại (không thay ảnh mới)</label>
+                        </div>
+                        <img id="imagePreview" th:src="${form.existingImageUrl}" th:data-existing-url="${form.existingImageUrl}"
+                             th:style="${!#strings.isEmpty(form.existingImageUrl)} ? 'display:block' : 'display:none'"
+                             alt="Xem trước ảnh" class="mt-2 rounded image-preview-box">
                     </div>
                     <div class="col-12">
                         <label class="info-label">Ghi chú / Quy cách</label>
@@ -521,11 +539,43 @@
         else if (e.key === 'Escape') { hideAc(); }
     });
 
+    // Live preview of the chosen file before upload; unchecks "Xoá ảnh hiện tại" if the user then
+    // picks a new file (the two are mutually exclusive — a new file always wins on submit).
+    function wireImagePreview() {
+        const fileInput = document.getElementById('imageFileInput');
+        const preview = document.getElementById('imagePreview');
+        const removeCheck = document.getElementById('removeImageCheck');
+        if (!fileInput || !preview) return;
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) return;
+            if (removeCheck) removeCheck.checked = false;
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        removeCheck?.addEventListener('change', () => {
+            if (removeCheck.checked) {
+                fileInput.value = '';
+                preview.style.display = 'none';
+            } else if (preview.dataset.existingUrl) {
+                preview.src = preview.dataset.existingUrl;
+                preview.style.display = 'block';
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         wireUnitEvents();
         recomputeUnits();
         filterTypesByGroup();
         initAcSources();
+        wireImagePreview();
         document.getElementById('itemGroup')?.addEventListener('change', filterTypesByGroup);
         document.getElementById('createForm')?.addEventListener('submit', () => {
             reindex('unitRows', 'units');

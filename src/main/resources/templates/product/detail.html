@@ -54,6 +54,18 @@
         .qty-in { color: #059669; font-weight: 600; }
         .qty-out { color: #dc2626; font-weight: 600; }
 
+        /* Fixed-size box so large photos don't overflow the page — the whole image always fits
+           inside (object-fit: contain), never cropped or stretched. */
+        .image-preview-box {
+            width: 200px;
+            height: 150px;
+            object-fit: contain;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+            padding: 4px;
+        }
+
         @media (max-width: 991.98px) {
             .product-page-content { padding-top: 84px !important; }
         }
@@ -104,7 +116,7 @@
             <h2 class="section-title mb-3">Thông tin sản phẩm</h2>
             <div class="row g-3">
                 <div class="col-12" th:if="${product.imageUrl}">
-                    <img th:src="${product.imageUrl}" alt="Ảnh sản phẩm" class="rounded" style="max-height:160px">
+                    <img th:src="${product.imageUrl}" alt="Ảnh sản phẩm" class="rounded image-preview-box">
                 </div>
                 <div class="col-6 col-md-3"><div class="info-label">Mã hàng</div><div class="info-value" th:text="${product.code}">—</div></div>
                 <div class="col-6 col-md-3"><div class="info-label">Barcode</div><div class="info-value" th:text="${product.barcode != null ? product.barcode : '—'}">—</div></div>

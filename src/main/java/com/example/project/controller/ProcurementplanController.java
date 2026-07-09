@@ -1,8 +1,11 @@
 package com.example.project.controller;
 
 import com.example.project.dto.request.ProcurementPlanCreateRequest;
+import com.example.project.dto.response.ProcurementPlanDetailRowView;
 import com.example.project.dto.response.ProcurementProductSearchResponse;
 import com.example.project.dto.response.ProcurementplanResponse;
+import com.example.project.dto.response.SupplierCostPriceResponse;
+import com.example.project.entity.Supplier;
 import com.example.project.service.ProcurementplanService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -10,10 +13,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.beans.propertyeditors.CustomNumberEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +27,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class ProcurementplanController {
@@ -29,6 +38,12 @@ public class ProcurementplanController {
 
     public ProcurementplanController(ProcurementplanService procurementplanService) {
         this.procurementplanService = procurementplanService;
+    }
+
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(BigDecimal.class, new CustomNumberEditor(BigDecimal.class, true));
+        binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
     }
 
     @GetMapping("/procurement-plans")
@@ -39,6 +54,9 @@ public class ProcurementplanController {
 
     @GetMapping("/owner/procurements")
     public String procurementPlanList(@RequestParam(name = "search", required = false) String search,
+                                      @RequestParam(name = "fromDate", required = false) String fromDate,
+                                      @RequestParam(name = "toDate", required = false) String toDate,
+                                      @RequestParam(name = "status", required = false) String status,
                                       @RequestParam(name = "page", defaultValue = "0") int page,
                                       @RequestParam(name = "size", defaultValue = "5") int size,
                                       HttpServletRequest request,
@@ -51,13 +69,21 @@ public class ProcurementplanController {
             size = 5;
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        Page<ProcurementplanResponse> procurementPage = procurementplanService.list(search, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date")
+                .and(Sort.by(Sort.Direction.DESC, "id")));
+        Page<ProcurementplanResponse> procurementPage = procurementplanService.list(
+                search, fromDate, toDate, status, pageable);
         String basePath = resolveBasePath(request);
 
         model.addAttribute("procurementPlans", procurementPage.getContent());
         model.addAttribute("totalProcurementPlans", procurementplanService.countAll());
+        model.addAttribute("completedProcurementPlans", procurementplanService.countCompleted());
+        model.addAttribute("inProgressProcurementPlans", procurementplanService.countInProgress());
+        model.addAttribute("statuses", procurementplanService.listStatuses());
         model.addAttribute("search", search);
+        model.addAttribute("fromDate", fromDate);
+        model.addAttribute("toDate", toDate);
+        model.addAttribute("filterStatus", status);
         model.addAttribute("currentPage", procurementPage.getNumber());
         model.addAttribute("totalPages", procurementPage.getTotalPages());
         model.addAttribute("pageSize", size);
@@ -72,6 +98,14 @@ public class ProcurementplanController {
     public List<ProcurementProductSearchResponse> searchProducts(@RequestParam(name = "keyword") String keyword,
                                                                  @RequestParam(name = "limit", defaultValue = "12") int limit) {
         return procurementplanService.searchProducts(keyword, limit);
+    }
+
+    @GetMapping("/owner/procurements/supplier-cost-price")
+    @ResponseBody
+    public SupplierCostPriceResponse getSupplierCostPrice(@RequestParam(name = "supplierId") Integer supplierId,
+                                                          @RequestParam(name = "productId") Integer productId) {
+        BigDecimal costPrice = procurementplanService.getSupplierCostPrice(supplierId, productId);
+        return new SupplierCostPriceResponse(costPrice);
     }
 
     @GetMapping("/owner/procurements/create-procurementplan")
@@ -118,13 +152,17 @@ public class ProcurementplanController {
                                             RedirectAttributes redirectAttributes) {
         String basePath = resolveBasePath(request);
         try {
+            ProcurementplanResponse procurementPlan = procurementplanService.getById(id);
+            boolean viewOnly = procurementplanService.isCompleted(id);
+
             if (!model.containsAttribute("procurementPlanForm")) {
                 model.addAttribute("procurementPlanForm", procurementplanService.buildUpdateForm(id));
             }
 
-            model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            model.addAttribute("procurementPlan", procurementPlan);
+            model.addAttribute("viewOnly", viewOnly);
             addFormPageData(request, model);
-            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            model.addAttribute("pageTitle", viewOnly ? "Xem chi tiết dự trù mua hàng" : "Cập nhật dự trù mua hàng");
             return "owner/update-procurementplan";
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
@@ -143,8 +181,11 @@ public class ProcurementplanController {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            model.addAttribute("viewOnly", procurementplanService.isCompleted(id));
             addFormPageData(request, model);
-            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            model.addAttribute("pageTitle", procurementplanService.isCompleted(id)
+                    ? "Xem chi tiết dự trù mua hàng"
+                    : "Cập nhật dự trù mua hàng");
             return "owner/update-procurementplan";
         }
 
@@ -164,8 +205,11 @@ public class ProcurementplanController {
             }
             model.addAttribute("errorMessage", exception.getMessage());
             model.addAttribute("procurementPlan", procurementplanService.getById(id));
+            model.addAttribute("viewOnly", procurementplanService.isCompleted(id));
             addFormPageData(request, model);
-            model.addAttribute("pageTitle", "Cập nhật dự trù mua hàng");
+            model.addAttribute("pageTitle", procurementplanService.isCompleted(id)
+                    ? "Xem chi tiết dự trù mua hàng"
+                    : "Cập nhật dự trù mua hàng");
             return "owner/update-procurementplan";
         }
     }
@@ -185,8 +229,37 @@ public class ProcurementplanController {
     private void addFormPageData(HttpServletRequest request, Model model) {
         ProcurementPlanCreateRequest form = (ProcurementPlanCreateRequest) model.getAttribute("procurementPlanForm");
         model.addAttribute("initialProducts", procurementplanService.listProductsForDetails(form));
-        model.addAttribute("suppliers", procurementplanService.listSuppliers());
+        model.addAttribute("initialDetailRows", buildInitialDetailRows(form));
+        model.addAttribute("suppliers", toSupplierOptions(procurementplanService.listSuppliers()));
         model.addAttribute("basePath", resolveBasePath(request));
+    }
+
+    private List<ProcurementPlanDetailRowView> buildInitialDetailRows(ProcurementPlanCreateRequest form) {
+        if (form == null || form.getDetails() == null) {
+            return List.of();
+        }
+
+        return form.getDetails().stream()
+                .filter(detail -> detail.getProductId() != null)
+                .map(detail -> new ProcurementPlanDetailRowView(
+                        detail.getProductId(),
+                        detail.getRequestedQuantity(),
+                        detail.getUnit(),
+                        detail.getEstimatedPrice(),
+                        detail.getSupplierId()
+                ))
+                .toList();
+    }
+
+    private List<Map<String, Object>> toSupplierOptions(List<Supplier> suppliers) {
+        return suppliers.stream()
+                .map(supplier -> {
+                    Map<String, Object> option = new HashMap<>();
+                    option.put("id", supplier.getId());
+                    option.put("name", supplier.getName() != null ? supplier.getName() : "");
+                    return option;
+                })
+                .toList();
     }
 
     private String resolveBasePath(HttpServletRequest request) {

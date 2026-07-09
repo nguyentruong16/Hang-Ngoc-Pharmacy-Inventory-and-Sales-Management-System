@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Cập nhật dự trù mua hàng | PharmaManager</title>
+    <title th:text="${pageTitle + ' | PharmaManager'}">Cập nhật dự trù mua hàng | PharmaManager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -296,10 +296,12 @@
             min-width: 0;
         }
 
-        .unit-badge-input {
+        .unit-badge-display {
+            display: block;
             width: 100%;
             min-width: 0;
             min-height: 30px;
+            line-height: 30px;
             border: 1px solid #93c5fd;
             border-radius: 6px;
             background: #f0f9ff;
@@ -308,12 +310,9 @@
             font-weight: 600;
             text-align: center;
             padding: 0 6px;
-            outline: none;
-        }
-
-        .unit-badge-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, .12);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .field-input {
@@ -353,6 +352,16 @@
             box-shadow: none;
         }
 
+        .price-display {
+            display: block;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 500;
+            color: #111827;
+            min-height: 32px;
+            line-height: 32px;
+        }
+
         .line-total-text {
             display: block;
             text-align: right;
@@ -361,6 +370,11 @@
             color: #111827;
             white-space: nowrap;
             overflow: visible;
+        }
+
+        .estimated-total-input {
+            font-weight: 700;
+            font-size: 13px;
         }
 
         .btn-line-more {
@@ -492,6 +506,41 @@
             color: #059669;
         }
 
+        .plan-status-badge.status-completed-view {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .view-only-banner {
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            color: #1e40af;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .view-only-text {
+            font-size: 13px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .product-lines-header.view-only-header,
+        .product-line.view-only-line {
+            grid-template-columns:
+                28px
+                minmax(0, 2fr)
+                42px
+                minmax(52px, 0.7fr)
+                56px
+                minmax(0, 1.2fr)
+                minmax(68px, 0.85fr)
+                minmax(72px, 0.9fr);
+        }
+
         @media (max-width: 991.98px) {
             .product-lines-header { display: none; }
             .product-line {
@@ -511,16 +560,21 @@
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
+        <div th:if="${viewOnly}" class="view-only-banner">
+            <i class="ti ti-info-circle me-1"></i>
+            Dự trù mua hàng đã hoàn thành. Bạn chỉ có thể xem thông tin, không thể chỉnh sửa hoặc xóa.
+        </div>
+
         <form id="procurementUpdateForm"
-              th:action="${basePath + '/update-procurementplan/' + procurementPlan.id}"
+              th:action="${viewOnly ? '#' : basePath + '/update-procurementplan/' + procurementPlan.id}"
               th:object="${procurementPlanForm}"
-              method="post"
+              th:method="${viewOnly ? 'get' : 'post'}"
               novalidate>
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <div class="row g-4">
                 <div class="col-12 col-lg-9">
                     <div class="owner-card">
-                        <div class="p-4 border-bottom">
+                        <div th:unless="${viewOnly}" class="p-4 border-bottom">
                             <div class="product-search-wrap">
                                 <div class="product-search-field">
                                     <i class="ti ti-search product-search-icon"></i>
@@ -536,16 +590,16 @@
                             </div>
                         </div>
 
-                        <div id="productLinesHeader" class="product-lines-header hidden">
+                        <div id="productLinesHeader" class="product-lines-header hidden" th:classappend="${viewOnly} ? ' view-only-header' : ''">
                             <div></div>
-                            <div></div>
+                            <div th:unless="${viewOnly}"></div>
                             <div>Hàng hóa</div>
                             <div class="text-center">Tồn</div>
                             <div>Đơn vị thuốc</div>
                             <div>Số lượng</div>
                             <div>Nhà cung cấp</div>
+                            <div class="text-end">Giá từng đơn vị</div>
                             <div class="text-end">Giá ước tính</div>
-                            <div class="text-end">Thành tiền</div>
                         </div>
 
                         <div id="detailLines"></div>
@@ -574,16 +628,21 @@
                         <div class="plan-info-row mb-0">
                             <span class="plan-info-label">Trạng thái</span>
                             <div>
-                                <input type="hidden" th:field="*{status}" id="procurementStatusInput">
-                                <label class="status-check-toggle">
-                                    <input type="checkbox"
-                                           id="statusCompletedToggle"
-                                           th:checked="${procurementPlanForm.status == 'Đã hoàn thành'}">
-                                    <span class="status-check-box" title="Đánh dấu hoàn thành">
-                                        <i class="ti ti-check"></i>
-                                    </span>
-                                    <span class="status-check-text" id="statusCheckText">Đang thực hiện</span>
-                                </label>
+                                <span th:if="${viewOnly}"
+                                      class="plan-status-badge status-completed-view"
+                                      th:text="${procurementPlan.status}">Đã hoàn thành</span>
+                                <div th:unless="${viewOnly}">
+                                    <input type="hidden" th:field="*{status}" id="procurementStatusInput">
+                                    <label class="status-check-toggle">
+                                        <input type="checkbox"
+                                               id="statusCompletedToggle"
+                                               th:checked="${procurementPlanForm.status == 'Đã hoàn thành'}">
+                                        <span class="status-check-box" title="Đánh dấu hoàn thành">
+                                            <i class="ti ti-check"></i>
+                                        </span>
+                                        <span class="status-check-text" id="statusCheckText">Đang thực hiện</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -606,16 +665,18 @@
                             <textarea id="procurementNote"
                                       class="order-note-input"
                                       th:field="*{note}"
+                                      th:readonly="${viewOnly}"
                                       rows="4"
                                       placeholder="Ghi chú dự trù"></textarea>
                         </div>
                     </div>
 
                     <div class="owner-card p-4">
-                        <button type="submit" class="btn btn-owner-primary w-100 mb-2">
+                        <button th:unless="${viewOnly}" type="submit" class="btn btn-owner-primary w-100 mb-2">
                             Cập nhật dự trù mua hàng
                         </button>
-                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">Hủy</a>
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100"
+                           th:text="${viewOnly} ? 'Quay lại danh sách' : 'Hủy'">Hủy</a>
                     </div>
                 </div>
             </div>
@@ -626,8 +687,9 @@
 <script th:inline="javascript">
     const basePath = /*[[${basePath}]]*/ '/owner/procurements';
     const suppliers = /*[[${suppliers}]]*/ [];
-    const initialDetails = /*[[${procurementPlanForm.details}]]*/ [];
+    const initialDetails = /*[[${initialDetailRows}]]*/ [];
     const initialProducts = /*[[${initialProducts}]]*/ [];
+    const viewOnly = /*[[${viewOnly}]]*/ false;
     const initialCompleted = /*[[${procurementPlan.status == 'Đã hoàn thành'}]]*/ false;
     const COMPLETED_STATUS = 'Đã hoàn thành';
     const COMPLETED_CONFIRM_MESSAGE = 'Sau khi đánh dấu "Đã hoàn thành", dự trù mua hàng sẽ không thể cập nhật hoặc xóa. Bạn có chắc chắn muốn tiếp tục?';
@@ -682,10 +744,150 @@
             productId: product.productID,
             requestedQuantity: overrides.requestedQuantity != null ? overrides.requestedQuantity : 1,
             unit: overrides.unit != null ? overrides.unit : (product.unit || ''),
-            estimatedPrice: overrides.estimatedPrice != null ? overrides.estimatedPrice : product.estimatedPrice,
+            estimatedPrice: overrides.estimatedPrice != null ? overrides.estimatedPrice : null,
             supplierId: overrides.supplierId != null ? overrides.supplierId : null,
             currentStock: overrides.currentStock != null ? overrides.currentStock : getStock(product.productID)
         };
+    }
+
+    function resolveUnitPriceFromDetail(detail) {
+        if (detail.unitCost != null && detail.unitCost !== '') {
+            const unitCost = Number(detail.unitCost);
+            return Number.isFinite(unitCost) ? unitCost : null;
+        }
+
+        const quantity = Number(detail.requestedQuantity) || 0;
+        const total = detail.estimatedPrice != null ? Number(detail.estimatedPrice) : null;
+        if (total != null && Number.isFinite(total) && quantity > 0) {
+            return total / quantity;
+        }
+        return null;
+    }
+
+    function getLineUnitPrice(row) {
+        const input = row.querySelector('.unit-price-input');
+        if (!input || input.value === '') {
+            return 0;
+        }
+        const value = Number(input.value);
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    function getLineEstimatedTotal(row) {
+        const input = row.querySelector('.estimated-total-input');
+        if (!input || input.value === '') {
+            return 0;
+        }
+        const value = Number(input.value);
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    function syncEstimatedFromUnitQty(row) {
+        const quantity = numberValue(row.querySelector('.quantity-input'));
+        const unitPrice = getLineUnitPrice(row);
+        const estimatedInput = row.querySelector('.estimated-total-input');
+        if (!estimatedInput) {
+            return;
+        }
+
+        const lineTotal = quantity * unitPrice;
+        estimatedInput.value = lineTotal > 0 ? lineTotal : '';
+    }
+
+    function setUnitPriceValue(row, price) {
+        const input = row.querySelector('.unit-price-input');
+        if (!input) {
+            return;
+        }
+
+        if (price == null || price === '') {
+            input.value = '';
+        } else {
+            input.value = price;
+        }
+        syncEstimatedFromUnitQty(row);
+        calculateSummary();
+    }
+
+    function handleUnitPriceChange(input) {
+        const row = input.closest('.product-line');
+        if (!row) {
+            return;
+        }
+        syncEstimatedFromUnitQty(row);
+        calculateSummary();
+    }
+
+    function handleQuantityInput(input) {
+        const row = input.closest('.product-line');
+        if (!row) {
+            return;
+        }
+        syncEstimatedFromUnitQty(row);
+        calculateSummary();
+    }
+
+    function syncLineAmountsBeforeSubmit() {
+        reindexDetailLines();
+    }
+
+    async function handleSupplierChange(select) {
+        const row = select.closest('.product-line');
+        if (!row) {
+            return;
+        }
+
+        const productIdInput = row.querySelector('[data-field="productId"]');
+        const unitInput = row.querySelector('.unit-price-input');
+        const estimatedInput = row.querySelector('.estimated-total-input');
+        const supplierId = select.value;
+        const productId = productIdInput ? productIdInput.value : null;
+
+        if (!supplierId) {
+            setUnitPriceValue(row, null);
+            return;
+        }
+
+        if (unitInput) {
+            unitInput.value = '';
+            unitInput.placeholder = '...';
+        }
+        if (estimatedInput) {
+            estimatedInput.value = '';
+        }
+        calculateSummary();
+
+        try {
+            const url = basePath + '/supplier-cost-price?supplierId=' + encodeURIComponent(supplierId)
+                + '&productId=' + encodeURIComponent(productId);
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) {
+                throw new Error('Fetch failed');
+            }
+            const data = await response.json();
+            if (unitInput) {
+                unitInput.placeholder = '0';
+            }
+            setUnitPriceValue(row, data.costPrice);
+        } catch (error) {
+            if (unitInput) {
+                unitInput.placeholder = '0';
+            }
+            setUnitPriceValue(row, null);
+        }
+    }
+
+    function initLineSupplierPrices(onlyMissing = false) {
+        document.querySelectorAll('#detailLines .product-line').forEach(row => {
+            const supplierSelect = row.querySelector('.supplier-select');
+            if (!supplierSelect || !supplierSelect.value) {
+                return;
+            }
+            if (onlyMissing && getLineUnitPrice(row) > 0) {
+                return;
+            }
+            handleSupplierChange(supplierSelect);
+        });
     }
 
     function toggleEmptyState() {
@@ -697,11 +899,14 @@
     function reindexDetailLines() {
         document.querySelectorAll('#detailLines .product-line').forEach((row, index) => {
             row.querySelector('.line-index').textContent = index + 1;
-            row.querySelectorAll('[data-field]').forEach(input => {
-                const field = input.getAttribute('data-field');
-                const name = 'details[' + index + '].' + field;
-                input.setAttribute('name', name);
-                input.setAttribute('id', name);
+            if (viewOnly) {
+                return;
+            }
+            row.querySelectorAll('input[data-field], select[data-field], textarea[data-field]').forEach(field => {
+                const fieldName = field.getAttribute('data-field');
+                const name = 'details[' + index + '].' + fieldName;
+                field.setAttribute('name', name);
+                field.setAttribute('id', name);
             });
         });
         toggleEmptyState();
@@ -715,12 +920,55 @@
         const currentStock = detail.currentStock != null ? detail.currentStock : getStock(product.productID);
         const quantity = detail.requestedQuantity != null ? detail.requestedQuantity : 1;
         const unit = detail.unit || '';
-        const price = detail.estimatedPrice != null ? detail.estimatedPrice : '';
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
-        const supplierOptionsHtml = suppliers.map(supplier =>
-            '<option value="' + supplier.id + '"' +
-            (String(supplierId) === String(supplier.id) ? ' selected' : '') +
-            '>' + escapeHtml(supplier.name) + '</option>'
+        const unitPrice = resolveUnitPriceFromDetail(detail);
+        const lineTotalFromDb = detail.estimatedPrice != null ? Number(detail.estimatedPrice) : 0;
+        const unitPriceValue = unitPrice != null ? unitPrice
+            : (lineTotalFromDb > 0 && quantity > 0 ? lineTotalFromDb / quantity : '');
+        const lineTotalValue = lineTotalFromDb > 0 ? lineTotalFromDb
+            : (unitPriceValue !== '' ? Number(quantity) * Number(unitPriceValue) : '');
+        const supplier = suppliers.find(item => String(item.id) === String(supplierId));
+        const supplierName = supplier ? supplier.name : '—';
+
+        if (viewOnly) {
+            const unitPriceView = quantity > 0 && lineTotalFromDb > 0 ? lineTotalFromDb / quantity : 0;
+            return `
+            <div class="product-line view-only-line"
+                 data-quantity="${quantity}"
+                 data-line-total="${lineTotalFromDb}">
+                <div><span class="line-index">${index + 1}</span></div>
+                <div class="product-info-block">
+                    <div class="product-title">
+                        <span class="product-title-code">${escapeHtml(product.code)}</span>
+                        ${escapeHtml(product.name)}
+                    </div>
+                </div>
+                <div>
+                    <span class="stock-display">${currentStock}</span>
+                </div>
+                <div>
+                    <span class="view-only-text">${escapeHtml(unit || '—')}</span>
+                </div>
+                <div>
+                    <span class="view-only-text">${quantity}</span>
+                </div>
+                <div>
+                    <span class="view-only-text">${escapeHtml(supplierName)}</span>
+                </div>
+                <div class="text-end">
+                    <span class="view-only-text">${unitPriceView > 0 ? formatLineMoney(unitPriceView) + 'đ' : '—'}</span>
+                </div>
+                <div class="text-end">
+                    <span class="line-total-text">${formatLineMoney(lineTotalFromDb)}</span>
+                </div>
+            </div>
+        `;
+        }
+
+        const supplierOptionsHtml = suppliers.map(supplierItem =>
+            '<option value="' + supplierItem.id + '"' +
+            (String(supplierId) === String(supplierItem.id) ? ' selected' : '') +
+            '>' + escapeHtml(supplierItem.name) + '</option>'
         ).join('');
 
         return `
@@ -742,27 +990,32 @@
                     <span class="stock-display">${currentStock}</span>
                 </div>
                 <div>
-                    <input type="text" class="unit-badge-input" data-field="unit"
-                           value="${escapeHtml(unit)}" placeholder="Đơn vị thuốc">
+                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
+                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
                 </div>
                 <div>
                     <input type="number" min="1" class="field-input quantity-input"
                            data-field="requestedQuantity" value="${quantity}"
-                           oninput="calculateSummary()">
+                           oninput="handleQuantityInput(this)">
                 </div>
                 <div>
-                    <select class="supplier-select" data-field="supplierId">
+                    <select class="supplier-select" data-field="supplierId"
+                            onchange="handleSupplierChange(this)">
                         <option value="">Chọn nhà cung cấp</option>
                         ${supplierOptionsHtml}
                     </select>
                 </div>
-                <div>
-                    <input type="number" min="0" step="1000" class="field-input price-input"
-                           data-field="estimatedPrice" value="${price}" placeholder="0"
-                           oninput="calculateSummary()">
+                <div class="text-end">
+                    <input type="number" min="0" step="1000"
+                           class="field-input price-input unit-price-input"
+                           value="${unitPriceValue}" placeholder="0"
+                           oninput="handleUnitPriceChange(this)">
                 </div>
-                <div>
-                    <span class="line-total-text">${formatLineMoney(Number(quantity) * Number(price || 0))}</span>
+                <div class="text-end">
+                    <input type="number" min="0" step="1000"
+                           class="field-input price-input estimated-total-input"
+                           data-field="estimatedPrice" value="${lineTotalValue}" placeholder="0"
+                           oninput="calculateSummary()">
                 </div>
             </div>
         `;
@@ -786,7 +1039,7 @@
         if (existingRow) {
             const quantityInput = existingRow.querySelector('.quantity-input');
             quantityInput.value = numberValue(quantityInput) + 1;
-            calculateSummary();
+            handleQuantityInput(quantityInput);
             existingRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             return;
         }
@@ -804,15 +1057,13 @@
         let totalAmount = 0;
 
         rows.forEach(row => {
-            const quantity = numberValue(row.querySelector('.quantity-input'));
-            const price = numberValue(row.querySelector('.price-input'));
-            const lineTotal = quantity * price;
-            totalAmount += lineTotal;
-
-            const totalDisplay = row.querySelector('.line-total-text');
-            if (totalDisplay) {
-                totalDisplay.textContent = formatLineMoney(lineTotal);
+            if (viewOnly) {
+                const lineTotal = Number(row.dataset.lineTotal) || 0;
+                totalAmount += lineTotal;
+                return;
             }
+
+            totalAmount += getLineEstimatedTotal(row);
         });
 
         document.getElementById('itemCountDisplay').textContent = rows.length;
@@ -850,7 +1101,6 @@
                     <div class="product-search-name">${escapeHtml(product.name)}</div>
                     <div class="product-search-meta">
                         ${product.unit ? escapeHtml(product.unit) : 'Chưa có đơn vị thuốc'}
-                        ${product.estimatedPrice != null ? ' · ' + formatLineMoney(product.estimatedPrice) + 'đ' : ''}
                     </div>
                 </div>
                 <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}</div>
@@ -928,10 +1178,11 @@
         searchInput.focus();
     }
 
-    document.querySelector('.btn-barcode').addEventListener('click', function () {
+    document.querySelector('.btn-barcode')?.addEventListener('click', function () {
         document.getElementById('productSearchInput').focus();
     });
 
+    if (!viewOnly) {
     document.getElementById('productSearchInput').addEventListener('input', function (event) {
         const value = event.target.value;
         if (!value.trim()) {
@@ -974,25 +1225,32 @@
     document.addEventListener('click', function (event) {
         if (!event.target.closest('.product-search-wrap')) hideSearchResults();
     });
+    }
 
-    (initialDetails || [])
-        .filter(detail => detail && detail.productId != null)
-        .forEach(detail => {
-            const product = productMap[detail.productId];
-            if (!product) return;
-            addProductLine({
-                productId: detail.productId,
-                requestedQuantity: detail.requestedQuantity,
-                unit: detail.unit,
-                estimatedPrice: detail.estimatedPrice,
-                supplierId: detail.supplierId,
-                currentStock: product.currentStock
-            }, false);
-        });
+    try {
+        (initialDetails || [])
+            .filter(detail => detail && detail.productId != null)
+            .forEach(detail => {
+                const product = productMap[detail.productId];
+                if (!product) return;
+                addProductLine({
+                    productId: detail.productId,
+                    requestedQuantity: detail.requestedQuantity,
+                    unit: detail.unit,
+                    estimatedPrice: detail.estimatedPrice,
+                    supplierId: detail.supplierId,
+                    currentStock: product.currentStock
+                }, false);
+            });
+    } catch (error) {
+        console.error('Không thể tải danh sách sản phẩm dự trù', error);
+    }
 
+    initLineSupplierPrices(true);
     toggleEmptyState();
     calculateSummary();
 
+    if (!viewOnly) {
     (function initStatusToggle() {
         const DEFAULT_STATUS = 'Đang thực hiện';
         const toggle = document.getElementById('statusCompletedToggle');
@@ -1016,6 +1274,8 @@
         if (!form || !toggle) return;
 
         form.addEventListener('submit', function (event) {
+            syncLineAmountsBeforeSubmit();
+
             if (initialCompleted || !toggle.checked) {
                 return;
             }
@@ -1025,6 +1285,7 @@
             }
         });
     })();
+    }
 </script>
 
 </body>

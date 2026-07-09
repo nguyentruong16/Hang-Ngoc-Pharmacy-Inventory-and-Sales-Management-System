@@ -366,7 +366,8 @@ public class ProductService {
             product.setProducerID(producerRepository.getReferenceById(request.getProducerId()));
         }
         if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode()));
+            String typeName = product.getTypeID() != null ? product.getTypeID().getName() : null;
+            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode(), typeName));
         }
         Product saved = productRepository.save(product);
 
@@ -540,11 +541,22 @@ public class ProductService {
         product.setStatus(request.getStatus() == null ? Boolean.TRUE : request.getStatus());
         product.setNote(trimToNull(request.getNote()));
         product.setOrigin(trimToNull(request.getOrigin()));
+        String oldTypeName = product.getTypeID() != null ? product.getTypeID().getName() : null;
         product.setTypeID(request.getTypeId() != null ? typeRepository.getReferenceById(request.getTypeId()) : null);
+        String newTypeName = product.getTypeID() != null ? product.getTypeID().getName() : null;
         product.setProducerID(request.getProducerId() != null
                 ? producerRepository.getReferenceById(request.getProducerId()) : null);
         if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode()));
+            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode(), newTypeName));
+        } else if (Boolean.TRUE.equals(request.getRemoveImage()) && product.getImage() != null) {
+            productImageStorageService.delete(product.getCode());
+            product.setImage(null);
+        } else if (product.getImage() != null) {
+            String oldTag = productImageStorageService.typeTag(oldTypeName);
+            String newTag = productImageStorageService.typeTag(newTypeName);
+            if (!oldTag.equals(newTag)) {
+                productImageStorageService.retag(product.getCode(), oldTag, newTag);
+            }
         }
         productRepository.save(product);
 
