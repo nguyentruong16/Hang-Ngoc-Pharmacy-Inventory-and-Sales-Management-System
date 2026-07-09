@@ -296,10 +296,12 @@
             min-width: 0;
         }
 
-        .unit-badge-input {
+        .unit-badge-display {
+            display: block;
             width: 100%;
             min-width: 0;
             min-height: 30px;
+            line-height: 30px;
             border: 1px solid #93c5fd;
             border-radius: 6px;
             background: #f0f9ff;
@@ -308,12 +310,9 @@
             font-weight: 600;
             text-align: center;
             padding: 0 6px;
-            outline: none;
-        }
-
-        .unit-badge-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, .12);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .field-input {
@@ -351,6 +350,16 @@
         .field-input.price-input:focus {
             border-bottom-color: #2563eb;
             box-shadow: none;
+        }
+
+        .price-display {
+            display: block;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 500;
+            color: #111827;
+            min-height: 32px;
+            line-height: 32px;
         }
 
         .line-total-text {
@@ -577,10 +586,81 @@
             productId: product.productID,
             requestedQuantity: overrides.requestedQuantity != null ? overrides.requestedQuantity : 1,
             unit: overrides.unit != null ? overrides.unit : (product.unit || ''),
-            estimatedPrice: overrides.estimatedPrice != null ? overrides.estimatedPrice : product.estimatedPrice,
+            estimatedPrice: overrides.estimatedPrice != null ? overrides.estimatedPrice : null,
             supplierId: overrides.supplierId != null ? overrides.supplierId : null,
             currentStock: overrides.currentStock != null ? overrides.currentStock : getStock(product.productID)
         };
+    }
+
+    function getLineUnitPrice(row) {
+        const input = row.querySelector('[data-field="estimatedPrice"]');
+        if (!input || input.disabled || input.value === '') {
+            return 0;
+        }
+        const value = Number(input.value);
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    function updateLinePriceDisplay(row, price) {
+        const display = row.querySelector('.price-display');
+        const hidden = row.querySelector('[data-field="estimatedPrice"]');
+        if (!display || !hidden) {
+            return;
+        }
+
+        if (price == null || price === '') {
+            display.textContent = '—';
+            hidden.value = '';
+            hidden.disabled = true;
+        } else {
+            display.textContent = formatLineMoney(price);
+            hidden.value = price;
+            hidden.disabled = false;
+        }
+        calculateSummary();
+    }
+
+    async function handleSupplierChange(select) {
+        const row = select.closest('.product-line');
+        if (!row) {
+            return;
+        }
+
+        const productIdInput = row.querySelector('[data-field="productId"]');
+        const priceDisplay = row.querySelector('.price-display');
+        const supplierId = select.value;
+        const productId = productIdInput ? productIdInput.value : null;
+
+        if (!supplierId) {
+            updateLinePriceDisplay(row, null);
+            return;
+        }
+
+        if (priceDisplay) {
+            priceDisplay.textContent = '...';
+        }
+
+        try {
+            const url = basePath + '/supplier-cost-price?supplierId=' + encodeURIComponent(supplierId)
+                + '&productId=' + encodeURIComponent(productId);
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) {
+                throw new Error('Fetch failed');
+            }
+            const data = await response.json();
+            updateLinePriceDisplay(row, data.costPrice);
+        } catch (error) {
+            updateLinePriceDisplay(row, null);
+        }
+    }
+
+    function initLineSupplierPrices() {
+        document.querySelectorAll('#detailLines .product-line').forEach(row => {
+            const supplierSelect = row.querySelector('.supplier-select');
+            if (supplierSelect && supplierSelect.value) {
+                handleSupplierChange(supplierSelect);
+            }
+        });
     }
 
     function toggleEmptyState() {
@@ -612,6 +692,10 @@
         const unit = detail.unit || '';
         const price = detail.estimatedPrice != null ? detail.estimatedPrice : '';
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
+        const hasSupplier = supplierId !== '';
+        const showPrice = hasSupplier && price !== '';
+        const priceDisplay = showPrice ? formatLineMoney(price) : '—';
+        const priceValue = showPrice ? price : '';
         const supplierOptionsHtml = suppliers.map(supplier =>
             '<option value="' + supplier.id + '"' +
             (String(supplierId) === String(supplier.id) ? ' selected' : '') +
@@ -637,8 +721,8 @@
                     <span class="stock-display">${currentStock}</span>
                 </div>
                 <div>
-                    <input type="text" class="unit-badge-input" data-field="unit"
-                           value="${escapeHtml(unit)}" placeholder="Đơn vị thuốc">
+                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
+                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
                 </div>
                 <div>
                     <input type="number" min="1" class="field-input quantity-input"
@@ -651,13 +735,12 @@
                         ${supplierOptionsHtml}
                     </select>
                 </div>
-                <div>
-                    <input type="number" min="0" step="1000" class="field-input price-input"
-                           data-field="estimatedPrice" value="${price}" placeholder="0"
-                           oninput="calculateSummary()">
+                <div class="text-end">
+                    <span class="price-display">${priceDisplay}</span>
+                    <input type="hidden" data-field="estimatedPrice" value="${priceValue}"${showPrice ? '' : ' disabled'}>
                 </div>
                 <div>
-                    <span class="line-total-text">${formatLineMoney(Number(quantity) * Number(price || 0))}</span>
+                    <span class="line-total-text">${formatLineMoney(Number(quantity) * Number(showPrice ? price : 0))}</span>
                 </div>
             </div>
         `;
@@ -700,8 +783,8 @@
 
         rows.forEach(row => {
             const quantity = numberValue(row.querySelector('.quantity-input'));
-            const price = numberValue(row.querySelector('.price-input'));
-            const lineTotal = quantity * price;
+            const unitPrice = getLineUnitPrice(row);
+            const lineTotal = quantity * unitPrice;
             totalAmount += lineTotal;
 
             const totalDisplay = row.querySelector('.line-total-text');
@@ -745,7 +828,6 @@
                     <div class="product-search-name">${escapeHtml(product.name)}</div>
                     <div class="product-search-meta">
                         ${product.unit ? escapeHtml(product.unit) : 'Chưa có đơn vị thuốc'}
-                        ${product.estimatedPrice != null ? ' · ' + formatLineMoney(product.estimatedPrice) + 'đ' : ''}
                     </div>
                 </div>
                 <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}</div>
@@ -866,6 +948,12 @@
         }
     });
 
+    document.getElementById('detailLines').addEventListener('change', function (event) {
+        if (event.target.matches('.supplier-select')) {
+            handleSupplierChange(event.target);
+        }
+    });
+
     document.addEventListener('click', function (event) {
         if (!event.target.closest('.product-search-wrap')) hideSearchResults();
     });
@@ -885,6 +973,7 @@
             }, false);
         });
 
+    initLineSupplierPrices();
     toggleEmptyState();
     calculateSummary();
 </script>

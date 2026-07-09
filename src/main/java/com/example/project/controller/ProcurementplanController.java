@@ -3,6 +3,7 @@ package com.example.project.controller;
 import com.example.project.dto.request.ProcurementPlanCreateRequest;
 import com.example.project.dto.response.ProcurementProductSearchResponse;
 import com.example.project.dto.response.ProcurementplanResponse;
+import com.example.project.dto.response.SupplierCostPriceResponse;
 import com.example.project.service.ProcurementplanService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -83,6 +85,14 @@ public class ProcurementplanController {
     public List<ProcurementProductSearchResponse> searchProducts(@RequestParam(name = "keyword") String keyword,
                                                                  @RequestParam(name = "limit", defaultValue = "12") int limit) {
         return procurementplanService.searchProducts(keyword, limit);
+    }
+
+    @GetMapping("/owner/procurements/supplier-cost-price")
+    @ResponseBody
+    public SupplierCostPriceResponse getSupplierCostPrice(@RequestParam(name = "supplierId") Integer supplierId,
+                                                          @RequestParam(name = "productId") Integer productId) {
+        BigDecimal costPrice = procurementplanService.getSupplierCostPrice(supplierId, productId);
+        return new SupplierCostPriceResponse(costPrice);
     }
 
     @GetMapping("/owner/procurements/create-procurementplan")

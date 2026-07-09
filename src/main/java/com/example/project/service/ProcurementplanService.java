@@ -9,12 +9,14 @@ import com.example.project.entity.Procurementplandetail;
 import com.example.project.entity.Product;
 import com.example.project.entity.Productunit;
 import com.example.project.entity.Supplier;
+import com.example.project.entity.Supplierproduct;
 import com.example.project.repository.BatchRepository;
 import com.example.project.repository.ProcurementplanRepository;
 import com.example.project.repository.ProcurementplandetailRepository;
 import com.example.project.repository.ProductRepository;
 import com.example.project.repository.ProductunitRepository;
 import com.example.project.repository.SupplierRepository;
+import com.example.project.repository.SupplierproductRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +51,7 @@ public class ProcurementplanService {
     private final ProductRepository productRepository;
     private final ProductunitRepository productunitRepository;
     private final SupplierRepository supplierRepository;
+    private final SupplierproductRepository supplierproductRepository;
     private final BatchRepository batchRepository;
 
     public ProcurementplanService(ProcurementplanRepository procurementplanRepository,
@@ -56,12 +59,14 @@ public class ProcurementplanService {
                                   ProductRepository productRepository,
                                   ProductunitRepository productunitRepository,
                                   SupplierRepository supplierRepository,
+                                  SupplierproductRepository supplierproductRepository,
                                   BatchRepository batchRepository) {
         this.procurementplanRepository = procurementplanRepository;
         this.procurementplandetailRepository = procurementplandetailRepository;
         this.productRepository = productRepository;
         this.productunitRepository = productunitRepository;
         this.supplierRepository = supplierRepository;
+        this.supplierproductRepository = supplierproductRepository;
         this.batchRepository = batchRepository;
     }
 
@@ -269,6 +274,22 @@ public class ProcurementplanService {
         normalized = normalized.replaceAll("\\p{M}", "");
         normalized = normalized.replace("Đ", "D").replace("đ", "d");
         return normalized.toLowerCase(Locale.ROOT).trim();
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal getSupplierCostPrice(Integer supplierId, Integer productId) {
+        if (supplierId == null || productId == null) {
+            return null;
+        }
+
+        return supplierproductRepository.findBySupplierID_IdAndProductID_ProductID(supplierId, productId)
+                .filter(this::isActiveSupplierProduct)
+                .map(Supplierproduct::getCostPrice)
+                .orElse(null);
+    }
+
+    private boolean isActiveSupplierProduct(Supplierproduct supplierProduct) {
+        return supplierProduct.getIsActive() == null || Boolean.TRUE.equals(supplierProduct.getIsActive());
     }
 
     @Transactional(readOnly = true)
