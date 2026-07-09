@@ -386,6 +386,10 @@ public class ProcurementplanService {
     }
 
     private BigDecimal resolveEstimatedPrice(ProcurementPlanDetailCreateRequest item) {
+        if (item.getEstimatedPrice() != null) {
+            return item.getEstimatedPrice().setScale(2, RoundingMode.HALF_UP);
+        }
+
         Integer supplierId = item.getSupplierId();
         Integer productId = item.getProductId();
         Integer quantity = item.getRequestedQuantity();

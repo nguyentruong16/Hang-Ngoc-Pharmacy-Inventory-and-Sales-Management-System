@@ -372,6 +372,11 @@
             overflow: visible;
         }
 
+        .estimated-total-input {
+            font-weight: 700;
+            font-size: 13px;
+        }
+
         .btn-line-more {
             display: none;
         }
@@ -760,55 +765,70 @@
     }
 
     function getLineUnitPrice(row) {
-        const unitCost = row.dataset.unitCost;
-        if (unitCost === undefined || unitCost === '') {
+        const input = row.querySelector('.unit-price-input');
+        if (!input || input.value === '') {
             return 0;
         }
-        const value = Number(unitCost);
+        const value = Number(input.value);
         return Number.isFinite(value) ? value : 0;
     }
 
-    function setLineUnitCost(row, unitCost) {
-        if (unitCost == null || unitCost === '') {
-            delete row.dataset.unitCost;
-        } else {
-            row.dataset.unitCost = String(unitCost);
+    function getLineEstimatedTotal(row) {
+        const input = row.querySelector('.estimated-total-input');
+        if (!input || input.value === '') {
+            return 0;
         }
+        const value = Number(input.value);
+        return Number.isFinite(value) ? value : 0;
     }
 
-    function refreshLineAmounts(row) {
+    function syncEstimatedFromUnitQty(row) {
         const quantity = numberValue(row.querySelector('.quantity-input'));
         const unitPrice = getLineUnitPrice(row);
-        const lineTotal = quantity * unitPrice;
-
-        const totalDisplay = row.querySelector('.line-total-text');
-        if (totalDisplay) {
-            totalDisplay.textContent = formatLineMoney(lineTotal);
+        const estimatedInput = row.querySelector('.estimated-total-input');
+        if (!estimatedInput) {
+            return;
         }
+
+        const lineTotal = quantity * unitPrice;
+        estimatedInput.value = lineTotal > 0 ? lineTotal : '';
     }
 
-    function updateLinePriceDisplay(row, price) {
-        const display = row.querySelector('.price-display');
-        if (!display) {
+    function setUnitPriceValue(row, price) {
+        const input = row.querySelector('.unit-price-input');
+        if (!input) {
             return;
         }
 
         if (price == null || price === '') {
-            display.textContent = '—';
-            setLineUnitCost(row, null);
+            input.value = '';
         } else {
-            display.textContent = formatLineMoney(price);
-            setLineUnitCost(row, price);
+            input.value = price;
         }
-        refreshLineAmounts(row);
+        syncEstimatedFromUnitQty(row);
+        calculateSummary();
+    }
+
+    function handleUnitPriceChange(input) {
+        const row = input.closest('.product-line');
+        if (!row) {
+            return;
+        }
+        syncEstimatedFromUnitQty(row);
+        calculateSummary();
+    }
+
+    function handleQuantityInput(input) {
+        const row = input.closest('.product-line');
+        if (!row) {
+            return;
+        }
+        syncEstimatedFromUnitQty(row);
         calculateSummary();
     }
 
     function syncLineAmountsBeforeSubmit() {
         reindexDetailLines();
-        document.querySelectorAll('#detailLines .product-line').forEach(row => {
-            refreshLineAmounts(row);
-        });
     }
 
     async function handleSupplierChange(select) {
@@ -818,20 +838,24 @@
         }
 
         const productIdInput = row.querySelector('[data-field="productId"]');
-        const priceDisplay = row.querySelector('.price-display');
+        const unitInput = row.querySelector('.unit-price-input');
+        const estimatedInput = row.querySelector('.estimated-total-input');
         const supplierId = select.value;
         const productId = productIdInput ? productIdInput.value : null;
 
         if (!supplierId) {
-            updateLinePriceDisplay(row, null);
+            setUnitPriceValue(row, null);
             return;
         }
 
-        setLineUnitCost(row, null);
-        if (priceDisplay) {
-            priceDisplay.textContent = '...';
+        if (unitInput) {
+            unitInput.value = '';
+            unitInput.placeholder = '...';
         }
-        refreshLineAmounts(row);
+        if (estimatedInput) {
+            estimatedInput.value = '';
+        }
+        calculateSummary();
 
         try {
             const url = basePath + '/supplier-cost-price?supplierId=' + encodeURIComponent(supplierId)
@@ -841,9 +865,15 @@
                 throw new Error('Fetch failed');
             }
             const data = await response.json();
-            updateLinePriceDisplay(row, data.costPrice);
+            if (unitInput) {
+                unitInput.placeholder = '0';
+            }
+            setUnitPriceValue(row, data.costPrice);
         } catch (error) {
-            updateLinePriceDisplay(row, null);
+            if (unitInput) {
+                unitInput.placeholder = '0';
+            }
+            setUnitPriceValue(row, null);
         }
     }
 
@@ -893,13 +923,10 @@
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
         const unitPrice = resolveUnitPriceFromDetail(detail);
         const lineTotalFromDb = detail.estimatedPrice != null ? Number(detail.estimatedPrice) : 0;
-        const hasSupplier = supplierId !== '';
-        const showUnitPrice = hasSupplier && unitPrice != null;
-        const unitPriceDisplay = showUnitPrice ? formatLineMoney(unitPrice) : '—';
-        const lineTotal = showUnitPrice
-            ? Number(quantity) * Number(unitPrice)
-            : lineTotalFromDb;
-        const unitCostAttr = showUnitPrice ? ' data-unit-cost="' + unitPrice + '"' : '';
+        const unitPriceValue = unitPrice != null ? unitPrice
+            : (lineTotalFromDb > 0 && quantity > 0 ? lineTotalFromDb / quantity : '');
+        const lineTotalValue = lineTotalFromDb > 0 ? lineTotalFromDb
+            : (unitPriceValue !== '' ? Number(quantity) * Number(unitPriceValue) : '');
         const supplier = suppliers.find(item => String(item.id) === String(supplierId));
         const supplierName = supplier ? supplier.name : '—';
 
@@ -945,7 +972,7 @@
         ).join('');
 
         return `
-            <div class="product-line"${unitCostAttr}>
+            <div class="product-line">
                 <div><span class="line-index">${index + 1}</span></div>
                 <div>
                     <button type="button" class="btn-line-delete" onclick="removeDetailLine(this)" title="Xóa">
@@ -969,7 +996,7 @@
                 <div>
                     <input type="number" min="1" class="field-input quantity-input"
                            data-field="requestedQuantity" value="${quantity}"
-                           oninput="calculateSummary()">
+                           oninput="handleQuantityInput(this)">
                 </div>
                 <div>
                     <select class="supplier-select" data-field="supplierId"
@@ -979,10 +1006,16 @@
                     </select>
                 </div>
                 <div class="text-end">
-                    <span class="price-display">${unitPriceDisplay}</span>
+                    <input type="number" min="0" step="1000"
+                           class="field-input price-input unit-price-input"
+                           value="${unitPriceValue}" placeholder="0"
+                           oninput="handleUnitPriceChange(this)">
                 </div>
-                <div>
-                    <span class="line-total-text">${formatLineMoney(lineTotal)}</span>
+                <div class="text-end">
+                    <input type="number" min="0" step="1000"
+                           class="field-input price-input estimated-total-input"
+                           data-field="estimatedPrice" value="${lineTotalValue}" placeholder="0"
+                           oninput="calculateSummary()">
                 </div>
             </div>
         `;
@@ -1006,7 +1039,7 @@
         if (existingRow) {
             const quantityInput = existingRow.querySelector('.quantity-input');
             quantityInput.value = numberValue(quantityInput) + 1;
-            calculateSummary();
+            handleQuantityInput(quantityInput);
             existingRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             return;
         }
@@ -1030,11 +1063,7 @@
                 return;
             }
 
-            const quantity = numberValue(row.querySelector('.quantity-input'));
-            const unitPrice = getLineUnitPrice(row);
-            const lineTotal = quantity * unitPrice;
-            totalAmount += lineTotal;
-            refreshLineAmounts(row);
+            totalAmount += getLineEstimatedTotal(row);
         });
 
         document.getElementById('itemCountDisplay').textContent = rows.length;
