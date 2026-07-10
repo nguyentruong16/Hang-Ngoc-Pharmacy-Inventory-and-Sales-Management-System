@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Reusable styled confirmation dialog, replacing the browser's native confirm() popup.
+  Any submit button with a data-confirm="message" attribute is routed through this dialog; the form is
+  only submitted when the user clicks "Đồng ý". Include once per page:
+      <div th:replace="~{fragments/confirm :: confirm}"></div>
+  Usage on a button:  <button type="submit" data-confirm="Bạn có chắc chắn?">...</button>
+-->
+<th:block th:fragment="confirm">
+    <div id="pmConfirmBackdrop" class="pm-confirm-backdrop">
+        <div class="pm-confirm-dialog" role="dialog" aria-modal="true">
+            <div class="pm-confirm-head">
+                <span class="pm-confirm-icon"><i class="ti ti-help-circle"></i></span>
+                <span class="pm-confirm-title">Xác nhận</span>
+            </div>
+            <div class="pm-confirm-message" id="pmConfirmMessage"></div>
+            <div class="pm-confirm-actions">
+                <button type="button" class="btn btn-outline-secondary" id="pmConfirmCancel">Hủy</button>
+                <button type="button" class="btn pm-confirm-ok" id="pmConfirmOk">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .pm-confirm-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1095;
+            padding: 16px;
+        }
+
+        .pm-confirm-backdrop.open {
+            display: flex;
+        }
+
+        .pm-confirm-dialog {
+            background: #fff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            padding: 22px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, .25);
+        }
+
+        .pm-confirm-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .pm-confirm-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #d1fae5;
+            color: #059669;
+            font-size: 22px;
+        }
+
+        .pm-confirm-title {
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .pm-confirm-message {
+            font-size: 14px;
+            color: #4b5563;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .pm-confirm-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .pm-confirm-ok {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .pm-confirm-ok:hover {
+            background: #047857;
+            color: #fff;
+        }
+    </style>
+
+    <script>
+        (function () {
+            const backdrop = document.getElementById('pmConfirmBackdrop');
+            if (!backdrop) {
+                return;
+            }
+            const msgEl = document.getElementById('pmConfirmMessage');
+            const okBtn = document.getElementById('pmConfirmOk');
+            const cancelBtn = document.getElementById('pmConfirmCancel');
+            let onOk = null;
+
+            function open(message, cb) {
+                msgEl.textContent = message;
+                onOk = cb;
+                backdrop.classList.add('open');
+                okBtn.focus();
+            }
+
+            function close() {
+                backdrop.classList.remove('open');
+                onOk = null;
+            }
+
+            okBtn.addEventListener('click', function () {
+                const cb = onOk;
+                close();
+                if (cb) {
+                    cb();
+                }
+            });
+            cancelBtn.addEventListener('click', close);
+            backdrop.addEventListener('click', function (e) {
+                if (e.target === backdrop) {
+                    close();
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && backdrop.classList.contains('open')) {
+                    close();
+                }
+            });
+
+            // Intercept clicks on any submit button carrying data-confirm, and route it through the dialog.
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-confirm]');
+                if (!btn) {
+                    return;
+                }
+                const form = btn.form || btn.closest('form');
+                if (!form) {
+                    return;
+                }
+                e.preventDefault();
+                open(btn.getAttribute('data-confirm'), function () {
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit(btn); // keeps the button's name/value as the submitter
+                    } else {
+                        if (btn.name) {
+                            const hidden = document.createElement('input');
+                            hidden.type = 'hidden';
+                            hidden.name = btn.name;
+                            hidden.value = btn.value;
+                            form.appendChild(hidden);
+                        }
+                        form.submit();
+                    }
+                });
+            }, true);
+        })();
+    </script>
+</th:block>
+</body>
+</html>
