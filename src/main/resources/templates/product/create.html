@@ -18,7 +18,6 @@
         .info-label { font-size: 12px; color: #6b7280; }
         .table thead th { font-size: 12px; color: #6b7280; background: #f9fafb; font-weight: 600; }
         .table tbody td { font-size: 13px; vertical-align: middle; }
-        .cell-readonly { background: #f9fafb; }
 
         /* Theme's Bootstrap --bs-primary is orange (#E66239); force green focus/checked to match
            the app's main color (#059669) for inputs, selects and checkboxes on this screen. */
@@ -83,7 +82,7 @@
                 </a>
                 <h1 class="fs-4 mb-1" th:text="${isEdit} ? 'Sửa hàng hóa' : 'Tạo hàng hóa mới'">Tạo hàng hóa mới</h1>
                 <p class="text-secondary mb-0" th:if="${!isEdit}">Chỉ tạo hồ sơ sản phẩm. Tồn kho/lô hàng phát sinh khi nhập hàng.</p>
-                <p class="text-secondary mb-0" th:if="${isEdit}">Sửa lại thông tin đã điền nhầm. Không thể thêm/bớt đơn vị tính ở đây.</p>
+                <p class="text-secondary mb-0" th:if="${isEdit}">Sửa lại thông tin đã điền nhầm. Có thể thêm đơn vị tính mới; các đơn vị đã lưu thì không xoá được.</p>
             </div>
         </div>
 
@@ -249,53 +248,94 @@
                 </div>
             </div>
 
-            <!-- 4. Đơn vị quy đổi và giá bán -->
+            <!-- 4. Đơn vị tính -->
             <div class="stock-card p-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <h2 class="section-title mb-0">Đơn vị quy đổi và giá bán</h2>
-                    <button th:unless="${isEdit}" type="button" class="btn btn-sm btn-outline-secondary" onclick="addUnit()">
+                    <h2 class="section-title mb-0">Đơn vị tính</h2>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addUnit()">
                         <i class="ti ti-plus me-1"></i> Thêm đơn vị
                     </button>
                 </div>
-                <p class="text-secondary small" th:unless="${isEdit}">Nhập từ đơn vị nhỏ nhất tới lớn nhất. Dòng đầu là đơn vị cơ bản (tỷ lệ = 1). Giá đề xuất = giá cơ bản × tỷ lệ; có thể sửa giá thực tế.</p>
-                <p class="text-secondary small" th:if="${isEdit}">Chỉ được sửa tên / tỷ lệ / giá của các đơn vị đã có — không thể thêm hoặc bớt dòng.</p>
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead>
-                        <tr>
-                            <th>Đơn vị</th>
-                            <th>SL so với ĐV trước</th>
-                            <th>ĐV trước</th>
-                            <th>Tỷ lệ quy đổi</th>
-                            <th>Giá đề xuất</th>
-                            <th>Giá bán thực tế</th>
-                            <th>Cơ bản</th>
-                            <th>Mặc định</th>
-                            <th>Active</th>
-                            <th th:unless="${isEdit}"></th>
-                        </tr>
-                        </thead>
-                        <tbody id="unitRows">
-                        <tr th:each="u,stat : *{units}">
-                            <td><input type="text" class="form-control form-control-sm unit-name" data-field="unitName"
-                                       th:name="'units[' + ${stat.index} + '].unitName'" th:value="${u.unitName}" placeholder="VD: Viên"></td>
-                            <td><input type="number" min="1" step="1" class="form-control form-control-sm unit-qty" data-field="quantityRelativeToPrevious"
-                                       th:name="'units[' + ${stat.index} + '].quantityRelativeToPrevious'" th:value="${u.quantityRelativeToPrevious}"></td>
-                            <td class="cell-readonly unit-prev text-secondary small">—</td>
-                            <td class="cell-readonly unit-ratio fw-semibold">1</td>
-                            <td class="cell-readonly unit-suggested text-secondary">—</td>
-                            <td><input type="number" min="0" step="0.01" class="form-control form-control-sm unit-price" data-field="sellPrice"
-                                       th:name="'units[' + ${stat.index} + '].sellPrice'" th:value="${u.sellPrice}"></td>
-                            <td class="text-center"><input type="checkbox" class="form-check-input unit-base" value="true" data-field="baseUnit"
-                                       th:name="'units[' + ${stat.index} + '].baseUnit'" th:checked="${u.baseUnit}"></td>
-                            <td class="text-center"><input type="checkbox" class="form-check-input unit-default" value="true" data-field="defaultUnit"
-                                       th:name="'units[' + ${stat.index} + '].defaultUnit'" th:checked="${u.defaultUnit}"></td>
-                            <td class="text-center"><input type="checkbox" class="form-check-input unit-active" value="true" data-field="active"
-                                       th:name="'units[' + ${stat.index} + '].active'" th:checked="${u.active}"></td>
-                            <td th:unless="${isEdit}"><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'unitRows','units'); recomputeUnits();"><i class="ti ti-trash"></i></button></td>
-                        </tr>
-                        </tbody>
-                    </table>
+                <p class="text-secondary small mb-3">
+                    Thêm đơn vị bán hoặc nhập như chai, lốc, thùng. Đặt công thức quy đổi để tính nhanh giá và tồn kho.
+                    Ví dụ: 1 lốc = 4 chai, 1 thùng = 20 lốc.
+                </p>
+
+                <div id="unitRows">
+                    <div th:each="u,stat : *{units}" class="unit-row" th:classappend="${stat.index == 0} ? 'unit-row-base' : 'unit-row-extra'">
+
+                        <!-- Base unit row: always index 0, always the smallest unit, never removable. -->
+                        <div th:if="${stat.index == 0}" class="row g-3 align-items-center pb-3 mb-3 border-bottom">
+                            <div class="col-12 col-md-4">
+                                <label class="info-label">Tên đơn vị cơ bản</label>
+                                <input type="text" class="form-control unit-name" data-field="unitName"
+                                       th:name="'units[' + ${stat.index} + '].unitName'" th:value="${u.unitName}" placeholder="VD: Viên">
+                            </div>
+                            <div class="col-8 col-md-3">
+                                <label class="info-label">Giá bán</label>
+                                <input type="number" min="0" step="0.01" class="form-control unit-price" data-field="sellPrice"
+                                       th:name="'units[' + ${stat.index} + '].sellPrice'" th:value="${u.sellPrice}">
+                            </div>
+                            <div class="col-4 col-md-2">
+                                <label class="form-check d-flex align-items-center gap-1 mb-0 mt-3">
+                                    <input class="form-check-input unit-default" type="checkbox" value="true" data-field="defaultUnit"
+                                           th:name="'units[' + ${stat.index} + '].defaultUnit'" th:checked="${u.defaultUnit}">
+                                    Mặc định
+                                </label>
+                            </div>
+                            <div class="col-12 col-md-3" th:if="${isEdit}">
+                                <label class="form-check d-flex align-items-center gap-1 mb-0 mt-3">
+                                    <input class="form-check-input unit-active" type="checkbox" value="true" data-field="active"
+                                           th:name="'units[' + ${stat.index} + '].active'" th:checked="${u.active}">
+                                    Đang kinh doanh
+                                </label>
+                            </div>
+                            <input type="hidden" th:name="'units[' + ${stat.index} + '].baseUnit'" value="true">
+                            <input type="hidden" th:unless="${isEdit}" th:name="'units[' + ${stat.index} + '].active'" value="true">
+                        </div>
+
+                        <!-- Extra unit row: quy đổi từ đơn vị ngay trước nó. -->
+                        <div th:unless="${stat.index == 0}" class="row g-3 align-items-center pb-3 mb-3 border-bottom">
+                            <div class="col-12 col-md-3">
+                                <label class="info-label">Tên đơn vị</label>
+                                <input type="text" class="form-control unit-name" data-field="unitName"
+                                       th:name="'units[' + ${stat.index} + '].unitName'" th:value="${u.unitName}" placeholder="Tên đơn vị">
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="info-label">Giá trị quy đổi</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">=</span>
+                                    <input type="number" min="1" step="1" class="form-control unit-qty" data-field="quantityRelativeToPrevious"
+                                           th:name="'units[' + ${stat.index} + '].quantityRelativeToPrevious'" th:value="${u.quantityRelativeToPrevious}">
+                                    <span class="input-group-text unit-prev">—</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="info-label">Giá bán</label>
+                                <input type="number" min="0" step="0.01" class="form-control unit-price" data-field="sellPrice"
+                                       th:name="'units[' + ${stat.index} + '].sellPrice'" th:value="${u.sellPrice}">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-check d-flex align-items-center gap-1 mb-0 mt-3">
+                                    <input class="form-check-input unit-default" type="checkbox" value="true" data-field="defaultUnit"
+                                           th:name="'units[' + ${stat.index} + '].defaultUnit'" th:checked="${u.defaultUnit}">
+                                    Mặc định
+                                </label>
+                            </div>
+                            <div class="col-6 col-md-1" th:if="${isEdit}">
+                                <label class="form-check d-flex align-items-center gap-1 mb-0 mt-3">
+                                    <input class="form-check-input unit-active" type="checkbox" value="true" data-field="active"
+                                           th:name="'units[' + ${stat.index} + '].active'" th:checked="${u.active}">
+                                    Đang kinh doanh
+                                </label>
+                            </div>
+                            <div class="col-6 col-md-1 text-end" th:unless="${isEdit}">
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-3" onclick="removeRow(this,'unitRows','units'); recomputeUnits();"><i class="ti ti-trash"></i></button>
+                            </div>
+                            <input type="hidden" th:unless="${isEdit}" th:name="'units[' + ${stat.index} + '].active'" value="true">
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
@@ -311,18 +351,42 @@
 
 <!-- Row templates for JS-added rows -->
 <template id="unitTemplate">
-    <tr>
-        <td><input type="text" class="form-control form-control-sm unit-name" data-field="unitName" placeholder="VD: Vỉ"></td>
-        <td><input type="number" min="1" step="1" class="form-control form-control-sm unit-qty" data-field="quantityRelativeToPrevious" value="1"></td>
-        <td class="cell-readonly unit-prev text-secondary small">—</td>
-        <td class="cell-readonly unit-ratio fw-semibold">1</td>
-        <td class="cell-readonly unit-suggested text-secondary">—</td>
-        <td><input type="number" min="0" step="0.01" class="form-control form-control-sm unit-price" data-field="sellPrice"></td>
-        <td class="text-center"><input type="checkbox" class="form-check-input unit-base" value="true" data-field="baseUnit"></td>
-        <td class="text-center"><input type="checkbox" class="form-check-input unit-default" value="true" data-field="defaultUnit"></td>
-        <td class="text-center"><input type="checkbox" class="form-check-input unit-active" value="true" data-field="active" checked></td>
-        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this,'unitRows','units'); recomputeUnits();"><i class="ti ti-trash"></i></button></td>
-    </tr>
+    <div class="unit-row unit-row-extra">
+        <div class="row g-3 align-items-center pb-3 mb-3 border-bottom">
+            <div class="col-12 col-md-3">
+                <label class="info-label">Tên đơn vị</label>
+                <input type="text" class="form-control unit-name" data-field="unitName" placeholder="Tên đơn vị">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="info-label">Giá trị quy đổi</label>
+                <div class="input-group">
+                    <span class="input-group-text">=</span>
+                    <input type="number" min="1" step="1" class="form-control unit-qty" data-field="quantityRelativeToPrevious" value="1">
+                    <span class="input-group-text unit-prev">—</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="info-label">Giá bán</label>
+                <input type="number" min="0" step="0.01" class="form-control unit-price" data-field="sellPrice">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-check d-flex align-items-center gap-1 mb-0 mt-3">
+                    <input class="form-check-input unit-default" type="checkbox" value="true" data-field="defaultUnit">
+                    Mặc định
+                </label>
+            </div>
+            <div class="col-6 col-md-1" th:if="${isEdit}">
+                <label class="form-check d-flex align-items-center gap-1 mb-0 mt-3">
+                    <input class="form-check-input unit-active" type="checkbox" value="true" data-field="active" checked>
+                    Đang kinh doanh
+                </label>
+            </div>
+            <div class="col-6 col-md-1 text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger mt-3" onclick="removeRow(this,'unitRows','units'); recomputeUnits();"><i class="ti ti-trash"></i></button>
+            </div>
+            <input type="hidden" th:unless="${isEdit}" data-field="active" value="true">
+        </div>
+    </div>
 </template>
 <template id="ingredientTemplate">
     <tr>
@@ -340,17 +404,17 @@
 
 <script th:inline="none">
     function reindex(tbodyId, prefix) {
-        const rows = document.querySelectorAll('#' + tbodyId + ' > tr');
-        rows.forEach((tr, i) => {
-            tr.querySelectorAll('[data-field]').forEach(el => {
+        const rows = document.querySelectorAll('#' + tbodyId + ' > *');
+        rows.forEach((row, i) => {
+            row.querySelectorAll('[data-field]').forEach(el => {
                 el.setAttribute('name', prefix + '[' + i + '].' + el.dataset.field);
             });
         });
     }
 
     function removeRow(btn, tbodyId, prefix) {
-        const tr = btn.closest('tr');
-        tr.parentNode.removeChild(tr);
+        const row = btn.closest('tr, .unit-row');
+        row.parentNode.removeChild(row);
         reindex(tbodyId, prefix);
     }
 
@@ -375,36 +439,53 @@
         document.querySelectorAll('#unitRows .' + cls).forEach(cb => { if (cb !== changed) cb.checked = false; });
     }
 
+    // Each row (after the base row) shows the previous row's unit name next to its
+    // "Giá trị quy đổi" input (e.g. "1 vien") so the quy đổi is always relative to the row
+    // directly above it, not the base unit. It also auto-fills "Giá bán" as
+    // (giá đơn vị cơ bản × tỷ lệ quy đổi lũy kế), keeping it in sync as qty/base price change,
+    // right up until the user types a real price into that field themselves — a price input
+    // marked "touched" (via markPriceTouched below) is never overwritten again, matching the
+    // pre-fill pattern already used elsewhere in this app (Purchase Invoice's "Giá nhập").
     function recomputeUnits() {
-        const rows = document.querySelectorAll('#unitRows > tr');
+        const rows = document.querySelectorAll('#unitRows > .unit-row');
+        let ratio = 1;
         let basePrice = 0;
-        rows.forEach((tr, i) => {
-            const qty = parseInt(tr.querySelector('.unit-qty')?.value, 10);
-            const prevCell = tr.querySelector('.unit-prev');
-            const ratioCell = tr.querySelector('.unit-ratio');
-            const suggestedCell = tr.querySelector('.unit-suggested');
-            let ratio;
+        rows.forEach((row, i) => {
+            const priceInput = row.querySelector('.unit-price');
             if (i === 0) {
                 ratio = 1;
-                if (prevCell) prevCell.textContent = '—';
-                basePrice = parseFloat(tr.querySelector('.unit-price')?.value) || 0;
-            } else {
-                const prevRow = rows[i - 1];
-                const prevRatio = parseInt(prevRow.querySelector('.unit-ratio')?.textContent, 10) || 1;
-                ratio = (Number.isFinite(qty) && qty > 0) ? prevRatio * qty : prevRatio;
-                if (prevCell) prevCell.textContent = prevRow.querySelector('.unit-name')?.value || '—';
+                basePrice = parseFloat(priceInput?.value) || 0;
+                return;
             }
-            tr.dataset.ratio = ratio;
-            if (ratioCell) ratioCell.textContent = ratio;
-            if (suggestedCell) suggestedCell.textContent = basePrice > 0 ? (basePrice * ratio).toLocaleString('vi-VN') + 'đ' : '—';
+            const prevCell = row.querySelector('.unit-prev');
+            const prevRow = rows[i - 1];
+            if (prevCell) prevCell.textContent = prevRow?.querySelector('.unit-name')?.value || '—';
+
+            const qty = parseInt(row.querySelector('.unit-qty')?.value, 10);
+            ratio = (Number.isFinite(qty) && qty > 0) ? ratio * qty : ratio;
+
+            if (priceInput && priceInput.dataset.touched !== '1' && basePrice > 0) {
+                priceInput.value = Math.round(basePrice * ratio * 100) / 100;
+            }
         });
     }
 
+    // A price is "touched" once it holds a real number — whether typed by the user or already
+    // persisted (Edit mode) — so recomputeUnits() will never silently overwrite it. Clearing the
+    // field back to empty releases it back to auto-suggest mode.
+    function markPriceTouched(e) {
+        if (parseFloat(e.target.value) > 0) e.target.dataset.touched = '1';
+        else delete e.target.dataset.touched;
+        recomputeUnits();
+    }
+
     function wireUnitEvents() {
-        document.querySelectorAll('#unitRows .unit-base').forEach(cb => cb.onchange = () => enforceSingle('unit-base', cb));
         document.querySelectorAll('#unitRows .unit-default').forEach(cb => cb.onchange = () => enforceSingle('unit-default', cb));
-        document.querySelectorAll('#unitRows .unit-qty, #unitRows .unit-price, #unitRows .unit-name')
-            .forEach(el => el.oninput = recomputeUnits);
+        document.querySelectorAll('#unitRows .unit-name, #unitRows .unit-qty').forEach(el => el.oninput = recomputeUnits);
+        document.querySelectorAll('#unitRows .unit-price').forEach(el => {
+            if (parseFloat(el.value) > 0) el.dataset.touched = '1';
+            el.oninput = markPriceTouched;
+        });
     }
 
     // "Nhóm mặt hàng" filters "Loại hàng" to the Types whose sortType matches the chosen group,

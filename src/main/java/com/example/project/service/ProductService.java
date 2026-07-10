@@ -480,14 +480,16 @@ public class ProductService {
     /**
      * Saves edits to an existing product. Scope is deliberately narrower than
      * {@link #createProduct}: existing {@code ProductUnit} rows can only be edited in place (name /
-     * ratio / sell price / flags) — units can never be added or removed here, because
-     * {@code Batch}, {@code InvoiceDetail}, {@code StockOutDetail} and {@code ReturnDetail} all hold
-     * FK references to a specific {@code ProductUnit} row, so changing the row count would risk
-     * orphaning that history. Ingredients and storage positions carry no such references, so both
-     * lists are simply replaced wholesale (delete-all-then-recreate), same as on create.
+     * ratio / sell price / flags) and new rows may be appended, but an existing row can never be
+     * removed here, because {@code Batch}, {@code InvoiceDetail}, {@code StockOutDetail} and
+     * {@code ReturnDetail} all hold FK references to a specific {@code ProductUnit} row, so shrinking
+     * the row count would risk orphaning that history. Adding a row carries no such risk — it's a
+     * brand new row with no existing FK pointing at it. Ingredients and storage positions carry no
+     * such references, so both lists are simply replaced wholesale (delete-all-then-recreate), same
+     * as on create.
      *
-     * @throws ProductValidationException when validation fails (including a unit count mismatch);
-     *                                    the transaction rolls back so nothing is persisted.
+     * @throws ProductValidationException when validation fails (including removing an existing unit
+     *                                    row); the transaction rolls back so nothing is persisted.
      * @throws IllegalArgumentException   when {@code productId} does not refer to an existing product
      */
     @Transactional
@@ -523,8 +525,8 @@ public class ProductService {
 
         List<ProductUnitCreateRequest> requestedUnitRows = request.getUnits() == null ? List.of()
                 : request.getUnits().stream().filter(u -> trimToNull(u.getUnitName()) != null).toList();
-        if (requestedUnitRows.size() != existingUnits.size()) {
-            errors.add("Không thể thêm hoặc bớt đơn vị tính khi sửa hàng hóa");
+        if (requestedUnitRows.size() < existingUnits.size()) {
+            errors.add("Không thể xoá đơn vị tính đã có khi sửa hàng hóa");
         }
 
         List<ResolvedUnit> resolvedUnits = validateAndResolveUnits(request.getUnits(), errors);
@@ -563,6 +565,20 @@ public class ProductService {
         for (int i = 0; i < existingUnits.size(); i++) {
             Productunit unit = existingUnits.get(i);
             ResolvedUnit resolved = resolvedUnits.get(i);
+            unit.setUnitName(resolved.name());
+            unit.setRatio(BigDecimal.valueOf(resolved.ratio()));
+            unit.setSellPrice(resolved.sellPrice());
+            unit.setIsBaseUnit(resolved.baseUnit());
+            unit.setIsDefault(resolved.defaultUnit());
+            unit.setIsActive(resolved.active());
+            productunitRepository.save(unit);
+        }
+        // Any rows beyond the existing count are brand new (appended via "+ Thêm đơn vị" on the
+        // Edit screen) — no existing FK can point at them yet, so they're safe to insert outright.
+        for (int i = existingUnits.size(); i < resolvedUnits.size(); i++) {
+            ResolvedUnit resolved = resolvedUnits.get(i);
+            Productunit unit = new Productunit();
+            unit.setProductID(product);
             unit.setUnitName(resolved.name());
             unit.setRatio(BigDecimal.valueOf(resolved.ratio()));
             unit.setSellPrice(resolved.sellPrice());
