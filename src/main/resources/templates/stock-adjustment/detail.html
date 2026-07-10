@@ -164,8 +164,8 @@
             </h1>
         </div>
 
-        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        <div th:replace="~{fragments/toast :: flash}"></div>
+        <div th:replace="~{fragments/confirm :: confirm}"></div>
 
         <div class="row g-4">
             <div class="col-12 col-xl-9">
@@ -249,7 +249,8 @@
                                 <th>Lô</th>
                                 <th>Hạn dùng</th>
                                 <th>Đơn vị</th>
-                                <th>Số lượng</th>
+                                <th>Tồn hiện tại</th>
+                                <th>Chênh lệch</th>
                                 <th>Giá trị ước tính</th>
                                 <th>Ghi chú</th>
                             </tr>
@@ -265,7 +266,15 @@
                                 </td>
                                 <td th:text="${item.expirationDateDisplay}">12/05/2028</td>
                                 <td th:text="${item.unitName}">Hộp</td>
-                                <td th:text="${item.quantity}">5</td>
+                                <td th:text="${item.currentStock}">120</td>
+                                <td>
+                                    <span class="fw-semibold"
+                                          th:classappend="${item.direction == 'IN'} ? ' text-success' : ' text-danger'"
+                                          th:text="${(item.direction == 'IN' ? '+' : '−') + item.quantity}">−5</span>
+                                    <span class="badge ms-1"
+                                          th:classappend="${item.direction == 'IN'} ? ' bg-success-subtle text-success' : ' bg-danger-subtle text-danger'"
+                                          th:text="${item.directionDisplay}">Giảm</span>
+                                </td>
                                 <td class="fw-semibold"
                                     th:text="${#numbers.formatDecimal(item.lineCost, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     350.000đ
@@ -274,7 +283,7 @@
                             </tr>
 
                             <tr class="fw-semibold">
-                                <td colspan="5">Tổng cộng</td>
+                                <td colspan="6">Tổng cộng</td>
                                 <td th:text="${detail.totalQuantity}">9</td>
                                 <td class="text-success"
                                     th:text="${#numbers.formatDecimal(detail.estimatedValue, 0, 'POINT', 0, 'COMMA') + 'đ'}">
@@ -316,11 +325,6 @@
                         <div class="d-flex justify-content-between mb-3">
                             <span class="text-secondary">Loại điều chỉnh</span>
                             <strong th:text="${detail.adjustmentTypeDisplay}">Hủy hàng</strong>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="text-secondary">Tác động chi phí</span>
-                            <em th:text="${detail.costImpactDisplay}">Chưa ghi nhận chi phí</em>
                         </div>
 
                         <div class="d-flex justify-content-between">
@@ -391,10 +395,10 @@
                     <form th:if="${detail.statusName == 'Nháp'}"
                           th:action="${basePath + '/' + detail.id + '/submit'}"
                           method="post"
-                          class="mb-3"
-                          onsubmit="return confirm('Gửi duyệt phiếu này?');">
+                          class="mb-3">
                         <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="btn btn-stock-primary w-100">
+                        <button type="submit" class="btn btn-stock-primary w-100"
+                                data-confirm="Gửi duyệt phiếu này?">
                             <i class="ti ti-send me-1"></i>
                             <span th:text="${#strings.startsWith(basePath, '/owner')} ? 'Duyệt phiếu (từ nháp)' : 'Gửi duyệt'">Gửi duyệt</span>
                         </button>
@@ -403,10 +407,10 @@
                     <th:block th:if="${#strings.startsWith(basePath, '/owner') and detail.statusName == 'Chờ duyệt'}">
                         <form th:action="${basePath + '/' + detail.id + '/approve'}"
                               method="post"
-                              class="mb-3"
-                              onsubmit="return confirm('Bạn có chắc chắn muốn duyệt phiếu này không? Tồn kho sẽ được cập nhật.');">
+                              class="mb-3">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button type="submit" class="btn btn-stock-primary w-100">
+                            <button type="submit" class="btn btn-stock-primary w-100"
+                                    data-confirm="Bạn có chắc chắn muốn duyệt phiếu này không? Tồn kho sẽ được cập nhật.">
                                 <i class="ti ti-circle-check me-1"></i>
                                 Duyệt phiếu điều chỉnh
                             </button>
@@ -414,10 +418,10 @@
 
                         <form th:action="${basePath + '/' + detail.id + '/reject'}"
                               method="post"
-                              class="mb-3"
-                              onsubmit="return confirm('Bạn có chắc chắn muốn từ chối phiếu này không?');">
+                              class="mb-3">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button type="submit" class="btn btn-stock-warning w-100">
+                            <button type="submit" class="btn btn-stock-warning w-100"
+                                    data-confirm="Bạn có chắc chắn muốn từ chối phiếu này không?">
                                 <i class="ti ti-x me-1"></i>
                                 Từ chối phiếu điều chỉnh
                             </button>

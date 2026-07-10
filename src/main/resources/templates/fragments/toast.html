@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Reusable flash-message toasts. Renders a floating, auto-dismissing Bootstrap toast (top-right) from
+  the ${successMessage} / ${errorMessage} model attributes. Bootstrap JS is already bundled in main.js,
+  so no extra library is needed. Include once per page:
+      <div th:replace="~{fragments/toast :: flash}"></div>
+-->
+<th:block th:fragment="flash">
+    <div class="toast-container position-fixed top-0 end-0 p-3 pm-toast-container">
+        <div th:if="${successMessage}"
+             class="toast align-items-center border-0 pm-toast pm-toast-success"
+             role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="ti ti-circle-check fs-5 me-2"></i>
+                    <span th:text="${successMessage}">Thành công</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast" aria-label="Đóng"></button>
+            </div>
+        </div>
+
+        <div th:if="${errorMessage}"
+             class="toast align-items-center border-0 pm-toast pm-toast-error"
+             role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="6000">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="ti ti-alert-circle fs-5 me-2"></i>
+                    <span th:text="${errorMessage}">Có lỗi xảy ra</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast" aria-label="Đóng"></button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .pm-toast-container {
+            z-index: 1090;
+        }
+
+        .pm-toast {
+            color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(16, 24, 40, .18);
+        }
+
+        .pm-toast .toast-body {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .pm-toast-success {
+            background: #059669;
+        }
+
+        .pm-toast-error {
+            background: #dc2626;
+        }
+    </style>
+
+    <script>
+        (function () {
+            function initToastEl(el) {
+                if (window.bootstrap && bootstrap.Toast) {
+                    el.addEventListener('hidden.bs.toast', function () { el.remove(); });
+                    bootstrap.Toast.getOrCreateInstance(el, {autohide: true}).show();
+                } else {
+                    // Fallback if the Bootstrap bundle hasn't loaded: show statically, hide after a few seconds.
+                    el.classList.add('show');
+                    setTimeout(function () { el.classList.remove('show'); el.remove(); }, 5000);
+                }
+            }
+
+            function ensureContainer() {
+                var c = document.querySelector('.pm-toast-container');
+                if (!c) {
+                    c = document.createElement('div');
+                    c.className = 'toast-container position-fixed top-0 end-0 p-3 pm-toast-container';
+                    document.body.appendChild(c);
+                }
+                return c;
+            }
+
+            // Global helper so client-side code can raise a styled toast instead of a native alert():
+            //     pmToast('Đã lưu', 'success');   pmToast('Thiếu dữ liệu', 'error');
+            window.pmToast = function (message, type) {
+                var isError = type === 'error' || type === 'danger';
+                var el = document.createElement('div');
+                el.className = 'toast align-items-center border-0 pm-toast ' + (isError ? 'pm-toast-error' : 'pm-toast-success');
+                el.setAttribute('role', 'alert');
+                el.setAttribute('aria-live', 'assertive');
+                el.setAttribute('aria-atomic', 'true');
+                el.setAttribute('data-bs-delay', isError ? '6000' : '4000');
+                el.innerHTML = '<div class="d-flex"><div class="toast-body d-flex align-items-center">'
+                    + '<i class="ti ' + (isError ? 'ti-alert-circle' : 'ti-circle-check') + ' fs-5 me-2"></i>'
+                    + '<span></span></div>'
+                    + '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Đóng"></button></div>';
+                el.querySelector('span').textContent = message; // textContent -> safe from HTML injection
+                ensureContainer().appendChild(el);
+                initToastEl(el);
+            };
+
+            function showServerToasts() {
+                // Only the server-rendered toasts exist at load; dynamic ones (pmToast) init themselves.
+                document.querySelectorAll('.pm-toast-container > .pm-toast').forEach(initToastEl);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', showServerToasts);
+            } else {
+                showServerToasts();
+            }
+        })();
+    </script>
+</th:block>
+</body>
+</html>
