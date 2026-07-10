@@ -3,6 +3,7 @@ package com.example.project.controller;
 import com.example.project.dto.request.ProcurementPlanCreateRequest;
 import com.example.project.dto.response.ProcurementPlanDetailRowView;
 import com.example.project.dto.response.ProcurementProductSearchResponse;
+import com.example.project.dto.response.ProcurementSupplierSearchResponse;
 import com.example.project.dto.response.ProcurementplanResponse;
 import com.example.project.dto.response.SupplierCostPriceResponse;
 import com.example.project.entity.Supplier;
@@ -106,6 +107,14 @@ public class ProcurementplanController {
                                                           @RequestParam(name = "productId") Integer productId) {
         BigDecimal costPrice = procurementplanService.getSupplierCostPrice(supplierId, productId);
         return new SupplierCostPriceResponse(costPrice);
+    }
+
+    @GetMapping("/owner/procurements/suppliers/search")
+    @ResponseBody
+    public List<ProcurementSupplierSearchResponse> searchSuppliers(
+            @RequestParam(name = "productId", required = false) Integer productId,
+            @RequestParam(name = "keyword", defaultValue = "") String keyword) {
+        return procurementplanService.searchSuppliersForProduct(productId, keyword);
     }
 
     @GetMapping("/owner/procurements/create-procurementplan")

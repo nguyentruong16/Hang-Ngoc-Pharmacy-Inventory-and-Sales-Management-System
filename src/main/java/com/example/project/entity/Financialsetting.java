@@ -19,14 +19,6 @@ public class Financialsetting {
     @Column(name = "financialSettingID", nullable = false)
     private Integer id;
 
-    @ColumnDefault("0.00")
-    @Column(name = "vatRate", precision = 5, scale = 2)
-    private BigDecimal vatRate;
-
-    @ColumnDefault("0.00")
-    @Column(name = "incomeTaxRate", precision = 5, scale = 2)
-    private BigDecimal incomeTaxRate ;
-
     @ColumnDefault("1")
     @Column(name = "taxCalculationMethod")
     private Integer taxCalculationMethod;

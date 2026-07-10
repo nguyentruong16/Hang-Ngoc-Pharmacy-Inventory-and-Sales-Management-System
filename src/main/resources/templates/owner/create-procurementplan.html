@@ -73,32 +73,10 @@
 
         .product-search-wrap {
             position: relative;
-            display: flex;
-            gap: 10px;
-            align-items: stretch;
         }
 
         .product-search-field {
             position: relative;
-            flex: 1;
-        }
-
-        .btn-barcode {
-            width: 48px;
-            min-height: 48px;
-            border: none;
-            border-radius: 10px;
-            background: #2563eb;
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .btn-barcode:hover {
-            background: #1d4ed8;
         }
 
         .product-search-input {
@@ -180,23 +158,26 @@
 
         .product-lines-header,
         .product-line {
-            display: grid;
-            grid-template-columns:
+            --procurement-cols:
                 28px 28px
-                minmax(0, 2fr)
-                42px
-                minmax(52px, 0.7fr)
-                56px
-                minmax(0, 1.2fr)
-                minmax(68px, 0.85fr)
-                minmax(72px, 0.9fr);
-            gap: 6px;
+                minmax(0, 1.45fr)
+                minmax(0, 0.52fr)
+                minmax(0, 0.55fr)
+                minmax(0, 0.55fr)
+                minmax(0, 0.88fr)
+                minmax(0, 1.1fr)
+                minmax(0, 0.72fr)
+                minmax(0, 0.76fr);
+            display: grid;
+            grid-template-columns: var(--procurement-cols);
+            column-gap: 8px;
+            row-gap: 0;
             align-items: center;
             width: 100%;
         }
 
         .product-lines-header {
-            padding: 8px 12px;
+            padding: 10px 14px;
             background: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
             font-size: 10px;
@@ -210,7 +191,7 @@
         .product-lines-header.hidden { display: none; }
 
         .product-line {
-            padding: 10px 12px;
+            padding: 10px 14px;
             border-bottom: 1px solid #f3f4f6;
         }
 
@@ -247,20 +228,30 @@
         }
 
         .product-title {
-            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .product-title-code {
+            font-size: 12px;
+            color: #6b7280;
             font-weight: 600;
-            color: #111827;
-            line-height: 1.35;
-            margin-bottom: 4px;
+            line-height: 1.3;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .product-title-code {
-            color: #374151;
+        .product-title-name {
+            font-size: 14px;
             font-weight: 600;
-            margin-right: 6px;
+            color: #111827;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .product-meta {
@@ -268,11 +259,28 @@
         }
 
         .stock-display {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 32px;
             text-align: center;
             font-size: 13px;
             font-weight: 600;
             color: #2563eb;
+        }
+
+        .stock-unit-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 32px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .supplier-select {
@@ -287,9 +295,124 @@
             outline: none;
         }
 
-        .supplier-select:focus {
+        .supplier-picker-btn {
+            width: 100%;
+            min-width: 0;
+            min-height: 32px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 11px;
+            padding: 0 8px;
+            outline: none;
+            color: #374151;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .supplier-picker-btn:hover {
+            border-color: #93c5fd;
+            background: #f8fafc;
+        }
+
+        .supplier-picker-btn.empty {
+            color: #9ca3af;
+        }
+
+        .supplier-select:focus,
+        .supplier-picker-btn:focus {
             border-color: #93c5fd;
             box-shadow: 0 0 0 2px rgba(37, 99, 235, .1);
+        }
+
+        .supplier-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .45);
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            z-index: 1080;
+            padding: 60px 16px;
+            overflow-y: auto;
+        }
+
+        .supplier-modal-backdrop.open {
+            display: flex;
+        }
+
+        .supplier-modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 820px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, .25);
+        }
+
+        .supplier-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 22px;
+            border-bottom: 1px solid #eef0f3;
+        }
+
+        .supplier-modal-body {
+            padding: 18px 22px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .supplier-modal-close {
+            border: none;
+            background: transparent;
+            font-size: 22px;
+            line-height: 1;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .supplier-search-input {
+            border-radius: 10px;
+            min-height: 42px;
+            margin-bottom: 14px;
+        }
+
+        .supplier-pick-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .supplier-pick-table th,
+        .supplier-pick-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eef0f3;
+            vertical-align: middle;
+        }
+
+        .supplier-pick-table th {
+            background: #f8fafc;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .supplier-pick-row {
+            cursor: pointer;
+        }
+
+        .supplier-pick-row:hover {
+            background: #f0fdf4;
+        }
+
+        .supplier-pick-empty {
+            text-align: center;
+            color: #6b7280;
+            padding: 24px 12px;
         }
 
         .product-line > * {
@@ -297,22 +420,79 @@
         }
 
         .unit-badge-display {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             min-width: 0;
-            min-height: 30px;
-            line-height: 30px;
-            border: 1px solid #93c5fd;
+            min-height: 32px;
+            border: 1px solid #6ee7b7;
             border-radius: 6px;
-            background: #f0f9ff;
-            color: #1e40af;
+            background: #ecfdf5;
+            color: #059669;
             font-size: 13px;
             font-weight: 600;
             text-align: center;
-            padding: 0 6px;
+            padding: 4px 8px;
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .field-input.quantity-input {
+            color: #059669;
+            font-weight: 600;
+            border-color: #6ee7b7;
+            background: #ecfdf5;
+        }
+
+        .field-input.quantity-input:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, .15);
+        }
+
+        .request-qty-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 32px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .unit-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .unit-conversion-hint {
+            display: block;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #047857;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1.35;
+            text-align: center;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .qty-cell,
+        .stock-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
         }
 
         .field-input {
@@ -466,9 +646,6 @@
                                            autocomplete="off">
                                     <div id="productSearchResults" class="product-search-results"></div>
                                 </div>
-                                <button type="button" class="btn-barcode" title="Quét barcode">
-                                    <i class="ti ti-barcode"></i>
-                                </button>
                             </div>
                         </div>
 
@@ -477,8 +654,9 @@
                             <div></div>
                             <div>Hàng hóa</div>
                             <div class="text-center">Tồn</div>
-                            <div>Đơn vị thuốc</div>
-                            <div>Số lượng</div>
+                            <div class="text-center">Đơn vị tồn</div>
+                            <div class="text-center">Số lượng</div>
+                            <div class="text-center">Đơn vị thuốc</div>
                             <div>Nhà cung cấp</div>
                             <div class="text-end">Giá từng đơn vị</div>
                             <div class="text-end">Giá ước tính</div>
@@ -536,6 +714,34 @@
     </div>
 </main>
 
+<div class="supplier-modal-backdrop" id="supplierModal">
+    <div class="supplier-modal">
+        <div class="supplier-modal-header">
+            <h2 class="fs-6 mb-0">Chọn nhà cung cấp</h2>
+            <button type="button" class="supplier-modal-close" id="closeSupplierModalBtn">&times;</button>
+        </div>
+        <div class="supplier-modal-body">
+            <input type="text" id="supplierSearchInput" class="form-control supplier-search-input"
+                   placeholder="Tìm nhà cung cấp theo tên" autocomplete="off">
+            <div class="table-responsive">
+                <table class="supplier-pick-table">
+                    <thead>
+                    <tr>
+                        <th style="width: 56px;">STT</th>
+                        <th>Tên</th>
+                        <th style="width: 150px;" class="text-end">Giá bán lần cuối</th>
+                        <th style="width: 130px;" class="text-center">Số SP trong bảng</th>
+                    </tr>
+                    </thead>
+                    <tbody id="supplierModalBody">
+                    <tr><td colspan="4" class="supplier-pick-empty">Đang tải...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script th:inline="javascript">
     const basePath = /*[[${basePath}]]*/ '/owner/procurements';
     const suppliers = /*[[${suppliers}]]*/ [];
@@ -550,6 +756,12 @@
     let searchTimer = null;
     let searchAbortController = null;
     let searchRequestId = 0;
+
+    let activeSupplierRow = null;
+    let supplierSearchTimer = null;
+    let supplierSearchAbortController = null;
+    let supplierSearchRequestId = 0;
+    let lastSupplierItems = [];
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -579,6 +791,31 @@
             return cached.currentStock;
         }
         return 0;
+    }
+
+    function getStockUnit(productId) {
+        const cached = productMap[productId];
+        return cached && cached.stockUnit ? cached.stockUnit : '—';
+    }
+
+    function formatUnitRatio(value) {
+        if (value == null) return '';
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '';
+        if (Number.isInteger(num)) return String(num);
+        return num.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+    }
+
+    function buildUnitConversionHint(product, unitName) {
+        if (!product) return '';
+        const stockUnit = product.stockUnit;
+        const unit = unitName || product.unit;
+        const ratio = product.unitRatio;
+        if (!unit || !stockUnit || ratio == null) return '';
+        const ratioNum = Number(ratio);
+        if (!Number.isFinite(ratioNum) || ratioNum <= 0) return '';
+        if (unit === stockUnit && ratioNum === 1) return '';
+        return '1 ' + unit + ' = ' + formatUnitRatio(ratioNum) + ' ' + stockUnit;
     }
 
     function cacheSearchProducts(items) {
@@ -679,20 +916,146 @@
         reindexDetailLines();
     }
 
-    async function handleSupplierChange(select) {
-        const row = select.closest('.product-line');
-        if (!row) {
+    function getSupplierName(supplierId) {
+        if (!supplierId) return '';
+        const found = suppliers.find(item => String(item.id) === String(supplierId));
+        return found && found.name ? found.name : '';
+    }
+
+    function countTableLinesBySupplier(supplierId) {
+        if (!supplierId) return 0;
+        let count = 0;
+        document.querySelectorAll('#detailLines .product-line').forEach(row => {
+            const input = row.querySelector('[data-field="supplierId"]');
+            if (input && input.value && String(input.value) === String(supplierId)) {
+                count++;
+            }
+        });
+        return count;
+    }
+
+    function formatSupplierPrice(value) {
+        if (value == null || value === '') return '—';
+        const num = Number(value);
+        return Number.isFinite(num) ? formatLineMoney(num) + 'đ' : '—';
+    }
+
+    function renderSupplierModalRows(items, options = {}) {
+        const tbody = document.getElementById('supplierModalBody');
+        const { loading = false, emptyMessage = 'Không tìm thấy nhà cung cấp' } = options;
+
+        if (loading) {
+            tbody.innerHTML = '<tr><td colspan="4" class="supplier-pick-empty">Đang tải...</td></tr>';
             return;
         }
 
-        const productIdInput = row.querySelector('[data-field="productId"]');
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="supplier-pick-empty">' + escapeHtml(emptyMessage) + '</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = items.map((item, index) => `
+            <tr class="supplier-pick-row" data-supplier-id="${item.supplierId}"
+                onclick="selectSupplierFromModal(${item.supplierId}, ${item.lastCostPrice != null ? item.lastCostPrice : 'null'})">
+                <td class="text-center">${index + 1}</td>
+                <td>${escapeHtml(item.name || '—')}</td>
+                <td class="text-end">${formatSupplierPrice(item.lastCostPrice)}</td>
+                <td class="text-center">${countTableLinesBySupplier(item.supplierId)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function openSupplierModal(button) {
+        const row = button.closest('.product-line');
+        if (!row) return;
+
+        activeSupplierRow = row;
+        document.getElementById('supplierSearchInput').value = '';
+        document.getElementById('supplierModal').classList.add('open');
+        loadSupplierModalItems('');
+        setTimeout(() => document.getElementById('supplierSearchInput').focus(), 50);
+    }
+
+    function closeSupplierModal() {
+        document.getElementById('supplierModal').classList.remove('open');
+        activeSupplierRow = null;
+        if (supplierSearchAbortController) {
+            supplierSearchAbortController.abort();
+        }
+    }
+
+    async function loadSupplierModalItems(keyword) {
+        if (!activeSupplierRow) return;
+
+        const productIdInput = activeSupplierRow.querySelector('[data-field="productId"]');
+        const productId = productIdInput ? productIdInput.value : '';
+
+        if (supplierSearchAbortController) {
+            supplierSearchAbortController.abort();
+        }
+        supplierSearchAbortController = new AbortController();
+        const requestId = ++supplierSearchRequestId;
+
+        renderSupplierModalRows([], { loading: true });
+
+        try {
+            const url = basePath + '/suppliers/search?productId=' + encodeURIComponent(productId)
+                + '&keyword=' + encodeURIComponent(keyword || '');
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: supplierSearchAbortController.signal
+            });
+            if (!response.ok) {
+                throw new Error('Fetch failed');
+            }
+            const data = await response.json();
+            if (requestId !== supplierSearchRequestId) return;
+            lastSupplierItems = data || [];
+            renderSupplierModalRows(lastSupplierItems);
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            if (requestId !== supplierSearchRequestId) return;
+            renderSupplierModalRows([], { emptyMessage: 'Không thể tải danh sách nhà cung cấp' });
+        }
+    }
+
+    function scheduleSupplierSearch(keyword) {
+        clearTimeout(supplierSearchTimer);
+        supplierSearchTimer = setTimeout(() => loadSupplierModalItems(keyword), 250);
+    }
+
+    async function applySupplierToRow(row, supplierId, costPrice, fetchIfMissing = true) {
+        if (!row) return;
+
+        const supplierInput = row.querySelector('[data-field="supplierId"]');
+        const pickerBtn = row.querySelector('.supplier-picker-btn');
         const unitInput = row.querySelector('.unit-price-input');
         const estimatedInput = row.querySelector('.estimated-total-input');
-        const supplierId = select.value;
+        const productIdInput = row.querySelector('[data-field="productId"]');
         const productId = productIdInput ? productIdInput.value : null;
 
         if (!supplierId) {
+            if (supplierInput) supplierInput.value = '';
+            if (pickerBtn) {
+                pickerBtn.textContent = 'Chọn nhà cung cấp';
+                pickerBtn.classList.add('empty');
+            }
             setUnitPriceValue(row, null);
+            return;
+        }
+
+        if (supplierInput) supplierInput.value = supplierId;
+        if (pickerBtn) {
+            pickerBtn.textContent = getSupplierName(supplierId) || 'Chọn nhà cung cấp';
+            pickerBtn.classList.toggle('empty', !getSupplierName(supplierId));
+        }
+
+        if (costPrice != null) {
+            setUnitPriceValue(row, costPrice);
+            return;
+        }
+
+        if (!fetchIfMissing) {
             return;
         }
 
@@ -725,11 +1088,23 @@
         }
     }
 
+    function selectSupplierFromModal(supplierId, costPrice) {
+        if (!activeSupplierRow) return;
+        applySupplierToRow(activeSupplierRow, supplierId, costPrice, false);
+        closeSupplierModal();
+    }
+
+    async function handleSupplierChange(select) {
+        const row = select.closest('.product-line');
+        if (!row) return;
+        await applySupplierToRow(row, select.value, null, true);
+    }
+
     function initLineSupplierPrices() {
         document.querySelectorAll('#detailLines .product-line').forEach(row => {
-            const supplierSelect = row.querySelector('.supplier-select');
-            if (supplierSelect && supplierSelect.value) {
-                handleSupplierChange(supplierSelect);
+            const supplierInput = row.querySelector('[data-field="supplierId"]');
+            if (supplierInput && supplierInput.value) {
+                applySupplierToRow(row, supplierInput.value, null, true);
             }
         });
     }
@@ -759,8 +1134,10 @@
         if (!product) return '';
 
         const currentStock = detail.currentStock != null ? detail.currentStock : getStock(product.productID);
+        const stockUnit = product.stockUnit || getStockUnit(product.productID);
         const quantity = detail.requestedQuantity != null ? detail.requestedQuantity : 1;
         const unit = detail.unit || '';
+        const conversionHint = buildUnitConversionHint(product, unit);
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
         const unitPrice = resolveUnitPriceFromDetail(detail);
         const lineTotalFromDb = detail.estimatedPrice != null ? Number(detail.estimatedPrice) : 0;
@@ -768,11 +1145,8 @@
             : (lineTotalFromDb > 0 && quantity > 0 ? lineTotalFromDb / quantity : '');
         const lineTotalValue = lineTotalFromDb > 0 ? lineTotalFromDb
             : (unitPriceValue !== '' ? Number(quantity) * Number(unitPriceValue) : '');
-        const supplierOptionsHtml = suppliers.map(supplier =>
-            '<option value="' + supplier.id + '"' +
-            (String(supplierId) === String(supplier.id) ? ' selected' : '') +
-            '>' + escapeHtml(supplier.name) + '</option>'
-        ).join('');
+        const supplierName = getSupplierName(supplierId);
+        const supplierLabel = supplierName || 'Chọn nhà cung cấp';
 
         return `
             <div class="product-line">
@@ -785,28 +1159,31 @@
                 <div class="product-info-block">
                     <input type="hidden" data-field="productId" value="${product.productID}">
                     <div class="product-title">
-                        <span class="product-title-code">${escapeHtml(product.code)}</span>
-                        ${escapeHtml(product.name)}
+                        <div class="product-title-code">${escapeHtml(product.code)}</div>
+                        <div class="product-title-name">${escapeHtml(product.name)}</div>
                     </div>
                 </div>
-                <div>
+                <div class="stock-cell">
                     <span class="stock-display">${currentStock}</span>
                 </div>
-                <div>
-                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
-                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
+                <div class="stock-cell">
+                    <span class="stock-unit-display">${escapeHtml(stockUnit || '—')}</span>
                 </div>
-                <div>
+                <div class="qty-cell">
                     <input type="number" min="1" class="field-input quantity-input"
                            data-field="requestedQuantity" value="${quantity}"
                            oninput="handleQuantityInput(this)">
                 </div>
+                <div class="unit-cell">
+                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
+                    ${conversionHint ? `<span class="unit-conversion-hint" title="${escapeHtml(conversionHint)}">${escapeHtml(conversionHint)}</span>` : ''}
+                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
+                </div>
                 <div>
-                    <select class="supplier-select" data-field="supplierId"
-                            onchange="handleSupplierChange(this)">
-                        <option value="">Chọn nhà cung cấp</option>
-                        ${supplierOptionsHtml}
-                    </select>
+                    <input type="hidden" data-field="supplierId" value="${supplierId}">
+                    <button type="button"
+                            class="supplier-picker-btn${supplierName ? '' : ' empty'}"
+                            onclick="openSupplierModal(this)">${escapeHtml(supplierLabel)}</button>
                 </div>
                 <div class="text-end">
                     <input type="number" min="0" step="1000"
@@ -900,7 +1277,7 @@
                         ${product.unit ? escapeHtml(product.unit) : 'Chưa có đơn vị thuốc'}
                     </div>
                 </div>
-                <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}</div>
+                <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}${product.stockUnit ? ' ' + escapeHtml(product.stockUnit) : ''}</div>
             </div>
         `).join('');
         results.classList.add('show');
@@ -975,8 +1352,15 @@
         searchInput.focus();
     }
 
-    document.querySelector('.btn-barcode').addEventListener('click', function () {
-        document.getElementById('productSearchInput').focus();
+    document.getElementById('closeSupplierModalBtn').addEventListener('click', closeSupplierModal);
+    document.getElementById('supplierModal').addEventListener('click', function (event) {
+        if (event.target === this) closeSupplierModal();
+    });
+    document.getElementById('supplierSearchInput').addEventListener('input', function (event) {
+        scheduleSupplierSearch(event.target.value);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') closeSupplierModal();
     });
 
     document.getElementById('productSearchInput').addEventListener('input', function (event) {
