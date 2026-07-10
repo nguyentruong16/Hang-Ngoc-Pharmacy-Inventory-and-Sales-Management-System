@@ -73,9 +73,9 @@ public class ProfileService {
 
         return switch (role.toLowerCase()) {
             case "pharmacist", "duoc_si", "1" -> "Dược sĩ";
-            case "chief_pharmacist", "duoc_si_truong", "2" -> "Dược sĩ trưởng";
             case "accountant", "ke_toan", "3" -> "Kế toán";
-            case "owner", "chu_nha_thuoc", "5" -> "Chủ nhà thuốc";
+            case "chief_pharmacist", "duoc_si_truong", "2",
+                 "owner", "chu_nha_thuoc", "5" -> "Chủ nhà thuốc";
             default -> role;
         };
     }

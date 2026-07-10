@@ -16,7 +16,14 @@ public class StockAdjustmentDetailItemResponse {
     private LocalDate expirationDate;
     private String expirationDateDisplay;
     private String unitName;
+    /** Current on-hand stock of the batch (live value; after approval it already reflects this line). */
+    private Integer currentStock;
+    /** The adjusted amount (delta), always positive; pair it with {@link #direction} for the sign. */
     private Integer quantity;
+    /** Movement direction of this line: {@code IN} (increase) or {@code OUT} (decrease). */
+    private String direction;
+    /** Vietnamese label for {@link #direction}: "Tăng" / "Giảm". */
+    private String directionDisplay;
     private BigDecimal unitCostPrice;
     private BigDecimal lineCost;
     private String note;

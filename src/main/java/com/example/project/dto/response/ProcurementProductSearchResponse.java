@@ -17,6 +17,8 @@ public class ProcurementProductSearchResponse {
     private String code;
     private String barcode;
     private Integer currentStock;
+    private String stockUnit;
     private String unit;
+    private BigDecimal unitRatio;
     private BigDecimal estimatedPrice;
 }

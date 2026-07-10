@@ -180,6 +180,7 @@ public class ProcurementplanService {
         int maxResults = limit <= 0 ? 12 : Math.min(limit, 30);
         Map<Integer, Long> stockByProduct = buildStockByProduct();
         Map<Integer, Productunit> mainUnitByProduct = loadMainUnitByProduct();
+        Map<Integer, Productunit> baseUnitByProduct = loadBaseUnitByProduct();
 
         return productRepository.findAll()
                 .stream()
@@ -187,7 +188,7 @@ public class ProcurementplanService {
                 .filter(product -> matchesKeyword(product, normalizedKeyword))
                 .sorted(Comparator.comparing(product -> product.getName() == null ? "" : product.getName()))
                 .limit(maxResults)
-                .map(product -> toSearchResponse(product, stockByProduct, mainUnitByProduct))
+                .map(product -> toSearchResponse(product, stockByProduct, mainUnitByProduct, baseUnitByProduct))
                 .toList();
     }
 
@@ -210,10 +211,11 @@ public class ProcurementplanService {
 
         Map<Integer, Long> stockByProduct = buildStockByProduct();
         Map<Integer, Productunit> mainUnitByProduct = loadMainUnitByProduct();
+        Map<Integer, Productunit> baseUnitByProduct = loadBaseUnitByProduct();
 
         return productRepository.findAllById(productIds)
                 .stream()
-                .map(product -> toSearchResponse(product, stockByProduct, mainUnitByProduct))
+                .map(product -> toSearchResponse(product, stockByProduct, mainUnitByProduct, baseUnitByProduct))
                 .toList();
     }
 
@@ -233,6 +235,21 @@ public class ProcurementplanService {
         return mainUnitByProduct;
     }
 
+    private Map<Integer, Productunit> loadBaseUnitByProduct() {
+        Map<Integer, Productunit> baseUnitByProduct = new HashMap<>();
+        for (Productunit unit : productunitRepository.findAllWithProduct()) {
+            if (!Boolean.TRUE.equals(unit.getIsActive())
+                    || !Boolean.TRUE.equals(unit.getIsBaseUnit())
+                    || unit.getProductID() == null) {
+                continue;
+            }
+
+            Integer productId = unit.getProductID().getProductID();
+            baseUnitByProduct.putIfAbsent(productId, unit);
+        }
+        return baseUnitByProduct;
+    }
+
     private boolean isPreferredUnit(Productunit candidate, Productunit current) {
         if (Boolean.TRUE.equals(candidate.getIsDefault()) && !Boolean.TRUE.equals(current.getIsDefault())) {
             return true;
@@ -242,8 +259,10 @@ public class ProcurementplanService {
 
     private ProcurementProductSearchResponse toSearchResponse(Product product,
                                                               Map<Integer, Long> stockByProduct,
-                                                              Map<Integer, Productunit> mainUnitByProduct) {
+                                                              Map<Integer, Productunit> mainUnitByProduct,
+                                                              Map<Integer, Productunit> baseUnitByProduct) {
         Productunit mainUnit = mainUnitByProduct.get(product.getProductID());
+        Productunit baseUnit = baseUnitByProduct.get(product.getProductID());
         int stock = stockByProduct.getOrDefault(product.getProductID(), 0L).intValue();
 
         return new ProcurementProductSearchResponse(
@@ -252,7 +271,9 @@ public class ProcurementplanService {
                 product.getCode(),
                 product.getBarcode(),
                 stock,
+                baseUnit != null ? baseUnit.getUnitName() : null,
                 mainUnit != null ? mainUnit.getUnitName() : null,
+                mainUnit != null ? mainUnit.getRatio() : null,
                 mainUnit != null ? mainUnit.getSellPrice() : null
         );
     }

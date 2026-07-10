@@ -468,12 +468,17 @@ public class PurchaseinvoiceService {
         return PurchaseInvoiceStatus.ALL;
     }
 
+    /**
+     * (id, name) only — see {@link ProductOptionResponse} javadoc for why the raw {@code Product}
+     * entity can't be used here (this list is embedded into inline JavaScript on the create page).
+     */
     @Transactional(readOnly = true)
-    public List<Product> listProducts() {
+    public List<ProductOptionResponse> listProducts() {
         return productRepository.findAll()
                 .stream()
                 .filter(product -> Boolean.TRUE.equals(product.getStatus()))
                 .sorted(Comparator.comparing(product -> product.getName() == null ? "" : product.getName()))
+                .map(product -> new ProductOptionResponse(product.getProductID(), product.getName()))
                 .toList();
     }
 

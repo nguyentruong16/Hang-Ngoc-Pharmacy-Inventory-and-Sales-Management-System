@@ -73,32 +73,10 @@
 
         .product-search-wrap {
             position: relative;
-            display: flex;
-            gap: 10px;
-            align-items: stretch;
         }
 
         .product-search-field {
             position: relative;
-            flex: 1;
-        }
-
-        .btn-barcode {
-            width: 48px;
-            min-height: 48px;
-            border: none;
-            border-radius: 10px;
-            background: #2563eb;
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .btn-barcode:hover {
-            background: #1d4ed8;
         }
 
         .product-search-input {
@@ -180,23 +158,26 @@
 
         .product-lines-header,
         .product-line {
-            display: grid;
-            grid-template-columns:
+            --procurement-cols:
                 28px 28px
-                minmax(0, 2fr)
-                42px
-                minmax(52px, 0.7fr)
-                56px
-                minmax(0, 1.2fr)
-                minmax(68px, 0.85fr)
-                minmax(72px, 0.9fr);
-            gap: 6px;
+                minmax(0, 1.45fr)
+                minmax(0, 0.52fr)
+                minmax(0, 0.55fr)
+                minmax(0, 0.55fr)
+                minmax(0, 0.88fr)
+                minmax(0, 1.1fr)
+                minmax(0, 0.72fr)
+                minmax(0, 0.76fr);
+            display: grid;
+            grid-template-columns: var(--procurement-cols);
+            column-gap: 8px;
+            row-gap: 0;
             align-items: center;
             width: 100%;
         }
 
         .product-lines-header {
-            padding: 8px 12px;
+            padding: 10px 14px;
             background: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
             font-size: 10px;
@@ -210,7 +191,7 @@
         .product-lines-header.hidden { display: none; }
 
         .product-line {
-            padding: 10px 12px;
+            padding: 10px 14px;
             border-bottom: 1px solid #f3f4f6;
         }
 
@@ -247,20 +228,30 @@
         }
 
         .product-title {
-            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .product-title-code {
+            font-size: 12px;
+            color: #6b7280;
             font-weight: 600;
-            color: #111827;
-            line-height: 1.35;
-            margin-bottom: 4px;
+            line-height: 1.3;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .product-title-code {
-            color: #374151;
+        .product-title-name {
+            font-size: 14px;
             font-weight: 600;
-            margin-right: 6px;
+            color: #111827;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .product-meta {
@@ -268,11 +259,28 @@
         }
 
         .stock-display {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 32px;
             text-align: center;
             font-size: 13px;
             font-weight: 600;
             color: #2563eb;
+        }
+
+        .stock-unit-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 32px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .supplier-select {
@@ -297,22 +305,79 @@
         }
 
         .unit-badge-display {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             min-width: 0;
-            min-height: 30px;
-            line-height: 30px;
-            border: 1px solid #93c5fd;
+            min-height: 32px;
+            border: 1px solid #6ee7b7;
             border-radius: 6px;
-            background: #f0f9ff;
-            color: #1e40af;
+            background: #ecfdf5;
+            color: #059669;
             font-size: 13px;
             font-weight: 600;
             text-align: center;
-            padding: 0 6px;
+            padding: 4px 8px;
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .field-input.quantity-input {
+            color: #059669;
+            font-weight: 600;
+            border-color: #6ee7b7;
+            background: #ecfdf5;
+        }
+
+        .field-input.quantity-input:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, .15);
+        }
+
+        .request-qty-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 32px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .unit-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .unit-conversion-hint {
+            display: block;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #047857;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1.35;
+            text-align: center;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .qty-cell,
+        .stock-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
         }
 
         .field-input {
@@ -466,9 +531,6 @@
                                            autocomplete="off">
                                     <div id="productSearchResults" class="product-search-results"></div>
                                 </div>
-                                <button type="button" class="btn-barcode" title="Quét barcode">
-                                    <i class="ti ti-barcode"></i>
-                                </button>
                             </div>
                         </div>
 
@@ -477,8 +539,9 @@
                             <div></div>
                             <div>Hàng hóa</div>
                             <div class="text-center">Tồn</div>
-                            <div>Đơn vị thuốc</div>
-                            <div>Số lượng</div>
+                            <div class="text-center">Đơn vị tồn</div>
+                            <div class="text-center">Số lượng</div>
+                            <div class="text-center">Đơn vị thuốc</div>
                             <div>Nhà cung cấp</div>
                             <div class="text-end">Giá từng đơn vị</div>
                             <div class="text-end">Giá ước tính</div>
@@ -579,6 +642,31 @@
             return cached.currentStock;
         }
         return 0;
+    }
+
+    function getStockUnit(productId) {
+        const cached = productMap[productId];
+        return cached && cached.stockUnit ? cached.stockUnit : '—';
+    }
+
+    function formatUnitRatio(value) {
+        if (value == null) return '';
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '';
+        if (Number.isInteger(num)) return String(num);
+        return num.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+    }
+
+    function buildUnitConversionHint(product, unitName) {
+        if (!product) return '';
+        const stockUnit = product.stockUnit;
+        const unit = unitName || product.unit;
+        const ratio = product.unitRatio;
+        if (!unit || !stockUnit || ratio == null) return '';
+        const ratioNum = Number(ratio);
+        if (!Number.isFinite(ratioNum) || ratioNum <= 0) return '';
+        if (unit === stockUnit && ratioNum === 1) return '';
+        return '1 ' + unit + ' = ' + formatUnitRatio(ratioNum) + ' ' + stockUnit;
     }
 
     function cacheSearchProducts(items) {
@@ -759,8 +847,10 @@
         if (!product) return '';
 
         const currentStock = detail.currentStock != null ? detail.currentStock : getStock(product.productID);
+        const stockUnit = product.stockUnit || getStockUnit(product.productID);
         const quantity = detail.requestedQuantity != null ? detail.requestedQuantity : 1;
         const unit = detail.unit || '';
+        const conversionHint = buildUnitConversionHint(product, unit);
         const supplierId = detail.supplierId != null ? detail.supplierId : '';
         const unitPrice = resolveUnitPriceFromDetail(detail);
         const lineTotalFromDb = detail.estimatedPrice != null ? Number(detail.estimatedPrice) : 0;
@@ -785,21 +875,25 @@
                 <div class="product-info-block">
                     <input type="hidden" data-field="productId" value="${product.productID}">
                     <div class="product-title">
-                        <span class="product-title-code">${escapeHtml(product.code)}</span>
-                        ${escapeHtml(product.name)}
+                        <div class="product-title-code">${escapeHtml(product.code)}</div>
+                        <div class="product-title-name">${escapeHtml(product.name)}</div>
                     </div>
                 </div>
-                <div>
+                <div class="stock-cell">
                     <span class="stock-display">${currentStock}</span>
                 </div>
-                <div>
-                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
-                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
+                <div class="stock-cell">
+                    <span class="stock-unit-display">${escapeHtml(stockUnit || '—')}</span>
                 </div>
-                <div>
+                <div class="qty-cell">
                     <input type="number" min="1" class="field-input quantity-input"
                            data-field="requestedQuantity" value="${quantity}"
                            oninput="handleQuantityInput(this)">
+                </div>
+                <div class="unit-cell">
+                    <span class="unit-badge-display">${escapeHtml(unit || '—')}</span>
+                    ${conversionHint ? `<span class="unit-conversion-hint" title="${escapeHtml(conversionHint)}">${escapeHtml(conversionHint)}</span>` : ''}
+                    <input type="hidden" data-field="unit" value="${escapeHtml(unit)}">
                 </div>
                 <div>
                     <select class="supplier-select" data-field="supplierId"
@@ -900,7 +994,7 @@
                         ${product.unit ? escapeHtml(product.unit) : 'Chưa có đơn vị thuốc'}
                     </div>
                 </div>
-                <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}</div>
+                <div class="product-search-stock">Tồn: ${product.currentStock != null ? product.currentStock : 0}${product.stockUnit ? ' ' + escapeHtml(product.stockUnit) : ''}</div>
             </div>
         `).join('');
         results.classList.add('show');
@@ -974,10 +1068,6 @@
         hideSearchResults();
         searchInput.focus();
     }
-
-    document.querySelector('.btn-barcode').addEventListener('click', function () {
-        document.getElementById('productSearchInput').focus();
-    });
 
     document.getElementById('productSearchInput').addEventListener('input', function (event) {
         const value = event.target.value;
