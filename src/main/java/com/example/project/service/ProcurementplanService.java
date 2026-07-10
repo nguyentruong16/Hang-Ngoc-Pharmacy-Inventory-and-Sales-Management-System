@@ -273,6 +273,7 @@ public class ProcurementplanService {
                 stock,
                 baseUnit != null ? baseUnit.getUnitName() : null,
                 mainUnit != null ? mainUnit.getUnitName() : null,
+                mainUnit != null ? mainUnit.getRatio() : null,
                 mainUnit != null ? mainUnit.getSellPrice() : null
         );
     }
