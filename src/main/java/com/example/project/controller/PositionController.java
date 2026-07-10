@@ -69,10 +69,7 @@ public class PositionController {
         return "owner/position-list";
     }
 
-    @GetMapping({
-            "/owner/positions/create-position",
-            "/pharmacist/positions/create-position"
-    })
+    @GetMapping("/owner/positions/create-position")
     public String createPositionForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("positionForm")) {
             model.addAttribute("positionForm", new PositionCreateRequest());
@@ -81,10 +78,7 @@ public class PositionController {
         return "owner/create-position";
     }
 
-    @PostMapping({
-            "/owner/positions/create-position",
-            "/pharmacist/positions/create-position"
-    })
+    @PostMapping("/owner/positions/create-position")
     public String createPosition(@Valid @ModelAttribute("positionForm") PositionCreateRequest form,
                                  BindingResult bindingResult,
                                  HttpServletRequest request,
@@ -101,10 +95,7 @@ public class PositionController {
         return "redirect:" + basePath;
     }
 
-    @GetMapping({
-            "/owner/positions/update-position/{id}",
-            "/pharmacist/positions/update-position/{id}"
-    })
+    @GetMapping("/owner/positions/update-position/{id}")
     public String updatePositionForm(@PathVariable Integer id,
                                      HttpServletRequest request,
                                      Model model) {
@@ -122,10 +113,7 @@ public class PositionController {
         return "owner/update-position";
     }
 
-    @PostMapping({
-            "/owner/positions/update-position/{id}",
-            "/pharmacist/positions/update-position/{id}"
-    })
+    @PostMapping("/owner/positions/update-position/{id}")
     public String updatePosition(@PathVariable Integer id,
                                  @Valid @ModelAttribute("positionForm") PositionCreateRequest form,
                                  BindingResult bindingResult,

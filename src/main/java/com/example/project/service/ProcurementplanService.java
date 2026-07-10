@@ -3,6 +3,7 @@ package com.example.project.service;
 import com.example.project.dto.request.ProcurementPlanCreateRequest;
 import com.example.project.dto.request.ProcurementPlanDetailCreateRequest;
 import com.example.project.dto.response.ProcurementProductSearchResponse;
+import com.example.project.dto.response.ProcurementSupplierSearchResponse;
 import com.example.project.dto.response.ProcurementplanResponse;
 import com.example.project.entity.Procurementplan;
 import com.example.project.entity.Procurementplandetail;
@@ -319,6 +320,23 @@ public class ProcurementplanService {
         return supplierRepository.findAll()
                 .stream()
                 .sorted(Comparator.comparing(supplier -> supplier.getName() == null ? "" : supplier.getName()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProcurementSupplierSearchResponse> searchSuppliersForProduct(Integer productId, String keyword) {
+        String normalizedKeyword = normalize(keyword);
+
+        return supplierRepository.findAll()
+                .stream()
+                .filter(supplier -> normalizedKeyword.isEmpty()
+                        || containsNormalized(supplier.getName(), normalizedKeyword))
+                .sorted(Comparator.comparing(supplier -> supplier.getName() == null ? "" : supplier.getName()))
+                .map(supplier -> new ProcurementSupplierSearchResponse(
+                        supplier.getId(),
+                        supplier.getName(),
+                        productId != null ? getSupplierCostPrice(supplier.getId(), productId) : null
+                ))
                 .toList();
     }
 

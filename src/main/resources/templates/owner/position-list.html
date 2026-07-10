@@ -226,7 +226,7 @@
     <div class="main-card">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách vị trí</h2>
-        <a th:href="${basePath + '/create-position'}" class="btn-create">
+        <a th:if="${currentRole == 'OWNER'}" th:href="${basePath + '/create-position'}" class="btn-create">
           <i class="ti ti-plus"></i>Tạo vị trí
         </a>
       </div>
@@ -268,10 +268,11 @@
                 <div class="product-code" th:if="${pos.productCode != null}" th:text="${pos.productCode}">SP001</div>
               </td>
               <td style="text-align:center;">
-                <a class="update-link"
+                <a th:if="${currentRole == 'OWNER'}" class="update-link"
                    th:href="${basePath + '/update-position/' + pos.id}">
                   Cập nhật
                 </a>
+                <span th:unless="${currentRole == 'OWNER'}">—</span>
               </td>
             </tr>
 
