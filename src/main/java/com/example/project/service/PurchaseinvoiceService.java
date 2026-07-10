@@ -232,6 +232,8 @@ public class PurchaseinvoiceService {
         invoice.setTotalAmount(totalAmount);
         invoice.setPaid(paid);
         invoice.setStatus(resolveInvoiceStatus(totalAmount, paid));
+        invoice.setReturnStatus("NONE");
+        invoice.setReturnQty(0);
         invoice.setNote(request.getNote());
 
         Purchaseinvoice savedInvoice = purchaseinvoiceRepository.save(invoice);
