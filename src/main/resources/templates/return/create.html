@@ -150,7 +150,7 @@
             </a>
         </div>
 
-        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        <div th:replace="~{fragments/toast :: flash}"></div>
 
         <form id="returnForm" th:action="${basePath + '/create'}" method="post">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">

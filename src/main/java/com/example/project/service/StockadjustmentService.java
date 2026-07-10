@@ -244,11 +244,12 @@ public class StockadjustmentService {
     // ------------------------------------------------------------------ approve / reject
 
     /**
-     * Owner approves a pending slip: records the approver and marks it {@code Duyệt}.
+     * Owner approves a pending slip: records the approver, marks it {@code Duyệt} and applies the
+     * stock movement.
      *
-     * <p><strong>Không đổi tồn kho.</strong> The adjustment slip is only a request/confirmation step;
-     * the real {@code batch.storageQuantity} change happens on a separate screen (owned by another
-     * module). So this method never touches stock.</p>
+     * <p><strong>Đổi tồn kho.</strong> The stock adjustment is the step that actually moves
+     * {@code batch.storageQuantity} — IN adds, OUT subtracts. This is where a post-count correction
+     * is committed. (The stock <em>count</em> screen is the read-only step that does not move stock.)</p>
      */
     @Transactional
     public void approve(Integer adjustmentId, Integer approverAccountId) {
@@ -265,13 +266,41 @@ public class StockadjustmentService {
         adjustment.setStatus(StockAdjustmentStatus.APPROVED);
         adjustment.setApprovedBy(approver);
         adjustment.setApprovedAt(Instant.now());
+        applyStockEffect(adjustment,
+                stockadjustmentdetailRepository.findByStockOutIdWithRelations(adjustmentId));
         // A slip built from a stock count marks that count "Đã điều chỉnh" once approved.
         markStockCountAdjusted(adjustment.getStockCountID());
         // TODO(finance): auto-create an Expense (and link expenseID) for DESTROY with lineCost total > 0.
-        //   Deferred — the Expense entity/vocabulary (expenseCode, expenseType, status) is owned by the
-        //   finance module; wire it here once that contract is agreed.
+        //   Deferred — the Expense entity/vocabulary is owned by the finance module.
 
         stockadjustmentRepository.save(adjustment);
+    }
+
+    /**
+     * Commits the slip's stock movement to each batch: {@code IN} adds the quantity, {@code OUT}
+     * subtracts it (blocking negative stock). Called only when a slip reaches
+     * {@link StockAdjustmentStatus#APPROVED} — the single point at which stock actually changes.
+     */
+    private void applyStockEffect(Stockadjustment adjustment, List<Stockadjustmentdetail> details) {
+        for (Stockadjustmentdetail detail : details) {
+            Batch batch = detail.getBatchID();
+            if (batch == null) {
+                continue;
+            }
+            int qty = detail.getBaseQtyDeducted() != null ? detail.getBaseQtyDeducted() : 0;
+            int current = batch.getStorageQuantity() != null ? batch.getStorageQuantity() : 0;
+
+            if (DIRECTION_IN.equals(detail.getDirection())) {
+                batch.setStorageQuantity(current + qty);
+            } else {
+                if (current < qty) {
+                    throw new IllegalArgumentException("Tồn kho của lô " + displayBatch(batch)
+                            + " không đủ để điều chỉnh giảm (" + current + " < " + qty + ")");
+                }
+                batch.setStorageQuantity(current - qty);
+            }
+            batchRepository.save(batch);
+        }
     }
 
     @Transactional
@@ -481,6 +510,7 @@ public class StockadjustmentService {
 
         Stockadjustment savedAdjustment = stockadjustmentRepository.save(adjustment);
 
+        List<Stockadjustmentdetail> savedDetails = new ArrayList<>();
         for (Batch batch : selectedBatches) {
             StockAdjustmentItemRequest item = itemMap.get(batch.getId());
 
@@ -502,7 +532,11 @@ public class StockadjustmentService {
             detail.setLineCost(lineCost);
             detail.setNote(trimToNull(item.getReason()));
 
-            stockadjustmentdetailRepository.save(detail);
+            savedDetails.add(stockadjustmentdetailRepository.save(detail));
+        }
+
+        if (approvedNow) {
+            applyStockEffect(savedAdjustment, savedDetails);
         }
 
         return savedAdjustment.getId();
@@ -525,9 +559,6 @@ public class StockadjustmentService {
         if (request.getStockCountId() == null) {
             throw new IllegalArgumentException("Vui lòng chọn phiếu kiểm kê");
         }
-        if (request.getReason() == null || request.getReason().isBlank()) {
-            throw new IllegalArgumentException("Vui lòng nhập lý do điều chỉnh");
-        }
 
         Account creator = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
@@ -537,6 +568,12 @@ public class StockadjustmentService {
         if (!isStatus(count.getStatus(), COUNT_STATUS_APPROVED)) {
             throw new IllegalArgumentException("Phiếu kiểm kê không ở trạng thái Đã duyệt");
         }
+
+        // Reason is optional for a count-sourced slip: auto-fill it from the count when left blank.
+        String reason = (request.getReason() != null && !request.getReason().isBlank())
+                ? request.getReason().trim()
+                : "Điều chỉnh tồn kho theo chênh lệch kiểm kê "
+                    + (count.getStockCountCode() != null ? count.getStockCountCode() : "");
 
         boolean alreadyConsumed = stockadjustmentRepository.findAllWithRelations().stream()
                 .anyMatch(adj -> adj.getStockCountID() != null
@@ -564,10 +601,10 @@ public class StockadjustmentService {
 
         Integer firstId = null;
         if (!increaseLines.isEmpty()) {
-            firstId = persistCountSlip(TYPE_COUNT_INCREASE, increaseLines, count, creator, status, request);
+            firstId = persistCountSlip(TYPE_COUNT_INCREASE, increaseLines, count, creator, status, reason, request);
         }
         if (!decreaseLines.isEmpty()) {
-            Integer id = persistCountSlip(TYPE_COUNT_DECREASE, decreaseLines, count, creator, status, request);
+            Integer id = persistCountSlip(TYPE_COUNT_DECREASE, decreaseLines, count, creator, status, reason, request);
             firstId = firstId != null ? firstId : id;
         }
 
@@ -582,6 +619,7 @@ public class StockadjustmentService {
                                      Stockcount count,
                                      Account creator,
                                      String status,
+                                     String reason,
                                      StockAdjustmentCreateRequest request) {
         boolean approvedNow = StockAdjustmentStatus.APPROVED.equals(status);
 
@@ -590,7 +628,7 @@ public class StockadjustmentService {
         adjustment.setAdjustmentType(adjustmentType);
         adjustment.setDate(Instant.now());
         adjustment.setCreatedBy(creator);
-        adjustment.setReason(request.getReason().trim());
+        adjustment.setReason(reason);
         adjustment.setStockCountID(count);
         adjustment.setExpenseID(null);
         adjustment.setStatus(status);
@@ -602,6 +640,7 @@ public class StockadjustmentService {
 
         Stockadjustment savedAdjustment = stockadjustmentRepository.save(adjustment);
 
+        List<Stockadjustmentdetail> savedDetails = new ArrayList<>();
         for (StockAdjustmentCountLineResponse line : lines) {
             Batch batch = batchRepository.findById(line.getBatchId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lô hàng của phiếu kiểm kê"));
@@ -620,7 +659,11 @@ public class StockadjustmentService {
             detail.setLineCost(line.getLineCost());
             detail.setNote(null);
 
-            stockadjustmentdetailRepository.save(detail);
+            savedDetails.add(stockadjustmentdetailRepository.save(detail));
+        }
+
+        if (approvedNow) {
+            applyStockEffect(savedAdjustment, savedDetails);
         }
         return savedAdjustment.getId();
     }
@@ -637,9 +680,8 @@ public class StockadjustmentService {
     }
 
     /**
-     * Sends a {@link StockAdjustmentStatus#DRAFT} slip forward: the Owner auto-approves it, a
-     * Pharmacist moves it to {@link StockAdjustmentStatus#PENDING}. Neither path changes stock —
-     * the slip is only a confirmation step.
+     * Sends a {@link StockAdjustmentStatus#DRAFT} slip forward: the Owner auto-approves it (which
+     * applies the stock movement), a Pharmacist moves it to {@link StockAdjustmentStatus#PENDING}.
      */
     @Transactional
     public void submit(Integer adjustmentId, Integer currentAccountId, boolean isOwner) {
@@ -657,6 +699,8 @@ public class StockadjustmentService {
             adjustment.setStatus(StockAdjustmentStatus.APPROVED);
             adjustment.setApprovedBy(actor);
             adjustment.setApprovedAt(Instant.now());
+            applyStockEffect(adjustment,
+                    stockadjustmentdetailRepository.findByStockOutIdWithRelations(adjustmentId));
             markStockCountAdjusted(adjustment.getStockCountID());
         } else {
             adjustment.setStatus(StockAdjustmentStatus.PENDING);
@@ -751,7 +795,10 @@ public class StockadjustmentService {
                         ? batch.getExpirationDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
                         : "",
                 unit != null ? unit.getUnitName() : "",
+                batch != null ? batch.getStorageQuantity() : null,
                 detail.getQuantity(),
+                detail.getDirection(),
+                DIRECTION_IN.equals(detail.getDirection()) ? "Tăng" : "Giảm",
                 detail.getUnitCostPrice(),
                 detail.getLineCost(),
                 detail.getNote()

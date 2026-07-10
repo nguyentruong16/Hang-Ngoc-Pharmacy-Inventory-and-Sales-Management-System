@@ -139,8 +139,9 @@
             color: #9ca3af;
         }
 
+        /* Read-only fields are distinguished by italic + a very light tint, not a heavy grey block. */
         .auto-field {
-            background: #f3f4f6 !important;
+            background: #fbfdfc !important;
             color: #6b7280 !important;
             border-color: #e5e7eb;
             cursor: default;
@@ -199,7 +200,8 @@
             <p class="text-secondary mb-0">Chọn nguồn điều chỉnh, sau đó chọn hàng hóa (thủ công) hoặc một phiếu kiểm kê đã duyệt.</p>
         </div>
 
-        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        <div th:replace="~{fragments/toast :: flash}"></div>
+        <div th:replace="~{fragments/confirm :: confirm}"></div>
 
         <form th:action="${basePath + '/create'}" th:object="${form}" method="post" id="adjustmentForm">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -221,37 +223,22 @@
 
                         <div class="row g-3">
                             <div class="col-12 col-md-4">
-                                <label class="form-label">Mã phiếu
-                                    <span class="auto-tag"><i class="ti ti-bolt"></i>Tự động</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text auto-addon"><i class="ti ti-lock"></i></span>
-                                    <input type="text" class="form-control auto-field" value="Tự động (PDC-…)"
-                                           readonly tabindex="-1">
-                                </div>
+                                <label class="form-label">Mã phiếu</label>
+                                <input type="text" class="form-control auto-field" value="PDC-…"
+                                       readonly tabindex="-1">
                             </div>
 
                             <div class="col-12 col-md-4">
-                                <label class="form-label">Ngày tạo
-                                    <span class="auto-tag"><i class="ti ti-bolt"></i>Tự động</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text auto-addon"><i class="ti ti-lock"></i></span>
-                                    <input type="text" class="form-control auto-field" id="todayDisplay"
-                                           readonly tabindex="-1">
-                                </div>
+                                <label class="form-label">Ngày tạo</label>
+                                <input type="text" class="form-control auto-field" id="todayDisplay"
+                                       readonly tabindex="-1">
                             </div>
 
                             <div class="col-12 col-md-4">
-                                <label class="form-label">Người tạo
-                                    <span class="auto-tag"><i class="ti ti-bolt"></i>Tự động</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text auto-addon"><i class="ti ti-lock"></i></span>
-                                    <input type="text" class="form-control auto-field"
-                                           th:value="${creatorName != null ? creatorName : 'Tài khoản hiện tại'}"
-                                           value="Tài khoản hiện tại" readonly tabindex="-1">
-                                </div>
+                                <label class="form-label">Người tạo</label>
+                                <input type="text" class="form-control auto-field"
+                                       th:value="${creatorName != null ? creatorName : 'Tài khoản hiện tại'}"
+                                       value="Tài khoản hiện tại" readonly tabindex="-1">
                             </div>
 
                             <div class="col-12 col-md-6" id="typeField">
@@ -479,11 +466,11 @@
                     </div>
 
                     <div class="destroy-card p-4">
-                        <!-- Owner: submit auto-approves the slip (a confirmation only; stock is unchanged). -->
+                        <!-- Owner: submit auto-approves the slip and applies the stock movement. -->
                         <button th:if="${#strings.startsWith(basePath, '/owner')}"
                                 type="submit" name="action" value="submit"
                                 class="btn btn-destroy-primary w-100 mb-3"
-                                onclick="return confirm('Tạo và duyệt phiếu điều chỉnh này?');">
+                                data-confirm="Tạo và duyệt phiếu điều chỉnh này? Tồn kho sẽ được cập nhật.">
                             <i class="ti ti-circle-check me-1"></i>
                             Tạo &amp; duyệt
                         </button>
@@ -492,7 +479,7 @@
                         <button th:unless="${#strings.startsWith(basePath, '/owner')}"
                                 type="submit" name="action" value="submit"
                                 class="btn btn-destroy-primary w-100 mb-3"
-                                onclick="return confirm('Gửi phiếu này cho chủ nhà thuốc duyệt?');">
+                                data-confirm="Gửi phiếu này cho chủ nhà thuốc duyệt?">
                             <i class="ti ti-send me-1"></i>
                             Gửi duyệt
                         </button>
@@ -589,6 +576,15 @@
         return value.toLocaleString('vi-VN') + 'đ';
     }
 
+    // Styled toast for client-side validation messages (falls back to alert if the fragment is absent).
+    function notify(message) {
+        if (window.pmToast) {
+            pmToast(message, 'error');
+        } else {
+            alert(message);
+        }
+    }
+
     function today() {
         const date = new Date();
         return date.toLocaleDateString('vi-VN');
@@ -639,19 +635,19 @@
         const batchId = Number(select.value);
 
         if (!batchId) {
-            alert('Vui lòng chọn lô hàng cần điều chỉnh.');
+            notify('Vui lòng chọn lô hàng cần điều chỉnh.');
             return;
         }
 
         const candidate = candidates.find(item => item.batchId === batchId);
 
         if (!candidate) {
-            alert('Không tìm thấy lô hàng đã chọn.');
+            notify('Không tìm thấy lô hàng đã chọn.');
             return;
         }
 
         if (selectedBatchIds.has(batchId)) {
-            alert('Lô hàng này đã được thêm.');
+            notify('Lô hàng này đã được thêm.');
             return;
         }
 
@@ -1140,7 +1136,7 @@
         form.addEventListener('submit', function (event) {
             if (currentMode() === 'STOCK_COUNT' && !document.getElementById('stockCountIdInput').value) {
                 event.preventDefault();
-                alert('Vui lòng chọn phiếu kiểm kê.');
+                notify('Vui lòng chọn phiếu kiểm kê.');
                 return;
             }
             clearDraftLocal();
