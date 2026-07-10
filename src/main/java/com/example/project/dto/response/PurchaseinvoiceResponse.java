@@ -22,6 +22,8 @@ public class PurchaseinvoiceResponse {
     private BigDecimal discount;
     private BigDecimal totalAmount;
     private Integer procurementID;
+    private String returnStatus;
+    private Integer returnQty;
     private BigDecimal paid;
     private String status;
     private String note;
@@ -37,6 +39,8 @@ public class PurchaseinvoiceResponse {
                 purchaseinvoice.getDiscount(),
                 purchaseinvoice.getTotalAmount(),
                 purchaseinvoice.getProcurementID() != null ? purchaseinvoice.getProcurementID().getId() : null,
+                purchaseinvoice.getReturnStatus(),
+                purchaseinvoice.getReturnQty(),
                 purchaseinvoice.getPaid(),
                 purchaseinvoice.getStatus(),
                 purchaseinvoice.getNote()

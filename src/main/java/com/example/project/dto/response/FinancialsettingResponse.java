@@ -13,8 +13,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class FinancialsettingResponse {
     private Integer id;
-    private BigDecimal vatRate;
-    private BigDecimal incomeTaxRate ;
     private Integer taxCalculationMethod;
     private BigDecimal returnProductOnInvoiceValueRate;
     private Boolean autoGenerateVATInvoice;
@@ -31,8 +29,6 @@ public class FinancialsettingResponse {
     public static FinancialsettingResponse from(Financialsetting financialsetting) {
         return new FinancialsettingResponse(
                 financialsetting.getId(),
-                financialsetting.getVatRate(),
-                financialsetting.getIncomeTaxRate(),
                 financialsetting.getTaxCalculationMethod(),
                 financialsetting.getReturnProductOnInvoiceValueRate(),
                 financialsetting.getAutoGenerateVATInvoice(),
