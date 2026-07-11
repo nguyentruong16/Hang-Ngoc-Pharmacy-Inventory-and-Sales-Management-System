@@ -367,7 +367,11 @@ public class ProductService {
         }
         if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
             String typeName = product.getTypeID() != null ? product.getTypeID().getName() : null;
-            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode(), typeName));
+            try {
+                product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode(), typeName));
+            } catch (RuntimeException e) {
+                throw new ProductValidationException(List.of("Không thể tải ảnh sản phẩm lên. Vui lòng thử lại."));
+            }
         }
         Product saved = productRepository.save(product);
 
@@ -549,7 +553,11 @@ public class ProductService {
         product.setProducerID(request.getProducerId() != null
                 ? producerRepository.getReferenceById(request.getProducerId()) : null);
         if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-            product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode(), newTypeName));
+            try {
+                product.setImage(productImageStorageService.upload(request.getImageFile(), product.getCode(), newTypeName));
+            } catch (RuntimeException e) {
+                throw new ProductValidationException(List.of("Không thể tải ảnh sản phẩm lên. Vui lòng thử lại."));
+            }
         } else if (Boolean.TRUE.equals(request.getRemoveImage()) && product.getImage() != null) {
             productImageStorageService.delete(product.getCode());
             product.setImage(null);

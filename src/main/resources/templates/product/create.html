@@ -173,6 +173,7 @@
                         <label class="info-label">Ảnh sản phẩm</label>
                         <input type="file" class="form-control" id="imageFileInput" name="imageFile" accept="image/*">
                         <div class="form-text">Tuỳ chọn. Chọn ảnh mới sẽ thay thế ảnh hiện có.</div>
+                        <div class="text-danger small mt-1" id="imageSizeError" style="display:none"></div>
                         <div class="form-check mt-1" th:if="${isEdit and !#strings.isEmpty(form.existingImageUrl)}">
                             <input class="form-check-input" type="checkbox" name="removeImage" value="true" id="removeImageCheck">
                             <label class="form-check-label small" for="removeImageCheck">Xoá ảnh hiện tại (không thay ảnh mới)</label>
@@ -626,11 +627,23 @@
         const fileInput = document.getElementById('imageFileInput');
         const preview = document.getElementById('imagePreview');
         const removeCheck = document.getElementById('removeImageCheck');
+        const sizeError = document.getElementById('imageSizeError');
         if (!fileInput || !preview) return;
+        // Must match spring.servlet.multipart.max-file-size in application.properties.
+        const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
         fileInput.addEventListener('change', () => {
             const file = fileInput.files && fileInput.files[0];
             if (!file) return;
+            if (file.size > MAX_IMAGE_BYTES) {
+                fileInput.value = '';
+                if (sizeError) {
+                    sizeError.textContent = 'Ảnh vượt quá dung lượng cho phép (tối đa 5MB)';
+                    sizeError.style.display = 'block';
+                }
+                return;
+            }
+            if (sizeError) sizeError.style.display = 'none';
             if (removeCheck) removeCheck.checked = false;
             const reader = new FileReader();
             reader.onload = e => {
