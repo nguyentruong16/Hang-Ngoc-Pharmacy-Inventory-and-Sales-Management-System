@@ -129,7 +129,8 @@ public class SidebarMenuService {
                 menuGroup("Cung ứng", "ti ti-truck",
                         i("Danh sách nhà cung cấp", "/supplier", "ti ti-truck"),
                         i("Danh sách dự trù mua hàng", "/owner/procurements", "ti ti-clipboard-list"),
-                        i("Danh sách phiếu nhập", "/owner/purchase-invoices", "ti ti-receipt")),
+                        i("Danh sách phiếu nhập", "/owner/purchase-invoices", "ti ti-receipt"),
+                        i("Trả hàng nhà cung cấp", "/owner/return-purchases", "ti ti-rotate-2")),
 
                 menuGroup("Tài chính", "ti ti-cash-banknote",
                         i("Danh sách công nợ", "/owner/debts", "ti ti-credit-card"),
