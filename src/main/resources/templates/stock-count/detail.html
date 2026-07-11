@@ -376,9 +376,11 @@
                         Tạo phiếu điều chỉnh
                     </a>
 
-                    <a th:href="${basePath + '/print'}" class="btn btn-outline-secondary w-100 mb-3">
+                    <a th:href="${basePath + '/' + detail.stockCountId + '/print'}"
+                       class="btn btn-outline-secondary w-100 mb-3"
+                       target="_blank">
                         <i class="ti ti-printer me-1"></i>
-                        In bảng kiểm kê
+                        In phiếu kiểm kê
                     </a>
 
                     <a th:href="${basePath}" class="btn btn-outline-secondary w-100">

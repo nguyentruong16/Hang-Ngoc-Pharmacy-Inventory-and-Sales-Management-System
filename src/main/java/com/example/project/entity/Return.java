@@ -25,9 +25,8 @@ public class Return {
     @Column(name = "returnCode", nullable = false, length = 50)
     private String returnCode;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "invoiceID", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoiceID")
     private Invoice invoiceID;
 
     @ManyToOne(fetch = FetchType.LAZY)

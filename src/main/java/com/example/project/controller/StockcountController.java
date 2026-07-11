@@ -5,6 +5,7 @@ import com.example.project.dto.request.StockCountCreateRequest;
 import com.example.project.dto.response.StockCountDetailPageResponse;
 import com.example.project.dto.response.StockCountListItemResponse;
 import com.example.project.dto.response.StockCountPrintPageResponse;
+import com.example.project.dto.response.StockCountVoucherPrintPageResponse;
 import com.example.project.service.StockcountService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
@@ -153,6 +154,22 @@ public class StockcountController {
         model.addAttribute("basePath", resolveBasePath(request));
 
         return "stock-count/print";
+    }
+
+    @GetMapping({
+            OWNER_BASE + "/{stockCountId}/print",
+            PHARMACIST_BASE + "/{stockCountId}/print"
+    })
+    public String printVoucher(@PathVariable Integer stockCountId,
+                               HttpServletRequest request,
+                               Model model) {
+        StockCountVoucherPrintPageResponse printData =
+                stockcountService.getVoucherPrintPage(stockCountId);
+
+        model.addAttribute("printData", printData);
+        model.addAttribute("basePath", resolveBasePath(request));
+
+        return "stock-count/print-voucher";
     }
 
     @GetMapping({

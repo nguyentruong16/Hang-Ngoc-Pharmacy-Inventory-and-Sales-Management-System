@@ -23,10 +23,13 @@ public class Returndetail {
     @JoinColumn(name = "returnID", nullable = false)
     private Return returnID;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "invoiceDetailID", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoiceDetailID")
     private Invoicedetail invoiceDetailID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchaseDetailID")
+    private Purchasedetail purchaseDetailID;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

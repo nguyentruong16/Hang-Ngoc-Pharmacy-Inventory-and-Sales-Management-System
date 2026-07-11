@@ -1,5 +1,7 @@
 package com.example.project.controller;
 
+import com.example.project.constant.RoleConstants;
+import com.example.project.context.CurrentUserContext;
 import com.example.project.dto.request.SupplierRequest;
 import com.example.project.dto.response.SupplierResponse;
 import com.example.project.service.SupplierService;
@@ -7,20 +9,36 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * Shared Supplier module: only the Owner may create/edit suppliers and their supplied products;
+ * Pharmacist and Accountant are view-only (per the PHÂN QUYỀN MÀN HÌNH matrix — Supplier/
+ * SupplierProduct = "Chỉ xem" for both non-owner roles, "Toàn quyền" for Owner). All 3 roles
+ * share this one {@code /supplier/**} path, so the write restriction is enforced here with
+ * {@link #requireOwner()} rather than at the route level.
+ */
 @Controller
 @RequestMapping("/supplier")
 public class SupplierController {
 
     private final SupplierService supplierService;
+    private final CurrentUserContext currentUserContext;
 
-    public SupplierController(SupplierService supplierService) {
+    public SupplierController(SupplierService supplierService, CurrentUserContext currentUserContext) {
         this.supplierService = supplierService;
+        this.currentUserContext = currentUserContext;
+    }
+
+    private void requireOwner() {
+        if (!RoleConstants.OWNER.equals(currentUserContext.getCurrentRole())) {
+            throw new AccessDeniedException("Chỉ Chủ nhà thuốc được tạo/sửa nhà cung cấp");
+        }
     }
 
     // ------------------------------------------------------------------ list
@@ -58,6 +76,7 @@ public class SupplierController {
 
     @GetMapping("/create")
     public String createForm(Model model) {
+        requireOwner();
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new SupplierRequest());
         }
@@ -71,6 +90,7 @@ public class SupplierController {
                          @RequestParam(name = "action", defaultValue = "create") String action,
                          Model model,
                          RedirectAttributes redirectAttributes) {
+        requireOwner();
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", "Tạo nhà cung cấp");
             return "supplier/create";
@@ -121,6 +141,7 @@ public class SupplierController {
     public String addProducts(@PathVariable Integer id,
                               @RequestParam(name = "productIds", required = false) java.util.List<Integer> productIds,
                               RedirectAttributes redirectAttributes) {
+        requireOwner();
         if (productIds == null || productIds.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng chọn ít nhất một sản phẩm để thêm");
             return "redirect:/supplier/" + id;
@@ -141,6 +162,7 @@ public class SupplierController {
                          BindingResult bindingResult,
                          Model model,
                          RedirectAttributes redirectAttributes) {
+        requireOwner();
         if (bindingResult.hasErrors()) {
             model.addAttribute("supplier", supplierService.getById(id));
             model.addAttribute("supplierProducts", supplierService.getProducts(id));
