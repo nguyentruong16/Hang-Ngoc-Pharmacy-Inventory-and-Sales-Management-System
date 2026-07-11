@@ -100,6 +100,8 @@ public class ReturnService {
                 .collect(Collectors.groupingBy(detail -> detail.getReturnID().getId()));
 
         List<ReturnListItemResponse> filtered = returns.stream()
+                // Exclude supplier returns (purchaseID set) — they share the table but have their own screens.
+                .filter(ret -> ret.getInvoiceID() != null)
                 .filter(ret -> matchesKeyword(ret, detailMap.getOrDefault(ret.getId(), List.of()), normalizedKeyword))
                 .filter(ret -> matchesDate(ret, from, to))
                 .filter(ret -> returnType == null || returnType.isBlank() || returnType.equals(ret.getReturnType()))
@@ -117,7 +119,9 @@ public class ReturnService {
 
     @Transactional(readOnly = true)
     public ReturnStatsResponse getStats() {
-        List<Return> returns = returnRepository.findAllWithRelations();
+        List<Return> returns = returnRepository.findAllWithRelations().stream()
+                .filter(ret -> ret.getInvoiceID() != null)
+                .toList();
         YearMonth currentMonth = YearMonth.now();
 
         long monthlyCount = returns.stream()

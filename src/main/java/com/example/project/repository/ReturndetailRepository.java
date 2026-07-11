@@ -42,4 +42,18 @@ public interface ReturndetailRepository extends JpaRepository<Returndetail, Inte
        where d.returnID.id = :returnId
        """)
     List<Returndetail> findByReturnIdWithRelations(@Param("returnId") Integer returnId);
+
+    /**
+     * Base units already returned to the supplier, per purchase-invoice detail line, across return
+     * slips in the given status (used to derive a supplier return's per-line returnable quantity
+     * without a {@code returnedQty} column on {@code purchasedetail}). Each row is
+     * {@code [purchaseDetailID (Integer), totalReturnQty (Long)]}.
+     */
+    @Query("""
+       select d.purchaseDetailID.id, coalesce(sum(d.returnQty), 0)
+       from Returndetail d
+       where d.purchaseDetailID is not null and d.returnID.status = :status
+       group by d.purchaseDetailID.id
+       """)
+    List<Object[]> sumReturnedQtyByPurchaseDetail(@Param("status") String status);
 }

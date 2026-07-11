@@ -119,7 +119,7 @@
               <span class="sup-code-badge" th:text="${supplier.supplierCode}">NCC-000001</span>
             </div>
             <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-sup-primary px-3" id="btnToggleEdit">
+              <button th:if="${currentRole == 'OWNER'}" type="button" class="btn btn-sup-primary px-3" id="btnToggleEdit">
                 <i class="ti ti-edit"></i>Cập nhật thông tin
               </button>
               <a th:href="@{/supplier}" class="btn btn-sup-outline px-3">
@@ -241,7 +241,7 @@
       <div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap">
         <h2 class="fs-6 mb-0">Sản phẩm cung ứng</h2>
         <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-sup-primary btn-sm px-3"
+          <button th:if="${currentRole == 'OWNER'}" type="button" class="btn btn-sup-primary btn-sm px-3"
                   data-bs-toggle="modal" data-bs-target="#addProductModal">
             <i class="ti ti-plus"></i>Thêm sản phẩm cung ứng
           </button>
