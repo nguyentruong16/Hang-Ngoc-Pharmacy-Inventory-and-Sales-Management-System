@@ -20,6 +20,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 @Service
 public class StockcountService {
@@ -382,6 +383,99 @@ public class StockcountService {
                 batch.getExpirationDate(),
                 formatLocalDate(batch.getExpirationDate()),
                 batch.getStorageQuantity()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public StockCountVoucherPrintPageResponse getVoucherPrintPage(Integer stockCountId) {
+        Stockcount count = stockcountRepository.findByIdWithRelations(stockCountId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu kiểm kê"));
+
+        List<Stockcountdetail> details =
+                stockcountdetailRepository.findByStockCountIdWithRelations(stockCountId);
+
+        List<StockCountVoucherPrintLineResponse> items = details.stream()
+                .map(detail -> {
+                    Product product = detail.getProductID();
+                    Batch batch = detail.getBatchID();
+
+                    int systemQty = safe(detail.getSystemQty());
+                    int actualQty = safe(detail.getActualQty());
+
+                    int discrepancy = detail.getDiscrepancy() == null
+                            ? actualQty - systemQty
+                            : detail.getDiscrepancy();
+
+                    BigDecimal unitCost = batch != null && batch.getImportPricePerBase() != null
+                            ? batch.getImportPricePerBase()
+                            : BigDecimal.ZERO;
+
+                    BigDecimal discrepancyValue = unitCost.multiply(BigDecimal.valueOf(Math.abs(discrepancy)));
+
+                    return new StockCountVoucherPrintLineResponse(
+                            product != null ? product.getProductID() : null,
+                            product != null ? product.getCode() : "",
+                            product != null ? product.getName() : "Không rõ",
+                            batch != null ? batch.getLotNumber() : "",
+                            batch != null ? formatLocalDate(batch.getExpirationDate()) : "",
+                            systemQty,
+                            actualQty,
+                            discrepancy,
+                            discrepancyValue
+                    );
+                })
+                .toList();
+
+        int totalSystemQty = details.stream()
+                .map(Stockcountdetail::getSystemQty)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int totalActualQty = details.stream()
+                .map(Stockcountdetail::getActualQty)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int totalExcessQty = items.stream()
+                .map(StockCountVoucherPrintLineResponse::getDiscrepancy)
+                .filter(Objects::nonNull)
+                .filter(value -> value > 0)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int totalShortageQty = items.stream()
+                .map(StockCountVoucherPrintLineResponse::getDiscrepancy)
+                .filter(Objects::nonNull)
+                .filter(value -> value < 0)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int totalDiscrepancyQty = totalActualQty - totalSystemQty;
+
+        BigDecimal totalDiscrepancyValue = items.stream()
+                .map(StockCountVoucherPrintLineResponse::getDiscrepancyValue)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new StockCountVoucherPrintPageResponse(
+                count.getId(),
+                count.getStockCountCode(),
+                formatInstant(count.getCountDate()),
+                count.getStatus(),
+                count.getCreatedBy() != null ? count.getCreatedBy().getName() : "Không rõ",
+                count.getApprovedBy() != null ? count.getApprovedBy().getName() : "Chưa có",
+                count.getApprovedAt() != null ? formatInstant(count.getApprovedAt()) : "Chưa có",
+                count.getNote(),
+                items.size(),
+                totalSystemQty,
+                totalActualQty,
+                totalExcessQty,
+                totalShortageQty,
+                totalDiscrepancyQty,
+                totalDiscrepancyValue,
+                items
         );
     }
 
