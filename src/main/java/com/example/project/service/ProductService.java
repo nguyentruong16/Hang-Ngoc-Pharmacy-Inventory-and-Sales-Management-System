@@ -823,7 +823,7 @@ public class ProductService {
             Invoice invoice = detail.getInvoiceID();
             rows.add(new ProductRecentHistoryResponse(
                     invoice.getDate(), formatInstant(invoice.getDate()), "Bán hàng",
-                    invoice.getInvoiceCode(),
+                    invoice.getInvoicePattern(),
                     lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), null));
         }
 

@@ -166,7 +166,7 @@ public class ReturnService {
                 .sorted(Comparator.comparing(Invoice::getDate, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(invoice -> new ReturnableInvoiceResponse(
                         invoice.getId(),
-                        invoice.getInvoiceCode(),
+                        invoice.getInvoicePattern(),
                         formatInstant(invoice.getDate()),
                         invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                         invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
@@ -469,7 +469,7 @@ public class ReturnService {
                 ret.getReturnDate(),
                 formatInstant(ret.getReturnDate()),
                 invoice != null ? invoice.getId() : null,
-                invoice != null ? invoice.getInvoiceCode() : "—",
+                invoice != null ? invoice.getInvoicePattern() : "—",
                 customer != null ? customer.getName() : "Khách lẻ",
                 ret.getReturnedBy() != null ? ret.getReturnedBy().getName() : "Không rõ",
                 ret.getReturnType(),
@@ -508,7 +508,7 @@ public class ReturnService {
                 formatCode(ret.getId()),
                 ret.getReturnDate(),
                 formatInstant(ret.getReturnDate()),
-                invoice != null ? invoice.getInvoiceCode() : "—",
+                invoice != null ? invoice.getInvoicePattern() : "—",
                 customer != null ? customer.getName() : "Khách lẻ",
                 ret.getReturnedBy() != null ? ret.getReturnedBy().getName() : "Không rõ",
                 details.size(),
@@ -618,7 +618,7 @@ public class ReturnService {
         Invoice invoice = ret.getInvoiceID();
         Customer customer = invoice != null ? invoice.getCustomerID() : null;
         if (containsNormalized(formatCode(ret.getId()), normalizedKeyword)
-                || containsNormalized(invoice != null ? invoice.getInvoiceCode() : null, normalizedKeyword)
+                || containsNormalized(invoice != null ? invoice.getInvoicePattern() : null, normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getName() : null, normalizedKeyword)
                 || containsNormalized(ret.getReason(), normalizedKeyword)
                 || containsNormalized(getStatusName(ret), normalizedKeyword)
@@ -639,7 +639,7 @@ public class ReturnService {
             return true;
         }
         Customer customer = invoice.getCustomerID();
-        return containsNormalized(invoice.getInvoiceCode(), normalizedKeyword)
+        return containsNormalized(invoice.getInvoicePattern(), normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getName() : null, normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getPhoneNumber() : null, normalizedKeyword);
     }

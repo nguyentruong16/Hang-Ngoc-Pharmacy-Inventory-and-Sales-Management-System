@@ -22,8 +22,8 @@ public class Invoice {
 
     @Size(max = 6)
     @NotNull
-    @Column(name = "invoiceCode", nullable = false, length = 6)
-    private String invoiceCode;
+    @Column(name = "invoicePattern", nullable = false, length = 6)
+    private String invoicePattern;
 
     @Size(max = 50)
     @NotNull
@@ -46,17 +46,9 @@ public class Invoice {
     @Column(name = "subtotal", nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal;
 
-    @NotNull
-    @Column(name = "subimport", nullable = false, precision = 15, scale = 2)
-    private BigDecimal subimport;
-
     @ColumnDefault("0.00")
     @Column(name = "discount", precision = 15, scale = 2)
     private BigDecimal discount;
-
-    @ColumnDefault("0.00")
-    @Column(name = "taxAmount", precision = 15, scale = 2)
-    private BigDecimal taxAmount;
 
     @NotNull
     @Column(name = "total", nullable = false, precision = 15, scale = 2)
