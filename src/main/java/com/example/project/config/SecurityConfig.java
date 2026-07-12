@@ -32,6 +32,10 @@ public class SecurityConfig {
             AccountAuthenticationProvider accountAuthenticationProvider) throws Exception {
         http
                 .authenticationProvider(accountAuthenticationProvider)
+                // Same-origin framing only (still blocks third-party clickjacking) — needed so the
+                // purchase-invoice print page can be loaded in a hidden same-origin iframe to trigger
+                // window.print() without navigating the user away from the detail page.
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(authorize -> authorize
                         // Public (no login required)
                         .requestMatchers(
