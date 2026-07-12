@@ -287,6 +287,10 @@ public class InvoiceService {
         if (prescriptionRequired && prescriptionCode == null) {
             throw new IllegalArgumentException("Vui lòng nhập mã đơn thuốc cho hóa đơn kê đơn");
         }
+        if (prescriptionRequired && !prescriptionCode.matches("^[A-Za-z0-9]{12}-[cnhy]$")) {
+            throw new IllegalArgumentException(
+                    "Mã đơn thuốc không đúng định dạng (12 ký tự chữ/số, dấu \"-\", rồi c/n/h/y)");
+        }
 
         Invoice invoice = new Invoice();
         invoice.setInvoicePattern(INVOICE_PATTERN);
@@ -319,7 +323,7 @@ public class InvoiceService {
 
         BigDecimal discount = maxZero(request.getDiscount());
         if (discount.compareTo(subtotal) > 0) {
-            throw new IllegalArgumentException("Chiết khấu không được lớn hơn tiền hàng");
+            throw new IllegalArgumentException("Giảm giá không được lớn hơn tiền hàng");
         }
         BigDecimal total = subtotal.subtract(discount);
 
@@ -374,7 +378,7 @@ public class InvoiceService {
                 : (unit.getSellPrice() != null ? unit.getSellPrice() : BigDecimal.ZERO);
         BigDecimal lineSubtotal = unitSellPrice.multiply(BigDecimal.valueOf(quantity));
 
-        Batch firstBatch = deductStock(product, baseQty);
+        Batch firstBatch = deductStock(product, baseQty, quantity, ratio, unit.getUnitName());
 
         Invoicedetail detail = new Invoicedetail();
         detail.setInvoiceID(invoice);
@@ -393,14 +397,19 @@ public class InvoiceService {
     }
 
     /** Deducts {@code baseQty} from a product's in-stock batches (FEFO); returns the first batch used. */
-    private Batch deductStock(Product product, int baseQty) {
+    private Batch deductStock(Product product, int baseQty, int sellQuantity, BigDecimal ratio, String unitName) {
         List<Batch> batches = batchRepository.findInStockBatchesByProduct(product.getProductID());
         long available = batches.stream()
                 .mapToLong(batch -> batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity())
                 .sum();
         if (available < baseQty) {
+            BigDecimal safeRatio = ratio != null && ratio.compareTo(BigDecimal.ZERO) > 0 ? ratio : BigDecimal.ONE;
+            long availableInUnit = BigDecimal.valueOf(available)
+                    .divide(safeRatio, 0, RoundingMode.DOWN).longValue();
+            String unit = unitName != null ? unitName : "";
             throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
-                    + "\" không đủ tồn kho (còn " + available + ", cần " + baseQty + ")");
+                    + "\" không đủ tồn kho (còn " + availableInUnit + " " + unit
+                    + ", cần " + sellQuantity + " " + unit + ")");
         }
 
         Batch firstBatch = null;

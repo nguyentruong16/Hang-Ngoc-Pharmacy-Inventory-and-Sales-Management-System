@@ -17,7 +17,7 @@ public class InvoiceCreateRequest {
 
     private Integer customerId;
 
-    @DecimalMin(value = "0.0", message = "Chiết khấu không được âm")
+    @DecimalMin(value = "0.0", message = "Giảm giá không được âm")
     private BigDecimal discount = BigDecimal.ZERO;
 
     @DecimalMin(value = "0.0", message = "Tiền mặt không được âm")
