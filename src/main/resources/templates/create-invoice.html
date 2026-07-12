@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bán hàng | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .sell-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .sell-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .btn-sell-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-sell-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #ffffff;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .money-summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            font-size: 14px;
+        }
+
+        .stock-hint {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        @media (max-width: 991.98px) {
+            .sell-page-content {
+                padding-top: 84px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content sell-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Bán hàng</h1>
+                <p class="text-secondary mb-0">Tạo hóa đơn bán hàng và tự động trừ tồn kho theo hạn dùng gần nhất</p>
+            </div>
+
+            <a th:href="${invoicesPath}" class="btn btn-outline-secondary">
+                Danh sách hóa đơn
+            </a>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <form th:action="${basePath}" th:object="${form}" method="post">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div class="row g-4">
+                <div class="col-12 col-xl-8">
+
+                    <div class="sell-card p-4 mb-4">
+                        <div class="section-title mb-4">
+                            <i class="ti ti-user text-success me-1"></i>
+                            Thông tin hóa đơn
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Khách hàng</label>
+                                <select class="form-select" th:field="*{customerId}">
+                                    <option value="">Khách lẻ</option>
+                                    <option th:each="customer : ${customers}"
+                                            th:value="${customer.id}"
+                                            th:text="${customer.name + (customer.phoneNumber != null ? ' - ' + customer.phoneNumber : '')}">
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Người bán</label>
+                                <input type="text" class="form-control" th:value="${sellerName}" disabled>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="prescriptionRequired"
+                                           th:field="*{prescriptionRequired}">
+                                    <label class="form-check-label" for="prescriptionRequired">
+                                        Hóa đơn thuốc kê đơn
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Mã đơn thuốc</label>
+                                <input type="text" class="form-control" id="prescriptionCode"
+                                       th:field="*{prescriptionCode}"
+                                       placeholder="Chỉ nhập khi bán thuốc kê đơn" disabled>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Ghi chú</label>
+                                <textarea class="form-control" rows="2" th:field="*{note}"
+                                          placeholder="Nhập ghi chú nếu có"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sell-card">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                            <div class="section-title">
+                                <i class="ti ti-package text-success me-1"></i>
+                                Hàng hóa bán
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-sell-primary" onclick="addItemRow()">
+                                <i class="ti ti-plus me-1"></i>
+                                Thêm sản phẩm
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                <tr>
+                                    <th style="min-width: 240px;">Sản phẩm</th>
+                                    <th style="min-width: 140px;">Đơn vị</th>
+                                    <th style="min-width: 110px;">Số lượng</th>
+                                    <th style="min-width: 140px;">Đơn giá</th>
+                                    <th style="min-width: 130px;">Thành tiền</th>
+                                    <th class="text-end">Xóa</th>
+                                </tr>
+                                </thead>
+
+                                <tbody id="detailRows"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex gap-3">
+                        <button type="submit" class="btn btn-sell-primary px-4">
+                            Lưu hóa đơn
+                        </button>
+
+                        <a th:href="${invoicesPath}" class="btn btn-outline-secondary px-4">
+                            Hủy
+                        </a>
+                    </div>
+
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="sell-card p-4 mb-4">
+                        <div class="section-title mb-4">
+                            <i class="ti ti-calculator text-success me-1"></i>
+                            Thanh toán
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Tiền hàng</span>
+                            <strong id="subtotalDisplay">0đ</strong>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Chiết khấu</label>
+                            <input type="number" min="0" step="1000" class="form-control"
+                                   id="discount" th:field="*{discount}" oninput="calculateSummary()">
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Tổng tiền</span>
+                            <strong class="text-success" id="totalDisplay">0đ</strong>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tiền mặt</label>
+                            <input type="number" min="0" step="1000" class="form-control"
+                                   id="paidByCash" th:field="*{paidByCash}" oninput="calculateSummary()">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Chuyển khoản</label>
+                            <input type="number" min="0" step="1000" class="form-control"
+                                   id="paidByBanking" th:field="*{paidByBanking}" oninput="calculateSummary()">
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Đã thanh toán</span>
+                            <strong id="paidDisplay">0đ</strong>
+                        </div>
+
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Còn nợ</span>
+                            <strong class="text-warning" id="debtDisplay">0đ</strong>
+                        </div>
+
+                        <div class="text-danger small" id="overpaidWarning" style="display:none;">
+                            Số tiền thanh toán đang lớn hơn tổng tiền.
+                        </div>
+                    </div>
+
+                    <div class="sell-card p-4">
+                        <div class="section-title mb-3">Lưu ý bán hàng</div>
+                        <div class="text-secondary small">
+                            <p class="mb-2">1. Chọn sản phẩm rồi chọn đơn vị bán — đơn giá tự điền theo đơn vị.</p>
+                            <p class="mb-2">2. Tồn kho được trừ theo lô có hạn dùng gần nhất trước.</p>
+                            <p class="mb-2">3. Khách lẻ phải thanh toán đủ; chọn khách hàng nếu muốn ghi nợ.</p>
+                            <p class="mb-0">4. Bật "thuốc kê đơn" thì phải nhập mã đơn thuốc.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const products = /*[[${products}]]*/ [];
+    const productById = {};
+    products.forEach(p => productById[p.productId] = p);
+
+    function formatMoney(value) {
+        return Number(value || 0).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function numberValue(input) {
+        if (!input || input.value === '') return 0;
+        return Number(input.value);
+    }
+
+    function productOptionsHtml() {
+        let html = '<option value="">-- Chọn sản phẩm --</option>';
+        products.forEach(p => {
+            html += `<option value="${p.productId}">${p.name} (${p.code})</option>`;
+        });
+        return html;
+    }
+
+    function refreshUnits(row) {
+        const productSelect = row.querySelector('.product-select');
+        const unitSelect = row.querySelector('.unit-select');
+        const product = productById[productSelect.value];
+
+        if (!product) {
+            unitSelect.innerHTML = '<option value="">-- Đơn vị --</option>';
+            row.querySelector('.stock-hint').textContent = '';
+            applyUnitPrice(row);
+            return;
+        }
+
+        unitSelect.innerHTML = product.units.map((u, idx) =>
+            `<option value="${u.id}" data-ratio="${u.ratio}" data-price="${u.sellPrice}" ${u.defaultUnit || idx === 0 ? 'selected' : ''}>${u.unitName}</option>`
+        ).join('');
+
+        applyUnitPrice(row);
+    }
+
+    function applyUnitPrice(row) {
+        const productSelect = row.querySelector('.product-select');
+        const unitSelect = row.querySelector('.unit-select');
+        const priceInput = row.querySelector('.price-input');
+        const hint = row.querySelector('.stock-hint');
+        const product = productById[productSelect.value];
+
+        const option = unitSelect.options[unitSelect.selectedIndex];
+        if (option && option.value) {
+            priceInput.value = option.dataset.price || 0;
+            if (product) {
+                const ratio = Number(option.dataset.ratio) || 1;
+                const available = Math.floor(product.baseStock / ratio);
+                hint.textContent = 'Có thể bán: ' + available + ' ' + option.textContent;
+            }
+        } else {
+            hint.textContent = '';
+        }
+        calculateSummary();
+    }
+
+    function wireRow(row) {
+        row.querySelector('.product-select').addEventListener('change', () => refreshUnits(row));
+        row.querySelector('.unit-select').addEventListener('change', () => applyUnitPrice(row));
+        row.querySelector('.quantity-input').addEventListener('input', calculateSummary);
+        row.querySelector('.price-input').addEventListener('input', calculateSummary);
+    }
+
+    function refreshRowIndexes() {
+        document.querySelectorAll('#detailRows tr').forEach((row, index) => {
+            row.querySelectorAll('[data-field]').forEach(input => {
+                const field = input.getAttribute('data-field');
+                input.setAttribute('name', `details[${index}].${field}`);
+            });
+        });
+    }
+
+    function addItemRow() {
+        const tbody = document.getElementById('detailRows');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <select class="form-select product-select" data-field="productId">
+                    ${productOptionsHtml()}
+                </select>
+                <div class="stock-hint mt-1"></div>
+            </td>
+            <td>
+                <select class="form-select unit-select" data-field="productUnitId">
+                    <option value="">-- Đơn vị --</option>
+                </select>
+            </td>
+            <td>
+                <input type="number" min="1" value="1" class="form-control quantity-input" data-field="quantity">
+            </td>
+            <td>
+                <input type="number" min="0" step="1000" class="form-control price-input" data-field="unitSellPrice">
+            </td>
+            <td class="fw-semibold line-total">0đ</td>
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)">
+                    <i class="ti ti-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        refreshRowIndexes();
+        wireRow(row);
+        calculateSummary();
+    }
+
+    function removeItemRow(button) {
+        const rows = document.querySelectorAll('#detailRows tr');
+        if (rows.length <= 1) {
+            alert('Hóa đơn phải có ít nhất một sản phẩm.');
+            return;
+        }
+        button.closest('tr').remove();
+        refreshRowIndexes();
+        calculateSummary();
+    }
+
+    function calculateSummary() {
+        let subtotal = 0;
+        document.querySelectorAll('#detailRows tr').forEach(row => {
+            const quantity = numberValue(row.querySelector('.quantity-input'));
+            const price = numberValue(row.querySelector('.price-input'));
+            const lineTotal = quantity * price;
+            subtotal += lineTotal;
+            const cell = row.querySelector('.line-total');
+            if (cell) cell.textContent = formatMoney(lineTotal);
+        });
+
+        const discount = numberValue(document.getElementById('discount'));
+        let total = subtotal - discount;
+        if (total < 0) total = 0;
+
+        const paid = numberValue(document.getElementById('paidByCash'))
+            + numberValue(document.getElementById('paidByBanking'));
+        let debt = total - paid;
+        if (debt < 0) debt = 0;
+
+        document.getElementById('subtotalDisplay').textContent = formatMoney(subtotal);
+        document.getElementById('totalDisplay').textContent = formatMoney(total);
+        document.getElementById('paidDisplay').textContent = formatMoney(paid);
+        document.getElementById('debtDisplay').textContent = formatMoney(debt);
+        document.getElementById('overpaidWarning').style.display = paid > total ? 'block' : 'none';
+    }
+
+    function togglePrescriptionCode() {
+        const checkbox = document.getElementById('prescriptionRequired');
+        const codeInput = document.getElementById('prescriptionCode');
+        if (!checkbox || !codeInput) return;
+        codeInput.disabled = !checkbox.checked;
+        if (!checkbox.checked) {
+            codeInput.value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        addItemRow();
+        calculateSummary();
+
+        const checkbox = document.getElementById('prescriptionRequired');
+        if (checkbox) {
+            checkbox.addEventListener('change', togglePrescriptionCode);
+        }
+        togglePrescriptionCode();
+    });
+</script>
+
+</body>
+</html>
