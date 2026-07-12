@@ -324,10 +324,12 @@
                 </div>
 
                 <div class="purchase-card p-4">
-                    <a href="javascript:window.print()" class="btn btn-purchase-primary w-100 mb-3">
+                    <button type="button" id="printPurchaseInvoiceBtn"
+                            th:data-print-url="${basePath + '/' + detail.id + '/print'}"
+                            class="btn btn-purchase-primary w-100 mb-3">
                         <i class="ti ti-printer me-1"></i>
                         In phiếu nhập
-                    </a>
+                    </button>
 
                     <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
                         <i class="ti ti-arrow-left me-1"></i>
@@ -340,5 +342,25 @@
 
     </div>
 </main>
+
+<script th:inline="none">
+    document.getElementById('printPurchaseInvoiceBtn').addEventListener('click', function () {
+        var printUrl = this.dataset.printUrl;
+
+        var iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+
+        iframe.addEventListener('load', function () {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            iframe.contentWindow.addEventListener('afterprint', function () {
+                document.body.removeChild(iframe);
+            });
+        });
+
+        iframe.src = printUrl;
+        document.body.appendChild(iframe);
+    });
+</script>
 </body>
 </html>
