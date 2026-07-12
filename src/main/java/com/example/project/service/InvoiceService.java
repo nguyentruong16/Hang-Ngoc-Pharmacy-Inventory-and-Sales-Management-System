@@ -287,6 +287,10 @@ public class InvoiceService {
         if (prescriptionRequired && prescriptionCode == null) {
             throw new IllegalArgumentException("Vui lòng nhập mã đơn thuốc cho hóa đơn kê đơn");
         }
+        if (prescriptionRequired && !prescriptionCode.matches("^[A-Za-z0-9]{12}-[cnhy]$")) {
+            throw new IllegalArgumentException(
+                    "Mã đơn thuốc không đúng định dạng (12 ký tự chữ/số, dấu \"-\", rồi c/n/h/y)");
+        }
 
         Invoice invoice = new Invoice();
         invoice.setInvoicePattern(INVOICE_PATTERN);

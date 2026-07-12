@@ -61,8 +61,28 @@
         }
 
         .stock-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 6px;
+            padding: 2px 10px;
             font-size: 11px;
-            color: #6b7280;
+            font-weight: 500;
+            line-height: 1.6;
+            border-radius: 999px;
+            color: #047857;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+        }
+
+        .stock-hint:empty {
+            display: none;
+        }
+
+        .stock-hint.text-danger {
+            color: #b91c1c !important;
+            background: #fef2f2;
+            border-color: #fecaca;
         }
 
         @media (max-width: 991.98px) {
@@ -135,8 +155,15 @@
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Mã đơn thuốc</label>
                                 <input type="text" class="form-control" id="prescriptionCode"
-                                       th:field="*{prescriptionCode}"
-                                       placeholder="Chỉ nhập khi bán thuốc kê đơn" disabled>
+                                       th:field="*{prescriptionCode}" maxlength="14"
+                                       placeholder="VD: AB12Cd345xyz-c" disabled>
+                                <div class="form-text">
+                                    12 ký tự chữ/số + "-" + loại đơn (c: thường, n: gây nghiện,
+                                    h: hướng thần, y: y học cổ truyền).
+                                </div>
+                                <div class="invalid-feedback" id="prescriptionError" style="display:none;">
+                                    Mã đơn thuốc không đúng định dạng (VD: AB12Cd345xyz-c).
+                                </div>
                             </div>
 
                             <div class="col-12">
@@ -408,13 +435,15 @@
         if (usedBase > product.baseStock) {
             quantityInput.classList.add('is-invalid');
             hint.classList.add('text-danger');
-            hint.textContent = 'Vượt tồn kho! Chỉ còn ' + availableInUnit + ' ' + option.textContent;
+            hint.innerHTML = '<i class="ti ti-alert-triangle"></i> Vượt tồn kho! Chỉ còn '
+                + availableInUnit + ' ' + option.textContent;
             return false;
         }
 
         quantityInput.classList.remove('is-invalid');
         hint.classList.remove('text-danger');
-        hint.textContent = 'Có thể bán: ' + availableInUnit + ' ' + option.textContent;
+        hint.innerHTML = '<i class="ti ti-package"></i> Có thể bán: '
+            + availableInUnit + ' ' + option.textContent;
         return true;
     }
 
@@ -440,12 +469,35 @@
                 allValid = false;
             }
         });
+        return allValid;
+    }
 
+    /** Validates the prescription code format when the invoice is marked as prescription-required. */
+    function validatePrescription() {
+        const checkbox = document.getElementById('prescriptionRequired');
+        const codeInput = document.getElementById('prescriptionCode');
+        const feedback = document.getElementById('prescriptionError');
+        if (!checkbox || !codeInput) {
+            return true;
+        }
+        if (!checkbox.checked) {
+            codeInput.classList.remove('is-invalid');
+            if (feedback) feedback.style.display = 'none';
+            return true;
+        }
+        const valid = /^[A-Za-z0-9]{12}-[cnhy]$/.test(codeInput.value.trim());
+        codeInput.classList.toggle('is-invalid', !valid);
+        if (feedback) feedback.style.display = valid ? 'none' : 'block';
+        return valid;
+    }
+
+    /** Enables the submit button only when both stock and prescription checks pass. */
+    function updateSubmitState() {
+        const ok = validateStock() && validatePrescription();
         const submitBtn = document.getElementById('submitInvoiceBtn');
         if (submitBtn) {
-            submitBtn.disabled = !allValid;
+            submitBtn.disabled = !ok;
         }
-        return allValid;
     }
 
     function wireRow(row) {
@@ -472,7 +524,7 @@
                 <select class="form-select product-select" data-field="productId">
                     ${productOptionsHtml()}
                 </select>
-                <div class="stock-hint mt-1"></div>
+                <div class="stock-hint"></div>
             </td>
             <td>
                 <select class="form-select unit-select" data-field="productUnitId">
@@ -607,7 +659,7 @@
         document.getElementById('debtDisplay').textContent = formatMoney(debt);
         document.getElementById('overpaidWarning').style.display = paid > total ? 'block' : 'none';
 
-        validateStock();
+        updateSubmitState();
     }
 
     function togglePrescriptionCode() {
@@ -618,6 +670,7 @@
         if (!checkbox.checked) {
             codeInput.value = '';
         }
+        updateSubmitState();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -631,6 +684,10 @@
         const checkbox = document.getElementById('prescriptionRequired');
         if (checkbox) {
             checkbox.addEventListener('change', togglePrescriptionCode);
+        }
+        const codeInput = document.getElementById('prescriptionCode');
+        if (codeInput) {
+            codeInput.addEventListener('input', updateSubmitState);
         }
         togglePrescriptionCode();
     });
