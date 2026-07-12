@@ -108,7 +108,7 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Khách hàng</label>
-                                <select class="form-select" th:field="*{customerId}">
+                                <select class="form-select" th:field="*{customerId}" onchange="calculateSummary()">
                                     <option value="">Khách lẻ</option>
                                     <option th:each="customer : ${customers}"
                                             th:value="${customer.id}"
@@ -168,7 +168,6 @@
                                     <th style="min-width: 140px;">Đơn vị</th>
                                     <th style="min-width: 110px;">Số lượng</th>
                                     <th style="min-width: 140px;">Đơn giá</th>
-                                    <th style="min-width: 130px;">Thành tiền</th>
                                     <th class="text-end">Xóa</th>
                                 </tr>
                                 </thead>
@@ -179,7 +178,7 @@
                     </div>
 
                     <div class="mt-4 d-flex gap-3">
-                        <button type="submit" class="btn btn-sell-primary px-4">
+                        <button type="submit" id="submitInvoiceBtn" class="btn btn-sell-primary px-4">
                             Lưu hóa đơn
                         </button>
 
@@ -203,7 +202,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Chiết khấu</label>
+                            <label class="form-label">Giảm giá</label>
                             <input type="number" min="0" step="1000" class="form-control"
                                    id="discount" th:field="*{discount}" oninput="calculateSummary()">
                         </div>
@@ -216,16 +215,47 @@
                         <hr>
 
                         <div class="mb-3">
-                            <label class="form-label">Tiền mặt</label>
-                            <input type="number" min="0" step="1000" class="form-control"
-                                   id="paidByCash" th:field="*{paidByCash}" oninput="calculateSummary()">
+                            <label class="form-label d-block mb-2">Hình thức thanh toán</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payMethod"
+                                           id="payCash" value="cash" checked onchange="onPayMethodChange()">
+                                    <label class="form-check-label" for="payCash">Tiền mặt</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payMethod"
+                                           id="payBanking" value="banking" onchange="onPayMethodChange()">
+                                    <label class="form-check-label" for="payBanking">Chuyển khoản</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payMethod"
+                                           id="payBoth" value="both" onchange="onPayMethodChange()">
+                                    <label class="form-check-label" for="payBoth">Tiền mặt + Chuyển khoản</label>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Chuyển khoản</label>
+                        <div class="mb-3" id="singlePaidBox">
+                            <label class="form-label">Khách thanh toán</label>
                             <input type="number" min="0" step="1000" class="form-control"
-                                   id="paidByBanking" th:field="*{paidByBanking}" oninput="calculateSummary()">
+                                   id="paidAmount" oninput="onPaidAmountInput()">
                         </div>
+
+                        <div id="splitPaidBox" style="display:none;">
+                            <div class="mb-3">
+                                <label class="form-label">Tiền mặt</label>
+                                <input type="number" min="0" step="1000" class="form-control"
+                                       id="cashAmount" oninput="onPaidAmountInput()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Chuyển khoản</label>
+                                <input type="number" min="0" step="1000" class="form-control"
+                                       id="bankingAmount" oninput="onPaidAmountInput()">
+                            </div>
+                        </div>
+
+                        <input type="hidden" th:field="*{paidByCash}">
+                        <input type="hidden" th:field="*{paidByBanking}">
 
                         <div class="money-summary-row">
                             <span class="text-secondary">Đã thanh toán</span>
@@ -260,6 +290,7 @@
 
 <script th:inline="javascript">
     const products = /*[[${products}]]*/ [];
+    const initialDetails = /*[[${form.details}]]*/ [];
     const productById = {};
     products.forEach(p => productById[p.productId] = p);
 
@@ -300,24 +331,121 @@
     }
 
     function applyUnitPrice(row) {
-        const productSelect = row.querySelector('.product-select');
         const unitSelect = row.querySelector('.unit-select');
         const priceInput = row.querySelector('.price-input');
-        const hint = row.querySelector('.stock-hint');
-        const product = productById[productSelect.value];
-
         const option = unitSelect.options[unitSelect.selectedIndex];
         if (option && option.value) {
             priceInput.value = option.dataset.price || 0;
-            if (product) {
-                const ratio = Number(option.dataset.ratio) || 1;
-                const available = Math.floor(product.baseStock / ratio);
-                hint.textContent = 'Có thể bán: ' + available + ' ' + option.textContent;
-            }
-        } else {
-            hint.textContent = '';
         }
         calculateSummary();
+    }
+
+    /** Max quantity (in the row's chosen unit) still sellable, after accounting for other rows. */
+    function maxSellableForRow(row) {
+        const product = productById[row.querySelector('.product-select').value];
+        const unitSelect = row.querySelector('.unit-select');
+        const option = unitSelect.options[unitSelect.selectedIndex];
+        if (!product || !option || !option.value) {
+            return null;
+        }
+        const ratio = Number(option.dataset.ratio) || 1;
+
+        let usedByOthers = 0;
+        document.querySelectorAll('#detailRows tr').forEach(other => {
+            if (other === row) return;
+            const otherProduct = productById[other.querySelector('.product-select').value];
+            if (!otherProduct || otherProduct.productId !== product.productId) return;
+            const otherUnit = other.querySelector('.unit-select');
+            const otherOption = otherUnit.options[otherUnit.selectedIndex];
+            if (!otherOption || !otherOption.value) return;
+            const otherRatio = Number(otherOption.dataset.ratio) || 1;
+            usedByOthers += numberValue(other.querySelector('.quantity-input')) * otherRatio;
+        });
+
+        const remainingBase = product.baseStock - usedByOthers;
+        const maxUnit = Math.floor(remainingBase / ratio);
+        return maxUnit < 0 ? 0 : maxUnit;
+    }
+
+    /** Caps a row's quantity so it can never exceed the available stock. */
+    function enforceQuantityLimit(row) {
+        const quantityInput = row.querySelector('.quantity-input');
+        const max = maxSellableForRow(row);
+        if (max === null) {
+            quantityInput.removeAttribute('max');
+            return;
+        }
+        quantityInput.max = max;
+        if (numberValue(quantityInput) > max) {
+            quantityInput.value = max;
+        }
+    }
+
+    function enforceAllLimits() {
+        document.querySelectorAll('#detailRows tr').forEach(row => enforceQuantityLimit(row));
+    }
+
+    /** Validates one row's quantity against stock (accounting for other rows of the same product). */
+    function validateRow(row, usedBaseByProduct) {
+        const productSelect = row.querySelector('.product-select');
+        const unitSelect = row.querySelector('.unit-select');
+        const quantityInput = row.querySelector('.quantity-input');
+        const hint = row.querySelector('.stock-hint');
+        const product = productById[productSelect.value];
+        const option = unitSelect.options[unitSelect.selectedIndex];
+
+        if (!product || !option || !option.value) {
+            quantityInput.classList.remove('is-invalid');
+            hint.classList.remove('text-danger');
+            hint.textContent = '';
+            return true;
+        }
+
+        const ratio = Number(option.dataset.ratio) || 1;
+        const availableInUnit = Math.floor(product.baseStock / ratio);
+        const usedBase = usedBaseByProduct[product.productId] || 0;
+
+        if (usedBase > product.baseStock) {
+            quantityInput.classList.add('is-invalid');
+            hint.classList.add('text-danger');
+            hint.textContent = 'Vượt tồn kho! Chỉ còn ' + availableInUnit + ' ' + option.textContent;
+            return false;
+        }
+
+        quantityInput.classList.remove('is-invalid');
+        hint.classList.remove('text-danger');
+        hint.textContent = 'Có thể bán: ' + availableInUnit + ' ' + option.textContent;
+        return true;
+    }
+
+    /** Validates every row and enables/disables the submit button accordingly. */
+    function validateStock() {
+        const rows = document.querySelectorAll('#detailRows tr');
+        const usedBaseByProduct = {};
+        rows.forEach(row => {
+            const product = productById[row.querySelector('.product-select').value];
+            const unitSelect = row.querySelector('.unit-select');
+            const option = unitSelect.options[unitSelect.selectedIndex];
+            if (product && option && option.value) {
+                const ratio = Number(option.dataset.ratio) || 1;
+                const qty = numberValue(row.querySelector('.quantity-input'));
+                usedBaseByProduct[product.productId] =
+                    (usedBaseByProduct[product.productId] || 0) + qty * ratio;
+            }
+        });
+
+        let allValid = true;
+        rows.forEach(row => {
+            if (!validateRow(row, usedBaseByProduct)) {
+                allValid = false;
+            }
+        });
+
+        const submitBtn = document.getElementById('submitInvoiceBtn');
+        if (submitBtn) {
+            submitBtn.disabled = !allValid;
+        }
+        return allValid;
     }
 
     function wireRow(row) {
@@ -336,7 +464,7 @@
         });
     }
 
-    function addItemRow() {
+    function addItemRow(preset) {
         const tbody = document.getElementById('detailRows');
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -357,7 +485,6 @@
             <td>
                 <input type="number" min="0" step="1000" class="form-control price-input" data-field="unitSellPrice">
             </td>
-            <td class="fw-semibold line-total">0đ</td>
             <td class="text-end">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)">
                     <i class="ti ti-trash"></i>
@@ -367,6 +494,25 @@
         tbody.appendChild(row);
         refreshRowIndexes();
         wireRow(row);
+
+        if (preset) {
+            const productSelect = row.querySelector('.product-select');
+            if (preset.productId != null) {
+                productSelect.value = String(preset.productId);
+            }
+            refreshUnits(row);
+            if (preset.productUnitId != null) {
+                row.querySelector('.unit-select').value = String(preset.productUnitId);
+                applyUnitPrice(row);
+            }
+            if (preset.unitSellPrice != null && preset.unitSellPrice !== '') {
+                row.querySelector('.price-input').value = preset.unitSellPrice;
+            }
+            if (preset.quantity != null) {
+                row.querySelector('.quantity-input').value = preset.quantity;
+            }
+        }
+
         calculateSummary();
     }
 
@@ -381,23 +527,77 @@
         calculateSummary();
     }
 
+    let paidTouched = false;
+
+    function onPaidAmountInput() {
+        paidTouched = true;
+        calculateSummary();
+    }
+
+    function currentPayMethod() {
+        const method = document.querySelector('input[name="payMethod"]:checked');
+        return method ? method.value : 'cash';
+    }
+
+    function isWalkInCustomer() {
+        const select = document.getElementById('customerId');
+        return !select || select.value === '';
+    }
+
+    function onPayMethodChange() {
+        const both = currentPayMethod() === 'both';
+        document.getElementById('singlePaidBox').style.display = both ? 'none' : 'block';
+        document.getElementById('splitPaidBox').style.display = both ? 'block' : 'none';
+        paidTouched = false;
+        calculateSummary();
+    }
+
     function calculateSummary() {
+        enforceAllLimits();
+
         let subtotal = 0;
         document.querySelectorAll('#detailRows tr').forEach(row => {
             const quantity = numberValue(row.querySelector('.quantity-input'));
             const price = numberValue(row.querySelector('.price-input'));
-            const lineTotal = quantity * price;
-            subtotal += lineTotal;
-            const cell = row.querySelector('.line-total');
-            if (cell) cell.textContent = formatMoney(lineTotal);
+            subtotal += quantity * price;
         });
 
         const discount = numberValue(document.getElementById('discount'));
         let total = subtotal - discount;
         if (total < 0) total = 0;
 
-        const paid = numberValue(document.getElementById('paidByCash'))
-            + numberValue(document.getElementById('paidByBanking'));
+        const method = currentPayMethod();
+        const cashField = document.getElementById('paidByCash');
+        const bankingField = document.getElementById('paidByBanking');
+        let paid;
+
+        if (method === 'both') {
+            const cash = numberValue(document.getElementById('cashAmount'));
+            const banking = numberValue(document.getElementById('bankingAmount'));
+            cashField.value = cash;
+            bankingField.value = banking;
+            paid = cash + banking;
+        } else {
+            const paidAmountInput = document.getElementById('paidAmount');
+            if (isWalkInCustomer()) {
+                paidAmountInput.value = total;
+                paidAmountInput.readOnly = true;
+            } else {
+                paidAmountInput.readOnly = false;
+                if (!paidTouched) {
+                    paidAmountInput.value = total;
+                }
+            }
+            paid = numberValue(paidAmountInput);
+            if (method === 'banking') {
+                cashField.value = 0;
+                bankingField.value = paid;
+            } else {
+                cashField.value = paid;
+                bankingField.value = 0;
+            }
+        }
+
         let debt = total - paid;
         if (debt < 0) debt = 0;
 
@@ -406,6 +606,8 @@
         document.getElementById('paidDisplay').textContent = formatMoney(paid);
         document.getElementById('debtDisplay').textContent = formatMoney(debt);
         document.getElementById('overpaidWarning').style.display = paid > total ? 'block' : 'none';
+
+        validateStock();
     }
 
     function togglePrescriptionCode() {
@@ -419,7 +621,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        addItemRow();
+        if (Array.isArray(initialDetails) && initialDetails.length > 0) {
+            initialDetails.forEach(detail => addItemRow(detail));
+        } else {
+            addItemRow();
+        }
         calculateSummary();
 
         const checkbox = document.getElementById('prescriptionRequired');
