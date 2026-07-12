@@ -38,8 +38,6 @@ public class PlaceholderController {
             "/owner/customers",
             "/owner/approvals",
             "/owner/notifications",
-            "/owner/selling",
-            "/owner/invoices",
             "/owner/incomes",
             "/owner/expenses",
             "/owner/shift-reports",
@@ -51,8 +49,6 @@ public class PlaceholderController {
 
     @GetMapping({
             "/pharmacist/dashboard",
-            "/pharmacist/selling",
-            "/pharmacist/invoices",
             "/pharmacist/customers",
             "/pharmacist/shift-reports",
             "/pharmacist/notifications",
@@ -68,7 +64,6 @@ public class PlaceholderController {
             "/accountant/debts",
             "/accountant/expenses",
             "/accountant/daily-reports",
-            "/accountant/invoices",
             "/accountant/vat-invoices",
             "/accountant/notifications",
             "/accountant/financial-setting"
