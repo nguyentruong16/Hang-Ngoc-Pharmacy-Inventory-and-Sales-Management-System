@@ -5,6 +5,7 @@ import com.example.project.dto.request.PurchaseInvoiceCreateRequest;
 import com.example.project.dto.request.PurchaseInvoiceDetailCreateRequest;
 import com.example.project.dto.response.PurchaseInvoiceDetailPageResponse;
 import com.example.project.dto.response.PurchaseInvoiceListItemResponse;
+import com.example.project.dto.response.PurchaseInvoicePrintPageResponse;
 import com.example.project.service.PurchaseinvoiceService;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
@@ -142,6 +143,22 @@ public class PurchaseInvoicePageController {
         model.addAttribute("basePath", resolveBasePath(request));
 
         return "purchase-invoice/detail";
+    }
+
+    @GetMapping({
+            "/owner/purchase-invoices/{purchaseId}/print",
+            "/accountant/purchase-invoices/{purchaseId}/print",
+            "/pharmacist/purchase-invoices/{purchaseId}/print"
+    })
+    public String printPage(@PathVariable Integer purchaseId,
+                            HttpServletRequest request,
+                            Model model) {
+        PurchaseInvoicePrintPageResponse printData = purchaseinvoiceService.getPrintPage(purchaseId);
+
+        model.addAttribute("printData", printData);
+        model.addAttribute("basePath", resolveBasePath(request));
+
+        return "purchase-invoice/print";
     }
 
     private void addCreatePageData(HttpServletRequest request, Model model) {

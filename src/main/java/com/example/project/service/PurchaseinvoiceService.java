@@ -192,6 +192,61 @@ public class PurchaseinvoiceService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public PurchaseInvoicePrintPageResponse getPrintPage(Integer purchaseId) {
+        Purchaseinvoice invoice = purchaseinvoiceRepository.findByIdWithRelations(purchaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập"));
+
+        List<Purchasedetail> details = purchasedetailRepository.findByPurchaseIdWithProduct(purchaseId);
+
+        BigDecimal subtotal = calculateSubtotal(details);
+        BigDecimal additionCost = safe(invoice.getAdditionCost());
+        BigDecimal discount = safe(invoice.getDiscount());
+        BigDecimal totalAmount = safeTotalAmount(invoice);
+
+        int totalQuantity = details.stream()
+                .map(Purchasedetail::getQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        Supplier supplier = invoice.getSupplierID();
+
+        List<PurchaseInvoicePrintLineResponse> lines = details.stream()
+                .map(this::toPrintLine)
+                .toList();
+
+        return new PurchaseInvoicePrintPageResponse(
+                invoice.getId(),
+                formatPurchaseCode(invoice.getId()),
+                formatInstant(invoice.getDate()),
+                invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
+                supplier != null ? supplier.getName() : "Không có",
+                supplier != null ? supplier.getAddress() : "",
+                totalQuantity,
+                subtotal,
+                additionCost,
+                discount,
+                totalAmount,
+                invoice.getNote(),
+                lines
+        );
+    }
+
+    private PurchaseInvoicePrintLineResponse toPrintLine(Purchasedetail detail) {
+        Product product = detail.getProductID();
+        BigDecimal lineTotal = safe(detail.getImportPrice())
+                .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity()));
+
+        return new PurchaseInvoicePrintLineResponse(
+                product != null ? product.getCode() : "",
+                product != null ? product.getName() : "Không rõ",
+                detail.getImportPrice(),
+                detail.getQuantity(),
+                lineTotal
+        );
+    }
+
     @Transactional
     public Integer createPurchaseInvoice(PurchaseInvoiceCreateRequest request, Integer currentAccountId) {
         validateCreateRequest(request);
