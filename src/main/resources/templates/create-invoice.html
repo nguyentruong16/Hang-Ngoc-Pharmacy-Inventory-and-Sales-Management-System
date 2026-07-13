@@ -195,6 +195,7 @@
                                     <th style="min-width: 140px;">Đơn vị</th>
                                     <th style="min-width: 110px;">Số lượng</th>
                                     <th style="min-width: 140px;">Đơn giá</th>
+                                    <th style="min-width: 130px; text-align:right;">Thành tiền</th>
                                     <th class="text-end">Xóa</th>
                                 </tr>
                                 </thead>
@@ -537,6 +538,9 @@
             <td>
                 <input type="number" min="0" step="1000" class="form-control price-input" data-field="unitSellPrice">
             </td>
+            <td style="text-align:right;">
+                <span class="line-total">0đ</span>
+            </td>
             <td class="text-end">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)">
                     <i class="ti ti-trash"></i>
@@ -611,7 +615,13 @@
         document.querySelectorAll('#detailRows tr').forEach(row => {
             const quantity = numberValue(row.querySelector('.quantity-input'));
             const price = numberValue(row.querySelector('.price-input'));
-            subtotal += quantity * price;
+            const lineTotal = quantity * price;
+            subtotal += lineTotal;
+
+            const lineTotalCell = row.querySelector('.line-total');
+            if (lineTotalCell) {
+                lineTotalCell.textContent = formatMoney(lineTotal);
+            }
         });
 
         const discount = numberValue(document.getElementById('discount'));
