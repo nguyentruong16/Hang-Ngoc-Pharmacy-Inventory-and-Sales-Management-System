@@ -382,9 +382,15 @@
                 </div>
               </td>
               <td>
-                <span class="status-badge"
-                      th:classappend="${' ' + item.statusCssClass}"
-                      th:text="${item.statusName}">Hoàn thành</span>
+                <div class="d-flex flex-column gap-1 align-items-start">
+                  <span class="status-badge"
+                        th:classappend="${' ' + item.statusCssClass}"
+                        th:text="${item.statusName}">Hoàn thành</span>
+                  <span class="status-badge"
+                        th:if="${item.returnStatusDisplay != 'Không'}"
+                        th:classappend="${' ' + item.returnStatusCssClass}"
+                        th:text="${item.returnStatusDisplay}">Trả một phần</span>
+                </div>
               </td>
               <td style="text-align:center;">
                 <button type="button" class="view-link invoice-view-btn"
