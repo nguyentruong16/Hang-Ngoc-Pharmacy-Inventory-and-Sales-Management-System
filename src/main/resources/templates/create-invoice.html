@@ -179,45 +179,48 @@
 
         .money-input-wrap {
             position: relative;
+            width: 100%;
         }
 
         .money-input-wrap .form-control {
-            padding-right: 36px;
+            width: 100%;
+            padding-right: 22px;
         }
 
         .money-stepper {
             position: absolute;
-            top: 4px;
-            right: 4px;
-            bottom: 4px;
-            width: 26px;
+            top: 1px;
+            right: 1px;
+            bottom: 1px;
+            width: 18px;
             display: flex;
             flex-direction: column;
+            border-left: 1px solid #dee2e6;
+            border-radius: 0 6px 6px 0;
             overflow: hidden;
-            border-left: 1px solid #e5e7eb;
         }
 
         .money-step-btn {
             flex: 1;
             border: none;
-            background: #f9fafb;
+            background: #f8f9fa;
             color: #6b7280;
-            font-size: 11px;
+            font-size: 9px;
             line-height: 1;
-            cursor: pointer;
             padding: 0;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .money-step-btn:hover {
-            background: #ecfdf5;
-            color: #059669;
+            background: #e9ecef;
+            color: #111827;
         }
 
         .money-step-btn.step-up {
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #dee2e6;
         }
     </style>
 </head>
