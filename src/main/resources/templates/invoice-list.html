@@ -352,6 +352,7 @@
             <tr>
               <th>Số hóa đơn</th>
               <th>Ngày lập</th>
+              <th>Loại hóa đơn</th>
               <th>Khách hàng</th>
               <th>Người bán</th>
               <th>Tổng tiền</th>
@@ -368,6 +369,7 @@
                       title="Hóa đơn thuốc kê đơn">Rx</span>
               </td>
               <td th:text="${item.dateDisplay}">01/07/2026 14:10</td>
+              <td th:text="${item.invoiceTypeDisplay}">Bán hàng</td>
               <td th:text="${item.customerName}">Anh Hoàng</td>
               <td th:text="${item.employeeName}">Dược sĩ A</td>
               <td class="sup-name"
@@ -403,7 +405,7 @@
             </tr>
 
             <tr th:if="${#lists.isEmpty(invoices)}" class="empty-row">
-              <td colspan="8" style="text-align:center;">
+              <td colspan="9" style="text-align:center;">
                 Không tìm thấy hóa đơn nào.
               </td>
             </tr>

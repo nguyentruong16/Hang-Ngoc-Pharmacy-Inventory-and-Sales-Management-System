@@ -20,6 +20,8 @@ public class InvoiceListItemResponse {
     private String customerName;
     private String employeeName;
 
+    private String invoiceTypeDisplay;
+
     private BigDecimal total;
     private BigDecimal debtAmount;
 
