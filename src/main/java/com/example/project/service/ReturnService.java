@@ -171,7 +171,7 @@ public class ReturnService {
                         invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                         invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
                         invoice.getTotal(),
-                        returnStatusDisplay(invoice.getReturnStatus())))
+                        returnStatusDisplay(invoiceReturnCode(invoice))))
                 .toList();
     }
 
@@ -390,7 +390,6 @@ public class ReturnService {
                 returndetailRepository.save(detail);
             }
         }
-        recomputeInvoiceReturnStatus(ret.getInvoiceID());
     }
 
     private Batch cloneReturnBatch(Batch original, int quantity, Return ret, int seq) {
@@ -416,22 +415,30 @@ public class ReturnService {
         return batchRepository.save(batch);
     }
 
-    private void recomputeInvoiceReturnStatus(Invoice invoice) {
+    /**
+     * NONE / PARTIAL / FULL derived from how much of the invoice's lines have been returned. Replaces
+     * the removed {@code invoice.returnStatus} column (the sale {@code status} is left untouched).
+     */
+    private String invoiceReturnCode(Invoice invoice) {
         List<Invoicedetail> lines = invoiceLinesOf(invoice.getId());
         boolean anyReturned = false;
         boolean allReturned = !lines.isEmpty();
         for (Invoicedetail line : lines) {
             int returned = line.getReturnedQty() != null ? line.getReturnedQty() : 0;
+            int quantity = line.getQuantity() != null ? line.getQuantity() : 0;
             if (returned > 0) {
                 anyReturned = true;
             }
-            if (returned < line.getQuantity()) {
+            if (returned < quantity) {
                 allReturned = false;
             }
         }
-        invoice.setReturnStatus(allReturned ? INVOICE_RETURN_FULL
-                : (anyReturned ? INVOICE_RETURN_PARTIAL : INVOICE_RETURN_NONE));
-        invoiceRepository.save(invoice);
+        return allReturned ? INVOICE_RETURN_FULL
+                : (anyReturned ? INVOICE_RETURN_PARTIAL : INVOICE_RETURN_NONE);
+    }
+
+    private boolean isFullyReturned(Invoice invoice) {
+        return INVOICE_RETURN_FULL.equals(invoiceReturnCode(invoice));
     }
 
     // ------------------------------------------------------------------ detail
@@ -579,7 +586,7 @@ public class ReturnService {
         if (Boolean.TRUE.equals(invoice.getPrescriptionRequired())) {
             return false;
         }
-        if (INVOICE_RETURN_FULL.equalsIgnoreCase(invoice.getReturnStatus())) {
+        if (isFullyReturned(invoice)) {
             return false;
         }
         return withinReturnWindow(invoice.getDate());
@@ -592,7 +599,7 @@ public class ReturnService {
         if (Boolean.TRUE.equals(invoice.getPrescriptionRequired())) {
             throw new IllegalArgumentException("Không thể trả hóa đơn thuốc kê đơn");
         }
-        if (INVOICE_RETURN_FULL.equalsIgnoreCase(invoice.getReturnStatus())) {
+        if (isFullyReturned(invoice)) {
             throw new IllegalArgumentException("Hóa đơn này đã được trả toàn bộ");
         }
         if (!withinReturnWindow(invoice.getDate())) {

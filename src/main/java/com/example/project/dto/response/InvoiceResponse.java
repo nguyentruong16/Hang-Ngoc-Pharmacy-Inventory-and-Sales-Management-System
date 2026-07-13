@@ -26,7 +26,9 @@ public class InvoiceResponse {
     private BigDecimal paidByBanking;
     private BigDecimal debtAmount;
     private Boolean prescriptionRequired;
-    private String returnStatus;
+    private String invoiceType;
+    private Integer originalInvoiceID;
+    private Integer returnID;
     private String status;
     private Integer shiftReportId;
     private String prescriptionCode;
@@ -47,7 +49,9 @@ public class InvoiceResponse {
                 invoice.getPaidByBanking(),
                 invoice.getDebtAmount(),
                 invoice.getPrescriptionRequired(),
-                invoice.getReturnStatus(),
+                invoice.getInvoiceType(),
+                invoice.getOriginalInvoiceID() != null ? invoice.getOriginalInvoiceID().getId() : null,
+                invoice.getReturnID() != null ? invoice.getReturnID().getId() : null,
                 invoice.getStatus(),
                 invoice.getShiftReportID() != null ? invoice.getShiftReportID().getId() : null,
                 invoice.getPrescriptionCode(),

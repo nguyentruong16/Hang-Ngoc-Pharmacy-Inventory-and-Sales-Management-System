@@ -47,8 +47,11 @@ import java.util.Objects;
 
 @Service
 public class InvoiceService {
+    private static final String RETURN_NONE = "NONE";
     private static final String RETURN_PARTIAL = "PARTIAL";
     private static final String RETURN_FULL = "FULL";
+
+    private static final String INVOICE_TYPE_NORMAL = "normal";
 
     private static final String PAYMENT_CASH = "CASH";
     private static final String PAYMENT_BANKING = "BANKING";
@@ -104,6 +107,7 @@ public class InvoiceService {
         LocalDate from = parseDate(fromDate);
         LocalDate to = parseDate(toDate);
         String normalizedStatus = status == null ? "" : status.trim();
+        Map<Integer, String> returnStates = returnStateByInvoice();
 
         List<InvoiceListItemResponse> filtered = invoiceRepository.findAllWithRelations()
                 .stream()
@@ -114,7 +118,7 @@ public class InvoiceService {
                 .filter(invoice -> normalizedStatus.isEmpty()
                         || normalize(normalizedStatus).equals(normalize(invoice.getStatus())))
                 .sorted(Comparator.comparing(Invoice::getDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(this::toListItem)
+                .map(invoice -> toListItem(invoice, returnStates))
                 .toList();
 
         int start = (int) pageable.getOffset();
@@ -205,13 +209,33 @@ public class InvoiceService {
 
     @Transactional(readOnly = true)
     public long countReturned() {
-        return invoiceRepository.findAll().stream()
-                .filter(invoice -> {
-                    String returnStatus = invoice.getReturnStatus();
-                    return RETURN_PARTIAL.equalsIgnoreCase(returnStatus)
-                            || RETURN_FULL.equalsIgnoreCase(returnStatus);
-                })
+        return returnStateByInvoice().values().stream()
+                .filter(code -> RETURN_PARTIAL.equals(code) || RETURN_FULL.equals(code))
                 .count();
+    }
+
+    /**
+     * Return state per invoice, derived from how much of its lines have been returned:
+     * {@code NONE} (nothing), {@code PARTIAL} (some), {@code FULL} (everything). Replaces the removed
+     * {@code returnStatus} column.
+     */
+    private Map<Integer, String> returnStateByInvoice() {
+        Map<Integer, String> map = new LinkedHashMap<>();
+        for (Object[] row : invoicedetailRepository.sumQuantitiesGroupedByInvoice()) {
+            Integer invoiceId = (Integer) row[0];
+            long sold = row[1] != null ? ((Number) row[1]).longValue() : 0;
+            long returned = row[2] != null ? ((Number) row[2]).longValue() : 0;
+            String code;
+            if (returned <= 0) {
+                code = RETURN_NONE;
+            } else if (returned >= sold) {
+                code = RETURN_FULL;
+            } else {
+                code = RETURN_PARTIAL;
+            }
+            map.put(invoiceId, code);
+        }
+        return map;
     }
 
     // ------------------------------------------------------------------ sell (create invoice)
@@ -319,7 +343,7 @@ public class InvoiceService {
         invoice.setDate(LocalDateTime.now(VN_ZONE).toInstant(ZoneOffset.UTC));
         invoice.setEmployeeID(employee);
         invoice.setCustomerID(customer);
-        invoice.setReturnStatus("NONE");
+        invoice.setInvoiceType(INVOICE_TYPE_NORMAL);
         invoice.setPrescriptionRequired(prescriptionRequired);
         invoice.setPrescriptionCode(prescriptionCode);
         invoice.setNote(trimToNull(request.getNote()));
@@ -483,8 +507,9 @@ public class InvoiceService {
                 .toList();
     }
 
-    private InvoiceListItemResponse toListItem(Invoice invoice) {
+    private InvoiceListItemResponse toListItem(Invoice invoice, Map<Integer, String> returnStates) {
         String statusName = invoice.getStatus() != null ? invoice.getStatus() : "Không rõ";
+        String returnCode = returnStates.getOrDefault(invoice.getId(), RETURN_NONE);
 
         return new InvoiceListItemResponse(
                 invoice.getId(),
@@ -497,8 +522,8 @@ public class InvoiceService {
                 invoice.getDebtAmount(),
                 paymentDisplay(invoice),
                 Boolean.TRUE.equals(invoice.getPrescriptionRequired()),
-                returnStatusDisplay(invoice.getReturnStatus()),
-                returnStatusCssClass(invoice.getReturnStatus()),
+                returnStatusDisplay(returnCode),
+                returnStatusCssClass(returnCode),
                 statusName,
                 statusCssClass(statusName));
     }

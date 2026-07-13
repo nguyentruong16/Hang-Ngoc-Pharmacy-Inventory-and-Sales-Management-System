@@ -32,4 +32,12 @@ public interface InvoicedetailRepository extends JpaRepository<Invoicedetail, In
        order by d.id
        """)
     List<Invoicedetail> findByInvoiceIdWithRelations(@Param("invoiceId") Integer invoiceId);
+
+    /** Per invoice: {@code [invoiceId, sum(quantity), sum(returnedQty)]}, for deriving return state. */
+    @Query("""
+       select d.invoiceID.id, sum(d.quantity), sum(coalesce(d.returnedQty, 0))
+       from Invoicedetail d
+       group by d.invoiceID.id
+       """)
+    List<Object[]> sumQuantitiesGroupedByInvoice();
 }

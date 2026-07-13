@@ -72,8 +72,16 @@ public class Invoice {
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "returnStatus", nullable = false, length = 50)
-    private String returnStatus;
+    @Column(name = "invoiceType", nullable = false, length = 50)
+    private String invoiceType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "originalInvoiceID")
+    private Invoice originalInvoiceID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "returnID")
+    private Return returnID;
 
     @Size(max = 50)
     @NotNull

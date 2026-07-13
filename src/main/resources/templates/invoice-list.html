@@ -356,7 +356,6 @@
               <th>Người bán</th>
               <th>Tổng tiền</th>
               <th>Thanh toán</th>
-              <th>Trả hàng</th>
               <th>Trạng thái</th>
               <th style="text-align:center;">Thao tác</th>
             </tr>
@@ -384,11 +383,6 @@
               </td>
               <td>
                 <span class="status-badge"
-                      th:classappend="${' ' + item.returnStatusCssClass}"
-                      th:text="${item.returnStatusDisplay}">Không</span>
-              </td>
-              <td>
-                <span class="status-badge"
                       th:classappend="${' ' + item.statusCssClass}"
                       th:text="${item.statusName}">Hoàn thành</span>
               </td>
@@ -403,7 +397,7 @@
             </tr>
 
             <tr th:if="${#lists.isEmpty(invoices)}" class="empty-row">
-              <td colspan="9" style="text-align:center;">
+              <td colspan="8" style="text-align:center;">
                 Không tìm thấy hóa đơn nào.
               </td>
             </tr>
