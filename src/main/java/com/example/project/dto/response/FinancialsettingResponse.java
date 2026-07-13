@@ -25,6 +25,9 @@ public class FinancialsettingResponse {
     private String email;
     private String bankAccountNumber;
     private String bankName;
+    private Integer revenueGroup;
+    private BigDecimal annualRevenueThreshold1;
+    private BigDecimal annualRevenueThreshold2;
 
     public static FinancialsettingResponse from(Financialsetting financialsetting) {
         return new FinancialsettingResponse(
@@ -40,7 +43,10 @@ public class FinancialsettingResponse {
                 financialsetting.getPhoneNumber(),
                 financialsetting.getEmail(),
                 financialsetting.getBankAccountNumber(),
-                financialsetting.getBankName()
+                financialsetting.getBankName(),
+                financialsetting.getRevenueGroup(),
+                financialsetting.getAnnualRevenueThreshold1(),
+                financialsetting.getAnnualRevenueThreshold2()
         );
     }
 }

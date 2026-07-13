@@ -98,5 +98,7 @@ public class Invoice {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "totalVATOutput", precision = 15, scale = 2)
+    private BigDecimal totalVATOutput;
 
 }

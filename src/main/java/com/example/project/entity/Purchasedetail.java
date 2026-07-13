@@ -45,5 +45,15 @@ public class Purchasedetail {
     @Column(name = "lotNumber", length = 50)
     private String lotNumber;
 
+    @NotNull
+    @Column(name = "vatRate", nullable = false, precision = 5, scale = 2)
+    private BigDecimal vatRate;
 
+    @NotNull
+    @Column(name = "preTaxAmount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal preTaxAmount;
+
+    @NotNull
+    @Column(name = "vatAmount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal vatAmount;
 }

@@ -16,6 +16,7 @@ public class SupplierResponse {
     private String phone;
     private String email;
     private long productCount;
+    private String taxCode;
 
     public static SupplierResponse from(Supplier supplier) {
         SupplierResponse r = new SupplierResponse();

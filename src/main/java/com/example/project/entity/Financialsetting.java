@@ -75,4 +75,16 @@ public class Financialsetting {
     @Column(name = "bankName", nullable = false, length = 100)
     private String bankName;
 
+    @ColumnDefault("1")
+    @Column(name = "revenueGroup")
+    private Integer revenueGroup;
+
+    @ColumnDefault("1000000000.00")
+    @Column(name = "annualRevenueThreshold1", precision = 15, scale = 2)
+    private BigDecimal annualRevenueThreshold1;
+
+    @ColumnDefault("3000000000.00")
+    @Column(name = "annualRevenueThreshold2", precision = 15, scale = 2)
+    private BigDecimal annualRevenueThreshold2;
+
 }

@@ -32,5 +32,8 @@ public class Supplier {
     @Column(name = "email", length = 100)
     private String email;
 
-
+    @Size(max = 20)
+    @NotNull
+    @Column(name = "taxCode", nullable = false)
+    private String taxCode;
 }

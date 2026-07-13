@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -27,6 +28,10 @@ public class PurchaseinvoiceResponse {
     private BigDecimal paid;
     private String status;
     private String note;
+    private String vatInvoiceNumber;
+    private LocalDate vatInvoiceDate;
+    private BigDecimal totalVATInput;
+    private Boolean isValidForDeduction;
 
     public static PurchaseinvoiceResponse from(Purchaseinvoice purchaseinvoice) {
         return new PurchaseinvoiceResponse(
@@ -43,7 +48,11 @@ public class PurchaseinvoiceResponse {
                 purchaseinvoice.getReturnQty(),
                 purchaseinvoice.getPaid(),
                 purchaseinvoice.getStatus(),
-                purchaseinvoice.getNote()
+                purchaseinvoice.getNote(),
+                purchaseinvoice.getVatInvoiceNumber(),
+                purchaseinvoice.getVatInvoiceDate(),
+                purchaseinvoice.getTotalVATInput(),
+                purchaseinvoice.getIsValidForDeduction()
         );
     }
 }
