@@ -90,6 +90,135 @@
                 padding-top: 84px !important;
             }
         }
+
+        .product-search-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .product-search-field {
+            position: relative;
+        }
+
+        .product-search-input {
+            padding-left: 42px;
+            min-height: 44px;
+            font-size: 14px;
+        }
+
+        .product-search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .product-search-results {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, .12);
+            max-height: 320px;
+            overflow-y: auto;
+            z-index: 30;
+            display: none;
+        }
+
+        .product-search-results.show { display: block; }
+
+        .product-search-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .product-search-item:last-child { border-bottom: none; }
+        .product-search-item:hover, .product-search-item.active { background: #ecfdf5; }
+
+        .product-search-code { font-size: 12px; color: #6b7280; font-weight: 600; }
+        .product-search-name { font-size: 14px; color: #111827; font-weight: 600; }
+        .product-search-stock { font-size: 12px; color: #059669; white-space: nowrap; }
+
+        .product-title-code {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .product-title-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.35;
+        }
+
+        .empty-product-state {
+            padding: 40px 24px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .empty-product-state i {
+            font-size: 40px;
+            color: #d1d5db;
+            margin-bottom: 10px;
+        }
+
+        .money-input-wrap {
+            position: relative;
+        }
+
+        .money-input-wrap .form-control {
+            padding-right: 36px;
+        }
+
+        .money-stepper {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            bottom: 4px;
+            width: 26px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-left: 1px solid #e5e7eb;
+        }
+
+        .money-step-btn {
+            flex: 1;
+            border: none;
+            background: #f9fafb;
+            color: #6b7280;
+            font-size: 11px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .money-step-btn:hover {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .money-step-btn.step-up {
+            border-bottom: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 
@@ -113,7 +242,7 @@
 
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <form th:action="${basePath}" th:object="${form}" method="post">
+        <form id="invoiceCreateForm" th:action="${basePath}" th:object="${form}" method="post">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <div class="row g-4">
@@ -175,16 +304,22 @@
                     </div>
 
                     <div class="sell-card">
-                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
-                            <div class="section-title">
+                        <div class="p-4 border-bottom">
+                            <div class="section-title mb-3">
                                 <i class="ti ti-package text-success me-1"></i>
                                 Hàng hóa bán
                             </div>
 
-                            <button type="button" class="btn btn-sm btn-sell-primary" onclick="addItemRow()">
-                                <i class="ti ti-plus me-1"></i>
-                                Thêm sản phẩm
-                            </button>
+                            <div class="product-search-wrap">
+                                <div class="product-search-field">
+                                    <i class="ti ti-search product-search-icon"></i>
+                                    <input type="text" id="productSearchInput"
+                                           class="form-control product-search-input"
+                                           placeholder="Tìm hàng theo tên, mã hoặc barcode"
+                                           autocomplete="off">
+                                    <div id="productSearchResults" class="product-search-results"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="table-responsive">
@@ -202,6 +337,12 @@
 
                                 <tbody id="detailRows"></tbody>
                             </table>
+                        </div>
+
+                        <div id="emptyProductState" class="empty-product-state">
+                            <div><i class="ti ti-package"></i></div>
+                            <div class="fw-semibold mb-1">Chưa có hàng hóa nào</div>
+                            <div class="small">Nhập tên hoặc mã hàng ở ô tìm kiếm phía trên để thêm vào hóa đơn</div>
                         </div>
                     </div>
 
@@ -231,8 +372,16 @@
 
                         <div class="mb-3">
                             <label class="form-label">Giảm giá</label>
-                            <input type="number" min="0" step="1000" class="form-control"
-                                   id="discount" th:field="*{discount}" oninput="calculateSummary()">
+                            <div class="money-input-wrap">
+                                <input type="text" inputmode="numeric" class="form-control"
+                                       id="discount" th:field="*{discount}" oninput="handlePriceInput(this)">
+                                <div class="money-stepper">
+                                    <button type="button" class="money-step-btn step-up"
+                                            onclick="stepMoney('discount', 1000)"><i class="ti ti-chevron-up"></i></button>
+                                    <button type="button" class="money-step-btn step-down"
+                                            onclick="stepMoney('discount', -1000)"><i class="ti ti-chevron-down"></i></button>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="money-summary-row">
@@ -265,20 +414,36 @@
 
                         <div class="mb-3" id="singlePaidBox">
                             <label class="form-label">Khách thanh toán</label>
-                            <input type="number" min="0" step="1000" class="form-control"
-                                   id="paidAmount" oninput="onPaidAmountInput()">
+                            <input type="text" inputmode="numeric" class="form-control"
+                                   id="paidAmount" oninput="handlePaidInput(this)">
                         </div>
 
                         <div id="splitPaidBox" style="display:none;">
                             <div class="mb-3">
                                 <label class="form-label">Tiền mặt</label>
-                                <input type="number" min="0" step="1000" class="form-control"
-                                       id="cashAmount" oninput="onPaidAmountInput()">
+                                <div class="money-input-wrap">
+                                    <input type="text" inputmode="numeric" class="form-control"
+                                           id="cashAmount" oninput="handlePaidInput(this)">
+                                    <div class="money-stepper">
+                                        <button type="button" class="money-step-btn step-up"
+                                                onclick="stepMoney('cashAmount', 1000)"><i class="ti ti-chevron-up"></i></button>
+                                        <button type="button" class="money-step-btn step-down"
+                                                onclick="stepMoney('cashAmount', -1000)"><i class="ti ti-chevron-down"></i></button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Chuyển khoản</label>
-                                <input type="number" min="0" step="1000" class="form-control"
-                                       id="bankingAmount" oninput="onPaidAmountInput()">
+                                <div class="money-input-wrap">
+                                    <input type="text" inputmode="numeric" class="form-control"
+                                           id="bankingAmount" oninput="handlePaidInput(this)">
+                                    <div class="money-stepper">
+                                        <button type="button" class="money-step-btn step-up"
+                                                onclick="stepMoney('bankingAmount', 1000)"><i class="ti ti-chevron-up"></i></button>
+                                        <button type="button" class="money-step-btn step-down"
+                                                onclick="stepMoney('bankingAmount', -1000)"><i class="ti ti-chevron-down"></i></button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -331,31 +496,61 @@
         return Number(input.value);
     }
 
-    function productOptionsHtml() {
-        let html = '<option value="">-- Chọn sản phẩm --</option>';
-        products.forEach(p => {
-            html += `<option value="${p.productId}">${p.name} (${p.code})</option>`;
-        });
-        return html;
+    /** Formats a raw number as a VND amount with dot thousand separators (e.g. 10000 -> "10.000"). */
+    function formatPriceDisplay(value) {
+        if (value == null || value === '') return '';
+        const num = Number(String(value).replace(/\./g, ''));
+        if (!Number.isFinite(num)) return '';
+        return num.toLocaleString('vi-VN');
     }
 
-    function refreshUnits(row) {
-        const productSelect = row.querySelector('.product-select');
-        const unitSelect = row.querySelector('.unit-select');
-        const product = productById[productSelect.value];
+    /** Reads a dot-separated price input back to its raw numeric value. */
+    function parsePrice(input) {
+        if (!input || !input.value) return 0;
+        const num = Number(String(input.value).replace(/\./g, ''));
+        return Number.isFinite(num) ? num : 0;
+    }
 
-        if (!product) {
-            unitSelect.innerHTML = '<option value="">-- Đơn vị --</option>';
-            row.querySelector('.stock-hint').textContent = '';
-            applyUnitPrice(row);
-            return;
+    /** Reformats a price input as the user types, keeping only digits + dot separators. */
+    function handlePriceInput(input) {
+        const digits = String(input.value).replace(/[^\d]/g, '');
+        input.value = digits ? Number(digits).toLocaleString('vi-VN') : '';
+        calculateSummary();
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function unitOptionsHtml(product, selectedUnitId) {
+        return product.units.map((u, idx) => {
+            const selected = (selectedUnitId != null && String(u.id) === String(selectedUnitId))
+                || (selectedUnitId == null && (u.defaultUnit || idx === 0));
+            return `<option value="${u.id}" data-ratio="${u.ratio}" data-price="${u.sellPrice}" ${selected ? 'selected' : ''}>${escapeHtml(u.unitName)}</option>`;
+        }).join('');
+    }
+
+    /** Base unit name = the sell unit with ratio 1 (stock is stored in this unit). */
+    function baseUnitName(product) {
+        if (!product || !product.units || !product.units.length) return '';
+        let base = product.units.find(u => Number(u.ratio) === 1);
+        if (!base) {
+            base = product.units.reduce((min, u) =>
+                (Number(u.ratio) || Infinity) < (Number(min.ratio) || Infinity) ? u : min, product.units[0]);
         }
+        return base && base.unitName ? base.unitName : '';
+    }
 
-        unitSelect.innerHTML = product.units.map((u, idx) =>
-            `<option value="${u.id}" data-ratio="${u.ratio}" data-price="${u.sellPrice}" ${u.defaultUnit || idx === 0 ? 'selected' : ''}>${u.unitName}</option>`
-        ).join('');
-
-        applyUnitPrice(row);
+    /** Returns the product row (tr) that already holds the given product id, if any. */
+    function findRowByProductId(productId) {
+        return Array.from(document.querySelectorAll('#detailRows tr')).find(row => {
+            const input = row.querySelector('[data-field="productId"]');
+            return input && Number(input.value) === Number(productId);
+        });
     }
 
     function applyUnitPrice(row) {
@@ -363,14 +558,19 @@
         const priceInput = row.querySelector('.price-input');
         const option = unitSelect.options[unitSelect.selectedIndex];
         if (option && option.value) {
-            priceInput.value = option.dataset.price || 0;
+            priceInput.value = formatPriceDisplay(option.dataset.price || 0);
         }
         calculateSummary();
     }
 
     /** Max quantity (in the row's chosen unit) still sellable, after accounting for other rows. */
+    function rowProduct(row) {
+        const input = row.querySelector('[data-field="productId"]');
+        return input ? productById[input.value] : null;
+    }
+
     function maxSellableForRow(row) {
-        const product = productById[row.querySelector('.product-select').value];
+        const product = rowProduct(row);
         const unitSelect = row.querySelector('.unit-select');
         const option = unitSelect.options[unitSelect.selectedIndex];
         if (!product || !option || !option.value) {
@@ -381,7 +581,7 @@
         let usedByOthers = 0;
         document.querySelectorAll('#detailRows tr').forEach(other => {
             if (other === row) return;
-            const otherProduct = productById[other.querySelector('.product-select').value];
+            const otherProduct = rowProduct(other);
             if (!otherProduct || otherProduct.productId !== product.productId) return;
             const otherUnit = other.querySelector('.unit-select');
             const otherOption = otherUnit.options[otherUnit.selectedIndex];
@@ -415,11 +615,10 @@
 
     /** Validates one row's quantity against stock (accounting for other rows of the same product). */
     function validateRow(row, usedBaseByProduct) {
-        const productSelect = row.querySelector('.product-select');
         const unitSelect = row.querySelector('.unit-select');
         const quantityInput = row.querySelector('.quantity-input');
         const hint = row.querySelector('.stock-hint');
-        const product = productById[productSelect.value];
+        const product = rowProduct(row);
         const option = unitSelect.options[unitSelect.selectedIndex];
 
         if (!product || !option || !option.value) {
@@ -453,7 +652,7 @@
         const rows = document.querySelectorAll('#detailRows tr');
         const usedBaseByProduct = {};
         rows.forEach(row => {
-            const product = productById[row.querySelector('.product-select').value];
+            const product = rowProduct(row);
             const unitSelect = row.querySelector('.unit-select');
             const option = unitSelect.options[unitSelect.selectedIndex];
             if (product && option && option.value) {
@@ -494,7 +693,8 @@
 
     /** Enables the submit button only when both stock and prescription checks pass. */
     function updateSubmitState() {
-        const ok = validateStock() && validatePrescription();
+        const hasRows = document.querySelectorAll('#detailRows tr').length > 0;
+        const ok = hasRows && validateStock() && validatePrescription();
         const submitBtn = document.getElementById('submitInvoiceBtn');
         if (submitBtn) {
             submitBtn.disabled = !ok;
@@ -502,10 +702,9 @@
     }
 
     function wireRow(row) {
-        row.querySelector('.product-select').addEventListener('change', () => refreshUnits(row));
         row.querySelector('.unit-select').addEventListener('change', () => applyUnitPrice(row));
         row.querySelector('.quantity-input').addEventListener('input', calculateSummary);
-        row.querySelector('.price-input').addEventListener('input', calculateSummary);
+        row.querySelector('.price-input').addEventListener('input', (event) => handlePriceInput(event.target));
     }
 
     function refreshRowIndexes() {
@@ -517,26 +716,38 @@
         });
     }
 
-    function addItemRow(preset) {
+    /** Adds a product line for the given product. `preset` restores a saved detail (unit/qty/price). */
+    function addItemRow(product, preset) {
+        if (!product) return;
+
         const tbody = document.getElementById('detailRows');
         const row = document.createElement('tr');
+        const selectedUnitId = preset && preset.productUnitId != null ? preset.productUnitId : null;
         row.innerHTML = `
             <td>
-                <select class="form-select product-select" data-field="productId">
-                    ${productOptionsHtml()}
-                </select>
+                <input type="hidden" data-field="productId" value="${product.productId}">
+                <div class="product-title-code">${escapeHtml(product.code)}</div>
+                <div class="product-title-name">${escapeHtml(product.name)}</div>
                 <div class="stock-hint"></div>
             </td>
             <td>
                 <select class="form-select unit-select" data-field="productUnitId">
-                    <option value="">-- Đơn vị --</option>
+                    ${unitOptionsHtml(product, selectedUnitId)}
                 </select>
             </td>
             <td>
                 <input type="number" min="1" value="1" class="form-control quantity-input" data-field="quantity">
             </td>
             <td>
-                <input type="number" min="0" step="1000" class="form-control price-input" data-field="unitSellPrice">
+                <div class="money-input-wrap">
+                    <input type="text" inputmode="numeric" class="form-control price-input" data-field="unitSellPrice">
+                    <div class="money-stepper">
+                        <button type="button" class="money-step-btn step-up"
+                                onclick="stepRowPrice(this, 1000)"><i class="ti ti-chevron-up"></i></button>
+                        <button type="button" class="money-step-btn step-down"
+                                onclick="stepRowPrice(this, -1000)"><i class="ti ti-chevron-down"></i></button>
+                    </div>
+                </div>
             </td>
             <td style="text-align:right;">
                 <span class="line-total">0đ</span>
@@ -548,39 +759,53 @@
             </td>
         `;
         tbody.appendChild(row);
-        refreshRowIndexes();
         wireRow(row);
+        applyUnitPrice(row);
 
         if (preset) {
-            const productSelect = row.querySelector('.product-select');
-            if (preset.productId != null) {
-                productSelect.value = String(preset.productId);
-            }
-            refreshUnits(row);
-            if (preset.productUnitId != null) {
-                row.querySelector('.unit-select').value = String(preset.productUnitId);
-                applyUnitPrice(row);
-            }
             if (preset.unitSellPrice != null && preset.unitSellPrice !== '') {
-                row.querySelector('.price-input').value = preset.unitSellPrice;
+                row.querySelector('.price-input').value = formatPriceDisplay(preset.unitSellPrice);
             }
             if (preset.quantity != null) {
                 row.querySelector('.quantity-input').value = preset.quantity;
             }
         }
 
+        refreshRowIndexes();
+        toggleEmptyState();
         calculateSummary();
     }
 
-    function removeItemRow(button) {
-        const rows = document.querySelectorAll('#detailRows tr');
-        if (rows.length <= 1) {
-            alert('Hóa đơn phải có ít nhất một sản phẩm.');
+    /** Adds the product by id, or bumps the quantity if it is already on the invoice. */
+    function addProductById(productId) {
+        const product = productById[productId];
+        if (!product) return;
+
+        const existingRow = findRowByProductId(productId);
+        if (existingRow) {
+            const quantityInput = existingRow.querySelector('.quantity-input');
+            quantityInput.value = numberValue(quantityInput) + 1;
+            existingRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            calculateSummary();
             return;
         }
+
+        addItemRow(product);
+    }
+
+    function removeItemRow(button) {
         button.closest('tr').remove();
         refreshRowIndexes();
+        toggleEmptyState();
         calculateSummary();
+    }
+
+    function toggleEmptyState() {
+        const hasRows = document.querySelectorAll('#detailRows tr').length > 0;
+        const emptyState = document.getElementById('emptyProductState');
+        if (emptyState) {
+            emptyState.style.display = hasRows ? 'none' : 'block';
+        }
     }
 
     let paidTouched = false;
@@ -588,6 +813,32 @@
     function onPaidAmountInput() {
         paidTouched = true;
         calculateSummary();
+    }
+
+    /** Reformats a payment input with dot separators as the user types. */
+    function handlePaidInput(input) {
+        const digits = String(input.value).replace(/[^\d]/g, '');
+        input.value = digits ? Number(digits).toLocaleString('vi-VN') : '';
+        onPaidAmountInput();
+    }
+
+    /** Increases/decreases a money input by `delta` (min 0) and triggers its recalculation. */
+    function stepMoney(inputId, delta) {
+        const input = document.getElementById(inputId);
+        if (!input || input.readOnly || input.disabled) return;
+        const next = Math.max(0, parsePrice(input) + delta);
+        input.value = next ? next.toLocaleString('vi-VN') : '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    /** Steps a product row's unit-price input up/down by `delta`. */
+    function stepRowPrice(button, delta) {
+        const wrap = button.closest('.money-input-wrap');
+        const input = wrap ? wrap.querySelector('.price-input') : null;
+        if (!input || input.readOnly || input.disabled) return;
+        const next = Math.max(0, parsePrice(input) + delta);
+        input.value = next ? next.toLocaleString('vi-VN') : '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     function currentPayMethod() {
@@ -614,7 +865,7 @@
         let subtotal = 0;
         document.querySelectorAll('#detailRows tr').forEach(row => {
             const quantity = numberValue(row.querySelector('.quantity-input'));
-            const price = numberValue(row.querySelector('.price-input'));
+            const price = parsePrice(row.querySelector('.price-input'));
             const lineTotal = quantity * price;
             subtotal += lineTotal;
 
@@ -624,7 +875,7 @@
             }
         });
 
-        const discount = numberValue(document.getElementById('discount'));
+        const discount = parsePrice(document.getElementById('discount'));
         let total = subtotal - discount;
         if (total < 0) total = 0;
 
@@ -634,23 +885,23 @@
         let paid;
 
         if (method === 'both') {
-            const cash = numberValue(document.getElementById('cashAmount'));
-            const banking = numberValue(document.getElementById('bankingAmount'));
+            const cash = parsePrice(document.getElementById('cashAmount'));
+            const banking = parsePrice(document.getElementById('bankingAmount'));
             cashField.value = cash;
             bankingField.value = banking;
             paid = cash + banking;
         } else {
             const paidAmountInput = document.getElementById('paidAmount');
             if (isWalkInCustomer()) {
-                paidAmountInput.value = total;
+                paidAmountInput.value = formatPriceDisplay(total);
                 paidAmountInput.readOnly = true;
             } else {
                 paidAmountInput.readOnly = false;
                 if (!paidTouched) {
-                    paidAmountInput.value = total;
+                    paidAmountInput.value = formatPriceDisplay(total);
                 }
             }
-            paid = numberValue(paidAmountInput);
+            paid = parsePrice(paidAmountInput);
             if (method === 'banking') {
                 cashField.value = 0;
                 bankingField.value = paid;
@@ -683,13 +934,112 @@
         updateSubmitState();
     }
 
+    let activeSearchIndex = -1;
+    let lastSearchItems = [];
+
+    function searchProducts(keyword) {
+        const normalized = keyword.trim().toLowerCase();
+        if (!normalized) return [];
+        return products.filter(p => {
+            const code = (p.code || '').toLowerCase();
+            const name = (p.name || '').toLowerCase();
+            const barcode = (p.barcode || '').toLowerCase();
+            return name.includes(normalized) || code.includes(normalized) || barcode.includes(normalized);
+        }).slice(0, 12);
+    }
+
+    function renderSearchResults(items, emptyMessage) {
+        const results = document.getElementById('productSearchResults');
+
+        if (!items.length) {
+            results.innerHTML = '<div class="product-search-item text-secondary">'
+                + escapeHtml(emptyMessage || 'Không tìm thấy hàng hóa') + '</div>';
+            results.classList.add('show');
+            activeSearchIndex = -1;
+            return;
+        }
+
+        results.innerHTML = items.map((product, index) => `
+            <div class="product-search-item ${index === activeSearchIndex ? 'active' : ''}"
+                 data-product-id="${product.productId}"
+                 onclick="selectSearchProduct(${product.productId})">
+                <div>
+                    <div class="product-search-code">${escapeHtml(product.code)}</div>
+                    <div class="product-search-name">${escapeHtml(product.name)}</div>
+                </div>
+                <div class="product-search-stock">Tồn: ${product.baseStock != null ? product.baseStock : 0}${baseUnitName(product) ? ' ' + escapeHtml(baseUnitName(product)) : ''}</div>
+            </div>
+        `).join('');
+        results.classList.add('show');
+    }
+
+    function hideSearchResults() {
+        document.getElementById('productSearchResults').classList.remove('show');
+        activeSearchIndex = -1;
+        lastSearchItems = [];
+    }
+
+    function liveSearchProducts(keyword) {
+        if (!keyword.trim()) {
+            hideSearchResults();
+            return;
+        }
+        lastSearchItems = searchProducts(keyword);
+        activeSearchIndex = -1;
+        renderSearchResults(lastSearchItems);
+    }
+
+    function selectSearchProduct(productId) {
+        addProductById(productId);
+        const searchInput = document.getElementById('productSearchInput');
+        searchInput.value = '';
+        hideSearchResults();
+        searchInput.focus();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         if (Array.isArray(initialDetails) && initialDetails.length > 0) {
-            initialDetails.forEach(detail => addItemRow(detail));
-        } else {
-            addItemRow();
+            initialDetails.forEach(detail => {
+                const product = productById[detail.productId];
+                if (product) {
+                    addItemRow(product, detail);
+                }
+            });
         }
+        toggleEmptyState();
         calculateSummary();
+
+        const searchInput = document.getElementById('productSearchInput');
+        searchInput.addEventListener('input', function (event) {
+            liveSearchProducts(event.target.value);
+        });
+        searchInput.addEventListener('keydown', function (event) {
+            if (!lastSearchItems.length && event.key !== 'Escape') {
+                return;
+            }
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                activeSearchIndex = Math.min(activeSearchIndex + 1, lastSearchItems.length - 1);
+                renderSearchResults(lastSearchItems);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                activeSearchIndex = Math.max(activeSearchIndex - 1, 0);
+                renderSearchResults(lastSearchItems);
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                if (activeSearchIndex >= 0 && lastSearchItems[activeSearchIndex]) {
+                    selectSearchProduct(lastSearchItems[activeSearchIndex].productId);
+                } else if (lastSearchItems.length === 1) {
+                    selectSearchProduct(lastSearchItems[0].productId);
+                }
+            } else if (event.key === 'Escape') {
+                hideSearchResults();
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('.product-search-wrap')) hideSearchResults();
+        });
 
         const checkbox = document.getElementById('prescriptionRequired');
         if (checkbox) {
@@ -700,6 +1050,23 @@
             codeInput.addEventListener('input', updateSubmitState);
         }
         togglePrescriptionCode();
+
+        const discountInput = document.getElementById('discount');
+        if (discountInput && discountInput.value) {
+            discountInput.value = formatPriceDisplay(discountInput.value);
+        }
+
+        const invoiceForm = document.getElementById('invoiceCreateForm');
+        if (invoiceForm) {
+            invoiceForm.addEventListener('submit', function () {
+                document.querySelectorAll('#detailRows .price-input').forEach(input => {
+                    input.value = String(parsePrice(input));
+                });
+                if (discountInput) {
+                    discountInput.value = String(parsePrice(discountInput));
+                }
+            });
+        }
     });
 </script>
 
