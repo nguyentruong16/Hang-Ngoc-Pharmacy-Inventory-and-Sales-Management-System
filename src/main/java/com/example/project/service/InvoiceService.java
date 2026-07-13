@@ -52,6 +52,7 @@ public class InvoiceService {
     private static final String RETURN_FULL = "FULL";
 
     private static final String INVOICE_TYPE_NORMAL = "normal";
+    private static final String INVOICE_TYPE_RETURN = "return";
 
     private static final String PAYMENT_CASH = "CASH";
     private static final String PAYMENT_BANKING = "BANKING";
@@ -518,6 +519,7 @@ public class InvoiceService {
                 formatInstant(invoice.getDate()),
                 invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
+                invoiceTypeDisplay(invoice.getInvoiceType()),
                 invoice.getTotal(),
                 invoice.getDebtAmount(),
                 paymentDisplay(invoice),
@@ -596,6 +598,17 @@ public class InvoiceService {
             case PAYMENT_MIXED -> cash && banking;
             case PAYMENT_DEBT -> debt;
             default -> true;
+        };
+    }
+
+    private String invoiceTypeDisplay(String invoiceType) {
+        if (invoiceType == null || invoiceType.isBlank()) {
+            return "—";
+        }
+        return switch (invoiceType.toLowerCase(Locale.ROOT)) {
+            case INVOICE_TYPE_NORMAL -> "Bán hàng";
+            case INVOICE_TYPE_RETURN -> "Trả hàng";
+            default -> invoiceType;
         };
     }
 
