@@ -302,7 +302,7 @@
                  class="filter-input"
                  name="search"
                  th:value="${search}"
-                 placeholder="Tìm theo mã hóa đơn, khách hàng, SĐT hoặc người bán">
+                 placeholder="Tìm theo mã hóa đơn hoặc khách hàng">
           <input type="date"
                  class="filter-input filter-date"
                  name="fromDate"
@@ -327,6 +327,14 @@
                     th:value="${item}"
                     th:text="${item}"
                     th:selected="${filterStatus == item}">
+            </option>
+          </select>
+          <select class="filter-select" name="sellerId">
+            <option value="">Người bán</option>
+            <option th:each="seller : ${sellers}"
+                    th:value="${seller.id}"
+                    th:text="${seller.name}"
+                    th:selected="${filterSellerId != null && filterSellerId == seller.id}">
             </option>
           </select>
           <button type="submit" class="btn-search primary">
@@ -377,7 +385,7 @@
               <td>
                 <span class="status-badge"
                       th:classappend="${' ' + item.returnStatusCssClass}"
-                      th:text="${item.returnStatusDisplay}">Chưa trả</span>
+                      th:text="${item.returnStatusDisplay}">Không</span>
               </td>
               <td>
                 <span class="status-badge"
@@ -414,18 +422,18 @@
           <ul class="pagination mb-0">
             <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, paymentType=${filterPaymentType}, status=${filterStatus}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
+                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, paymentType=${filterPaymentType}, status=${filterStatus}, sellerId=${filterSellerId}, page=${currentPage - 1}, size=${pageSize})}">Trước</a>
             </li>
             <li class="page-item"
                 th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
                 th:classappend="${p == currentPage} ? ' active'">
               <a class="page-link"
                  th:text="${p + 1}"
-                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, paymentType=${filterPaymentType}, status=${filterStatus}, page=${p}, size=${pageSize})}">1</a>
+                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, paymentType=${filterPaymentType}, status=${filterStatus}, sellerId=${filterSellerId}, page=${p}, size=${pageSize})}">1</a>
             </li>
             <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
               <a class="page-link"
-                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, paymentType=${filterPaymentType}, status=${filterStatus}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
+                 th:href="@{${basePath}(search=${search}, fromDate=${fromDate}, toDate=${toDate}, paymentType=${filterPaymentType}, status=${filterStatus}, sellerId=${filterSellerId}, page=${currentPage + 1}, size=${pageSize})}">Sau</a>
             </li>
           </ul>
         </nav>

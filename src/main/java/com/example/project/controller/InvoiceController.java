@@ -54,6 +54,7 @@ public class InvoiceController {
                               @RequestParam(name = "toDate", required = false) String toDate,
                               @RequestParam(name = "paymentType", required = false) String paymentType,
                               @RequestParam(name = "status", required = false) String status,
+                              @RequestParam(name = "sellerId", required = false) Integer sellerId,
                               @RequestParam(name = "page", defaultValue = "0") int page,
                               @RequestParam(name = "size", defaultValue = "5") int size,
                               HttpServletRequest request,
@@ -67,7 +68,7 @@ public class InvoiceController {
         }
 
         Page<InvoiceListItemResponse> invoicePage = invoiceService.list(
-                search, fromDate, toDate, paymentType, status, PageRequest.of(page, size));
+                search, fromDate, toDate, paymentType, status, sellerId, PageRequest.of(page, size));
         String basePath = resolveBasePath(request);
 
         model.addAttribute("invoices", invoicePage.getContent());
@@ -78,12 +79,14 @@ public class InvoiceController {
         model.addAttribute("debtTotal", invoiceService.sumDebtTotal());
         model.addAttribute("returnedInvoices", invoiceService.countReturned());
         model.addAttribute("statuses", invoiceService.listStatuses());
+        model.addAttribute("sellers", invoiceService.listSellers());
         model.addAttribute("paymentTypeLabels", invoiceService.paymentTypeLabels());
         model.addAttribute("search", search);
         model.addAttribute("fromDate", fromDate);
         model.addAttribute("toDate", toDate);
         model.addAttribute("filterPaymentType", paymentType);
         model.addAttribute("filterStatus", status);
+        model.addAttribute("filterSellerId", sellerId);
         model.addAttribute("currentPage", invoicePage.getNumber());
         model.addAttribute("totalPages", invoicePage.getTotalPages());
         model.addAttribute("pageSize", size);

@@ -98,6 +98,7 @@ public class InvoiceService {
                                               String toDate,
                                               String paymentType,
                                               String status,
+                                              Integer sellerId,
                                               Pageable pageable) {
         String normalizedKeyword = normalize(search);
         LocalDate from = parseDate(fromDate);
@@ -109,6 +110,7 @@ public class InvoiceService {
                 .filter(invoice -> matchesKeyword(invoice, normalizedKeyword))
                 .filter(invoice -> matchesDate(invoice, from, to))
                 .filter(invoice -> matchesPaymentType(invoice, paymentType))
+                .filter(invoice -> matchesSeller(invoice, sellerId))
                 .filter(invoice -> normalizedStatus.isEmpty()
                         || normalize(normalizedStatus).equals(normalize(invoice.getStatus())))
                 .sorted(Comparator.comparing(Invoice::getDate, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -132,6 +134,23 @@ public class InvoiceService {
                 .filter(status -> status != null && !status.isBlank())
                 .distinct()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    /** Distinct sellers (accounts) that have created at least one invoice, for the list filter. */
+    @Transactional(readOnly = true)
+    public List<CustomerOptionResponse> listSellers() {
+        Map<Integer, String> byId = new LinkedHashMap<>();
+        for (Invoice invoice : invoiceRepository.findAllWithRelations()) {
+            Account employee = invoice.getEmployeeID();
+            if (employee != null && employee.getId() != null) {
+                byId.putIfAbsent(employee.getId(), employee.getName());
+            }
+        }
+        return byId.entrySet().stream()
+                .map(entry -> new CustomerOptionResponse(entry.getKey(), entry.getValue(), null))
+                .sorted(Comparator.comparing(CustomerOptionResponse::getName,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
     }
 
@@ -513,12 +532,16 @@ public class InvoiceService {
         return containsNormalized(invoiceCode(invoice), normalizedKeyword)
                 || containsNormalized(invoice.getCustomerID() != null
                         ? invoice.getCustomerID().getName() : null, normalizedKeyword)
-                || containsNormalized(invoice.getCustomerID() != null
-                        ? invoice.getCustomerID().getPhoneNumber() : null, normalizedKeyword)
-                || containsNormalized(invoice.getEmployeeID() != null
-                        ? invoice.getEmployeeID().getName() : null, normalizedKeyword)
                 || containsNormalized(invoice.getStatus(), normalizedKeyword)
                 || containsNormalized(invoice.getNote(), normalizedKeyword);
+    }
+
+    private boolean matchesSeller(Invoice invoice, Integer sellerId) {
+        if (sellerId == null) {
+            return true;
+        }
+        return invoice.getEmployeeID() != null
+                && sellerId.equals(invoice.getEmployeeID().getId());
     }
 
     private boolean matchesDate(Invoice invoice, LocalDate from, LocalDate to) {
@@ -574,12 +597,12 @@ public class InvoiceService {
 
     private String returnStatusDisplay(String returnStatus) {
         if (returnStatus == null || returnStatus.isBlank()) {
-            return "Chưa trả";
+            return "Không";
         }
         return switch (returnStatus.toUpperCase(Locale.ROOT)) {
             case RETURN_PARTIAL -> "Trả một phần";
             case RETURN_FULL -> "Đã trả toàn bộ";
-            default -> "Chưa trả";
+            default -> "Không";
         };
     }
 
