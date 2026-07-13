@@ -812,6 +812,8 @@
     }
 
     let paidTouched = false;
+    /** Which split field the user last edited ('cash' | 'banking'), for walk-in mixed payment auto-balance. */
+    let lastSplitPaidField = null;
 
     function onPaidAmountInput() {
         paidTouched = true;
@@ -822,6 +824,13 @@
     function handlePaidInput(input) {
         const digits = String(input.value).replace(/[^\d]/g, '');
         input.value = digits ? Number(digits).toLocaleString('vi-VN') : '';
+        if (currentPayMethod() === 'both') {
+            if (input.id === 'cashAmount') {
+                lastSplitPaidField = 'cash';
+            } else if (input.id === 'bankingAmount') {
+                lastSplitPaidField = 'banking';
+            }
+        }
         onPaidAmountInput();
     }
 
@@ -859,7 +868,31 @@
         document.getElementById('singlePaidBox').style.display = both ? 'none' : 'block';
         document.getElementById('splitPaidBox').style.display = both ? 'block' : 'none';
         paidTouched = false;
+        lastSplitPaidField = null;
         calculateSummary();
+    }
+
+    /** Walk-in + TM+CK: keep cash + banking equal to total by adjusting the field the user did not edit. */
+    function balanceWalkInSplitPayment(total) {
+        const cashInput = document.getElementById('cashAmount');
+        const bankingInput = document.getElementById('bankingAmount');
+        let cash = parsePrice(cashInput);
+        let banking = parsePrice(bankingInput);
+
+        if (!paidTouched) {
+            cash = total;
+            banking = 0;
+        } else if (lastSplitPaidField === 'banking') {
+            banking = Math.min(Math.max(0, banking), total);
+            cash = total - banking;
+        } else {
+            cash = Math.min(Math.max(0, cash), total);
+            banking = total - cash;
+        }
+
+        cashInput.value = cash > 0 ? formatPriceDisplay(cash) : '';
+        bankingInput.value = banking > 0 ? formatPriceDisplay(banking) : '';
+        return { cash, banking };
     }
 
     function calculateSummary() {
@@ -888,8 +921,14 @@
         let paid;
 
         if (method === 'both') {
-            const cash = parsePrice(document.getElementById('cashAmount'));
-            const banking = parsePrice(document.getElementById('bankingAmount'));
+            let cash;
+            let banking;
+            if (isWalkInCustomer()) {
+                ({ cash, banking } = balanceWalkInSplitPayment(total));
+            } else {
+                cash = parsePrice(document.getElementById('cashAmount'));
+                banking = parsePrice(document.getElementById('bankingAmount'));
+            }
             cashField.value = cash;
             bankingField.value = banking;
             paid = cash + banking;
