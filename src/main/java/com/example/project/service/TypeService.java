@@ -62,6 +62,7 @@ public class TypeService {
         Type type = new Type();
         type.setSortType(request.getSortType().trim());
         type.setName(request.getName().trim());
+        type.setDefaultVATRate(request.getDefaultVATRate());
         return TypeResponse.from(typeRepository.save(type));
     }
 
@@ -71,6 +72,7 @@ public class TypeService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy loại hàng"));
         type.setSortType(request.getSortType().trim());
         type.setName(request.getName().trim());
+        type.setDefaultVATRate(request.getDefaultVATRate());
         return TypeResponse.from(typeRepository.save(type));
     }
 }
