@@ -168,6 +168,7 @@ public class SupplierService {
         supplier.setPhone(request.getPhone().trim());
         supplier.setEmail(request.getEmail().trim());
         supplier.setAddress(request.getAddress().trim());
+        supplier.setTaxCode(request.getTaxCode().trim());
 
         return supplierRepository.save(supplier).getId();
     }
@@ -186,6 +187,7 @@ public class SupplierService {
         supplier.setPhone(request.getPhone().trim());
         supplier.setEmail(request.getEmail().trim());
         supplier.setAddress(request.getAddress().trim());
+        supplier.setTaxCode(request.getTaxCode().trim());
 
         supplierRepository.save(supplier);
     }

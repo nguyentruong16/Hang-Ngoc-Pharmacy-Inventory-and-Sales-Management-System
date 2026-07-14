@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +44,10 @@ public class ReturnService {
 
     /** Only completed sale invoices are returnable. Matched accent/case-insensitively. */
     private static final String INVOICE_STATUS_COMPLETED = "Hoàn thành";
+    // The sale invoice no longer has a separate returnStatus column (removed by DB) — the return
+    // state is written back into invoice.status using these values, per the DB owner (2026-07-14).
+    private static final String INVOICE_STATUS_RETURNED_FULL = "Đã trả hàng toàn bộ";
+    private static final String INVOICE_STATUS_RETURNED_PARTIAL = "Đã trả hàng 1 phần";
 
     private static final String INVOICE_RETURN_NONE = "NONE";
     private static final String INVOICE_RETURN_PARTIAL = "PARTIAL";
@@ -261,9 +266,12 @@ public class ReturnService {
                 throw new IllegalArgumentException("Số lượng trả của \"" + productName(line)
                         + "\" vượt quá số còn có thể trả (" + returnable + ")");
             }
-            // Only base-unit lines may be restocked; among those, respect the user's checkbox.
-            boolean restockable = isSoldInBaseUnit(line) && !Boolean.FALSE.equals(item.getRestockable());
-            prepared.put(line.getId(), new PreparedLine(line, qty, restockable));
+            // Restockable is hard-coded by item type (BA 2026-07-12): only the manufacturer's default
+            // packaging unit (productunit.isDefault) goes back to stock; loose units do not. No manual
+            // checkbox — the client value is ignored. (Combo / medical-device "máy" / prescription
+            // invoices are already blocked from return upstream.)
+            boolean restockable = isRestockableUnit(line);
+            prepared.put(line.getId(), preparedLineOf(line, qty, restockable));
         }
 
         if (prepared.isEmpty()) {
@@ -272,6 +280,9 @@ public class ReturnService {
 
         BigDecimal totalRefund = prepared.values().stream()
                 .map(PreparedLine::lineRefund)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalVATRefund = prepared.values().stream()
+                .map(PreparedLine::vatAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         String returnType = resolveReturnType(request.getReturnType());
@@ -289,6 +300,7 @@ public class ReturnService {
         ret.setRefundBanking(TYPE_BANKING.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setRefundCredit(TYPE_DEBT.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setTotalRefund(totalRefund);
+        ret.setTotalVATRefund(totalVATRefund);
         ret.setOffsetDebtAmount(BigDecimal.ZERO);
         ret.setReason(request.getReason().trim());
         ret.setNote(trimToNull(request.getNote()));
@@ -312,6 +324,9 @@ public class ReturnService {
             detail.setBaseQtyRestored(line.baseQtyRestored());
             detail.setUnitSellPrice(line.unitSellPrice());
             detail.setLineRefund(line.lineRefund());
+            detail.setVatRate(line.vatRate());
+            detail.setPreTaxAmount(line.preTaxAmount());
+            detail.setVatAmount(line.vatAmount());
             detail.setRestockable(line.restockable());
             details.add(returndetailRepository.save(detail));
         }
@@ -389,6 +404,26 @@ public class ReturnService {
                 detail.setBatchID(returnBatch);
                 returndetailRepository.save(detail);
             }
+        }
+        updateInvoiceReturnStatus(ret.getInvoiceID());
+    }
+
+    /**
+     * Writes the return state into the sale invoice's {@code status} — the dedicated {@code returnStatus}
+     * column was removed by the DB owner (2026-07-14), who asked to reuse {@code invoice.status}
+     * ("Đã trả hàng 1 phần" / "Đã trả hàng toàn bộ"). Left untouched when nothing has been returned.
+     */
+    private void updateInvoiceReturnStatus(Invoice invoice) {
+        if (invoice == null) {
+            return;
+        }
+        String code = invoiceReturnCode(invoice);
+        if (INVOICE_RETURN_FULL.equals(code)) {
+            invoice.setStatus(INVOICE_STATUS_RETURNED_FULL);
+            invoiceRepository.save(invoice);
+        } else if (INVOICE_RETURN_PARTIAL.equals(code)) {
+            invoice.setStatus(INVOICE_STATUS_RETURNED_PARTIAL);
+            invoiceRepository.save(invoice);
         }
     }
 
@@ -561,13 +596,41 @@ public class ReturnService {
                 already,
                 line.getQuantity() - already,
                 line.getUnitSellPrice(),
-                isSoldInBaseUnit(line));
+                isRestockableUnit(line));
     }
 
-    /** True when the line's sale unit is the product's base unit — the only case we allow restocking. */
-    private boolean isSoldInBaseUnit(Invoicedetail line) {
+    /**
+     * Restockable only when the sold unit is the manufacturer's default packaging unit
+     * ({@code productunit.isDefault}) — BA 2026-07-12. Loose units (isDefault=false) cannot go back to
+     * stock; combo / medical-device "máy" / prescription invoices are already blocked from return
+     * upstream. This is hard-coded (no manual checkbox).
+     */
+    private boolean isRestockableUnit(Invoicedetail line) {
         Productunit unit = line.getProductUnitID();
-        return unit != null && Boolean.TRUE.equals(unit.getIsBaseUnit());
+        return unit != null && Boolean.TRUE.equals(unit.getIsDefault());
+    }
+
+    /**
+     * Builds a priced return line, copying the VAT split from the original sale line proportionally to
+     * the returned quantity (docx: ReturnDetail.vatRate copied from InvoiceDetail; vatAmount reduces the
+     * period's output VAT). Falls back to a fully-pre-tax refund when the sale line has no VAT breakdown.
+     */
+    private PreparedLine preparedLineOf(Invoicedetail line, int qty, boolean restockable) {
+        BigDecimal rate = line.getVatRate() != null ? line.getVatRate() : BigDecimal.ZERO;
+        BigDecimal preTax;
+        BigDecimal vat;
+        Integer soldQty = line.getQuantity();
+        if (line.getPreTaxAmount() != null && line.getVatAmount() != null && soldQty != null && soldQty > 0) {
+            BigDecimal ratio = BigDecimal.valueOf(qty).divide(BigDecimal.valueOf(soldQty), 10, RoundingMode.HALF_UP);
+            preTax = line.getPreTaxAmount().multiply(ratio).setScale(2, RoundingMode.HALF_UP);
+            vat = line.getVatAmount().multiply(ratio).setScale(2, RoundingMode.HALF_UP);
+        } else {
+            BigDecimal gross = (line.getUnitSellPrice() != null ? line.getUnitSellPrice() : BigDecimal.ZERO)
+                    .multiply(BigDecimal.valueOf(qty));
+            preTax = gross;
+            vat = BigDecimal.ZERO;
+        }
+        return new PreparedLine(line, qty, restockable, rate, preTax, vat, preTax.add(vat));
     }
 
     // ------------------------------------------------------------------ invoice read-only access
@@ -579,8 +642,14 @@ public class ReturnService {
                 .toList();
     }
 
+    /** Completed, or already partially returned (a partial return moves status to "Đã trả hàng 1 phần"). */
+    private boolean isReturnEligibleStatus(Invoice invoice) {
+        return isStatus(invoice.getStatus(), INVOICE_STATUS_COMPLETED)
+                || isStatus(invoice.getStatus(), INVOICE_STATUS_RETURNED_PARTIAL);
+    }
+
     private boolean isReturnable(Invoice invoice) {
-        if (!isStatus(invoice.getStatus(), INVOICE_STATUS_COMPLETED)) {
+        if (!isReturnEligibleStatus(invoice)) {
             return false;
         }
         if (Boolean.TRUE.equals(invoice.getPrescriptionRequired())) {
@@ -593,7 +662,7 @@ public class ReturnService {
     }
 
     private void assertReturnable(Invoice invoice) {
-        if (!isStatus(invoice.getStatus(), INVOICE_STATUS_COMPLETED)) {
+        if (!isReturnEligibleStatus(invoice)) {
             throw new IllegalArgumentException("Chỉ trả được hóa đơn đã hoàn thành");
         }
         if (Boolean.TRUE.equals(invoice.getPrescriptionRequired())) {
@@ -799,14 +868,12 @@ public class ReturnService {
         return normalized.toLowerCase(Locale.ROOT).trim();
     }
 
-    /** A validated, priced return line ready to be persisted. */
-    private record PreparedLine(Invoicedetail invoiceLine, int qty, boolean restockable) {
+    /** A validated, priced return line (with its VAT split) ready to be persisted. */
+    private record PreparedLine(Invoicedetail invoiceLine, int qty, boolean restockable,
+                                BigDecimal vatRate, BigDecimal preTaxAmount, BigDecimal vatAmount,
+                                BigDecimal lineRefund) {
         BigDecimal unitSellPrice() {
             return invoiceLine.getUnitSellPrice() != null ? invoiceLine.getUnitSellPrice() : BigDecimal.ZERO;
-        }
-
-        BigDecimal lineRefund() {
-            return unitSellPrice().multiply(BigDecimal.valueOf(qty));
         }
 
         int baseQtyRestored() {

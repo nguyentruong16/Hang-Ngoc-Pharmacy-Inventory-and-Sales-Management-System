@@ -85,6 +85,18 @@
               <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
             </div>
 
+            <div class="mb-3">
+              <label for="supplierTaxCode" class="form-label">
+                Mã số thuế <span class="text-danger">*</span>
+              </label>
+              <input id="supplierTaxCode" type="text" class="form-control"
+                     th:field="*{taxCode}"
+                     th:classappend="${#fields.hasErrors('taxCode')} ? ' is-invalid'"
+                     maxlength="20"
+                     placeholder="VD: 0101234567 hoặc 0101234567-001">
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></div>
+            </div>
+
             <div class="row g-3 mb-3">
               <div class="col-12 col-md-6">
                 <label for="supplierPhone" class="form-label">
