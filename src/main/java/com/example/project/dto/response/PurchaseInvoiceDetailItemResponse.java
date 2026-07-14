@@ -20,4 +20,7 @@ public class PurchaseInvoiceDetailItemResponse {
     private Integer quantity;
     private BigDecimal importPrice;
     private BigDecimal lineTotal;
+    private BigDecimal vatRate;
+    private BigDecimal preTaxAmount;
+    private BigDecimal vatAmount;
 }

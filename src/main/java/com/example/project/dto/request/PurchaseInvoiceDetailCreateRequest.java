@@ -1,5 +1,6 @@
 package com.example.project.dto.request;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -29,4 +30,9 @@ public class PurchaseInvoiceDetailCreateRequest {
     private LocalDate expirationDate;
 
     private String lotNumber;
+
+    @NotNull(message = "Vui lòng nhập thuế suất VAT")
+    @DecimalMin(value = "0.0", message = "Thuế suất VAT không được âm")
+    @DecimalMax(value = "100.0", message = "Thuế suất VAT không được lớn hơn 100%")
+    private BigDecimal vatRate;
 }

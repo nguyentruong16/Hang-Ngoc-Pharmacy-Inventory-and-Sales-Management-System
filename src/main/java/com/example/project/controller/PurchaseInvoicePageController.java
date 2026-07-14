@@ -166,6 +166,7 @@ public class PurchaseInvoicePageController {
         model.addAttribute("products", purchaseinvoiceService.listProducts());
         model.addAttribute("existingLotsByProduct", purchaseinvoiceService.buildExistingLotsByProduct());
         model.addAttribute("costPriceBySupplierAndProduct", purchaseinvoiceService.buildCostPriceBySupplierAndProduct());
+        model.addAttribute("vatRateByProduct", purchaseinvoiceService.getVatRateByProduct());
         model.addAttribute("basePath", resolveBasePath(request));
     }
 

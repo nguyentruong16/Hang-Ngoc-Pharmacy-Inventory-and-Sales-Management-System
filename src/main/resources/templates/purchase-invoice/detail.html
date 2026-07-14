@@ -167,6 +167,16 @@
                         </div>
 
                         <div class="info-row">
+                            <div class="info-label">Số hóa đơn GTGT</div>
+                            <div th:text="${detail.vatInvoiceNumber}">0000123</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Ngày hóa đơn GTGT</div>
+                            <div th:text="${detail.vatInvoiceDateDisplay}">01/06/2026</div>
+                        </div>
+
+                        <div class="info-row">
                             <div class="info-label">Trạng thái thanh toán</div>
                             <div>
                                 <span class="status-badge"
@@ -203,6 +213,7 @@
                                 <th>Hạn dùng</th>
                                 <th>Số lượng</th>
                                 <th>Giá nhập</th>
+                                <th>Thuế suất (%)</th>
                                 <th>Thành tiền</th>
                             </tr>
                             </thead>
@@ -223,6 +234,7 @@
                                 <td th:text="${#numbers.formatDecimal(item.importPrice, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     0đ
                                 </td>
+                                <td th:text="${item.vatRate}">5</td>
                                 <td class="fw-semibold"
                                     th:text="${#numbers.formatDecimal(item.lineTotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     0đ
@@ -232,6 +244,7 @@
                             <tr class="fw-semibold">
                                 <td colspan="5">Tổng cộng</td>
                                 <td th:text="${detail.totalQuantity}">0</td>
+                                <td></td>
                                 <td></td>
                                 <td class="text-success"
                                     th:text="${#numbers.formatDecimal(detail.subtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
@@ -269,6 +282,13 @@
                         <div class="d-flex justify-content-between mb-3">
                             <span class="text-secondary">Tiền hàng</span>
                             <strong th:text="${#numbers.formatDecimal(detail.subtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tiền thuế VAT</span>
+                            <strong th:text="${#numbers.formatDecimal(detail.totalVATInput, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                 0đ
                             </strong>
                         </div>

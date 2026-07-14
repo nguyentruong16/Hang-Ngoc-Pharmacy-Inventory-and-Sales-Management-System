@@ -14,4 +14,6 @@ public class PurchaseInvoicePrintLineResponse {
     private BigDecimal importPrice;
     private Integer quantity;
     private BigDecimal lineTotal;
+    private BigDecimal vatRate;
+    private BigDecimal vatAmount;
 }
