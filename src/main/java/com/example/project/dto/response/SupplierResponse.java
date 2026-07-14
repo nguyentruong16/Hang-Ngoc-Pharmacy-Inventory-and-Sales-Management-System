@@ -26,6 +26,7 @@ public class SupplierResponse {
         r.address = supplier.getAddress();
         r.phone = supplier.getPhone();
         r.email = supplier.getEmail();
+        r.taxCode = supplier.getTaxCode();
         return r;
     }
 

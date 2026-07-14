@@ -148,6 +148,10 @@
               <div class="info-label">Email</div>
               <div class="info-value" th:text="${supplier.email != null ? supplier.email : '—'}">—</div>
             </div>
+            <div>
+              <div class="info-label">Mã số thuế</div>
+              <div class="info-value" th:text="${supplier.taxCode != null ? supplier.taxCode : '—'}">—</div>
+            </div>
             <div class="full">
               <div class="info-label">Địa chỉ</div>
               <div class="info-value" th:text="${supplier.address != null ? supplier.address : '—'}">—</div>
@@ -182,6 +186,18 @@
                  th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
                  placeholder="Nhập tên nhà cung cấp">
           <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <div class="mb-3">
+          <label for="editTaxCode" class="form-label">
+            Mã số thuế <span class="text-danger">*</span>
+          </label>
+          <input id="editTaxCode" type="text" class="form-control"
+                 th:field="*{taxCode}"
+                 th:classappend="${#fields.hasErrors('taxCode')} ? ' is-invalid'"
+                 maxlength="20"
+                 placeholder="VD: 0101234567 hoặc 0101234567-001">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></div>
         </div>
 
         <div class="row g-3 mb-3">

@@ -283,6 +283,7 @@
             <tr>
               <th>Mã NCC</th>
               <th>Tên nhà cung cấp</th>
+              <th>Mã số thuế</th>
               <th>Số điện thoại</th>
               <th>Email</th>
               <th>Địa chỉ</th>
@@ -294,6 +295,7 @@
             <tr th:each="sup : ${suppliers}">
               <td class="sup-code" th:text="${sup.supplierCode}">NCC-000001</td>
               <td class="sup-name"  th:text="${sup.name}">Tên NCC</td>
+              <td th:text="${sup.taxCode != null ? sup.taxCode : '—'}">—</td>
               <td th:text="${sup.phone != null ? sup.phone : '—'}">—</td>
               <td th:text="${sup.email != null ? sup.email : '—'}">—</td>
               <td class="sup-addr"
@@ -306,7 +308,7 @@
             </tr>
 
             <tr th:if="${#lists.isEmpty(suppliers)}" class="empty-row">
-              <td colspan="7" style="text-align:center;">
+              <td colspan="8" style="text-align:center;">
                 Không tìm thấy nhà cung cấp nào.
               </td>
             </tr>
