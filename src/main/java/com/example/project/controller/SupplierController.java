@@ -126,6 +126,7 @@ public class SupplierController {
             form.setPhone(supplier.getPhone());
             form.setEmail(supplier.getEmail());
             form.setAddress(supplier.getAddress());
+            form.setTaxCode(supplier.getTaxCode());
             model.addAttribute("form", form);
         }
 

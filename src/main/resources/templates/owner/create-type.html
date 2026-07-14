@@ -15,6 +15,16 @@
     <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
 
     <style>
+        :root {
+            --type-green: #059669;
+            --type-green-dark: #047857;
+            --type-green-bg: #e8f7f1;
+            --type-border: #e5e7eb;
+            --type-muted: #6b7280;
+        }
+
+        body { background: #f6f7f9; }
+
         .owner-page-content {
             padding-top: 96px !important;
             padding-bottom: 48px;
@@ -26,30 +36,128 @@
             }
         }
 
-        .owner-card {
-            border: 1px solid #e5e7eb;
+        .owner-card,
+        .action-panel {
+            border: 1px solid var(--type-border);
             border-radius: 14px;
             background: #fff;
             box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
         }
 
-        .btn-owner-primary {
-            background: #059669;
-            border-color: #059669;
-            color: #fff;
-            border-radius: 10px;
+        .form-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f3f4f6;
         }
 
-        .btn-owner-primary:hover {
-            background: #047857;
-            border-color: #047857;
-            color: #fff;
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 6px;
         }
 
         .form-control,
-        .form-select {
+        .form-select,
+        .input-group-text {
             border-radius: 10px;
             min-height: 42px;
+            border-color: var(--type-border);
+            font-size: 13px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #6ee7b7;
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, .1);
+        }
+
+        .input-group .form-control {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .input-group .input-group-text {
+            background: #f9fafb;
+            color: var(--type-muted);
+            font-weight: 600;
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
+        .vat-field {
+            max-width: 220px;
+        }
+
+        .vat-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .vat-chip {
+            height: 32px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid var(--type-border);
+            background: #fff;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .vat-chip:hover,
+        .vat-chip.active {
+            background: var(--type-green-bg);
+            border-color: #a7f3d0;
+            color: var(--type-green-dark);
+        }
+
+        .action-panel {
+            background: #f9fafb;
+            padding: 20px;
+        }
+
+        @media (min-width: 992px) {
+            .action-panel {
+                position: sticky;
+                top: 104px;
+            }
+        }
+
+        .action-note {
+            font-size: 13px;
+            color: var(--type-muted);
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .btn-owner-primary {
+            background: var(--type-green);
+            border-color: var(--type-green);
+            color: #fff;
+            border-radius: 10px;
+            min-height: 42px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-owner-primary:hover {
+            background: var(--type-green-dark);
+            border-color: var(--type-green-dark);
+            color: #fff;
+        }
+
+        .btn-back {
+            border-radius: 10px;
+            min-height: 40px;
+            font-size: 13px;
         }
     </style>
 </head>
@@ -64,21 +172,21 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <h1 class="fs-4 mb-1">Tạo loại hàng mới</h1>
-                <p class="text-secondary mb-0">Thêm loại hàng mới vào hệ thống</p>
+                <p class="text-secondary mb-0">Thêm loại hàng và thiết lập tỷ lệ VAT mặc định</p>
             </div>
 
-            <a th:href="${basePath}" class="btn btn-outline-secondary">
-                Quay lại danh sách
+            <a th:href="${basePath}" class="btn btn-outline-secondary btn-back">
+                <i class="ti ti-arrow-left me-1"></i>Quay lại danh sách
             </a>
         </div>
 
-        <div class="owner-card p-4">
-            <form th:action="${basePath + '/create-type'}" th:object="${typeForm}" method="post" novalidate>
-                <div class="row g-4">
-                    <div class="col-12 col-lg-8">
-                        <h2 class="fs-6 mb-3">Thông tin loại hàng</h2>
+        <form th:action="${basePath + '/create-type'}" th:object="${typeForm}" method="post" novalidate>
+            <div class="row g-4">
+                <div class="col-12 col-lg-8">
+                    <div class="owner-card p-4 p-md-5">
+                        <h2 class="form-section-title">Thông tin loại hàng</h2>
 
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label for="sortType" class="form-label">Nhóm mặt hàng <span class="text-danger">*</span></label>
                             <input id="sortType"
                                    type="text"
@@ -93,38 +201,92 @@
                             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('sortType')}" th:errors="*{sortType}"></div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="typeName" class="form-label">Tên loại hàng <span class="text-danger">*</span></label>
-                            <input id="typeName"
-                                   type="text"
-                                   class="form-control"
-                                   th:field="*{name}"
-                                   placeholder="Nhập tên loại hàng">
-                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-7">
+                                <label for="typeName" class="form-label">Tên loại hàng <span class="text-danger">*</span></label>
+                                <input id="typeName"
+                                       type="text"
+                                       class="form-control"
+                                       th:field="*{name}"
+                                       placeholder="Nhập tên loại hàng">
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                            </div>
+
+                            <div class="col-12 col-md-5">
+                                <label for="defaultVATRate" class="form-label">Tỷ lệ VAT mặc định <span class="text-danger">*</span></label>
+                                <div class="vat-field">
+                                    <div class="input-group">
+                                        <input id="defaultVATRate"
+                                               type="number"
+                                               min="0"
+                                               max="100"
+                                               step="0.01"
+                                               class="form-control"
+                                               th:field="*{defaultVATRate}"
+                                               placeholder="5">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="vat-presets" role="group" aria-label="Chọn nhanh tỷ lệ VAT">
+                                    <button type="button" class="vat-chip" data-vat="0">0%</button>
+                                    <button type="button" class="vat-chip" data-vat="5">5%</button>
+                                    <button type="button" class="vat-chip" data-vat="8">8%</button>
+                                    <button type="button" class="vat-chip" data-vat="10">10%</button>
+                                </div>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('defaultVATRate')}" th:errors="*{defaultVATRate}"></div>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="col-12 col-lg-4">
-                        <h2 class="fs-6 mb-3">Thao tác</h2>
-
-                        <p class="text-secondary small mb-4">
-                            Kiểm tra kỹ thông tin trước khi tạo loại hàng mới.
+                <div class="col-12 col-lg-4">
+                    <div class="action-panel">
+                        <h2 class="form-section-title mb-3">Thao tác</h2>
+                        <p class="action-note">
+                            Kiểm tra kỹ nhóm mặt hàng, tên loại và tỷ lệ VAT trước khi tạo mới.
                         </p>
 
                         <button type="submit" class="btn btn-owner-primary w-100 mb-2">
-                            Tạo loại hàng
+                            <i class="ti ti-plus me-1"></i>Tạo loại hàng
                         </button>
 
-                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
+                        <a th:href="${basePath}" class="btn btn-outline-secondary w-100 btn-back">
                             Hủy
                         </a>
                     </div>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
 
     </div>
 </main>
+
+<script>
+    (function () {
+        const vatInput = document.getElementById('defaultVATRate');
+        const chips = document.querySelectorAll('.vat-chip');
+        if (!vatInput || !chips.length) return;
+
+        function syncActiveChip() {
+            const value = parseFloat(vatInput.value);
+            chips.forEach(chip => {
+                const chipValue = parseFloat(chip.dataset.vat);
+                chip.classList.toggle('active', !Number.isNaN(value) && value === chipValue);
+            });
+        }
+
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                vatInput.value = chip.dataset.vat;
+                syncActiveChip();
+                vatInput.focus();
+            });
+        });
+
+        vatInput.addEventListener('input', syncActiveChip);
+        syncActiveChip();
+    })();
+</script>
 
 </body>
 </html>

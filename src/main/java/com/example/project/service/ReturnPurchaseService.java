@@ -307,6 +307,8 @@ public class ReturnPurchaseService {
         ret.setRefundBanking(TYPE_BANKING.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setRefundCredit(TYPE_DEBT.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setTotalRefund(totalRefund);
+        // Supplier-return input-VAT adjustment is deferred to the finance phase — no output VAT here.
+        ret.setTotalVATRefund(BigDecimal.ZERO);
         ret.setOffsetDebtAmount(BigDecimal.ZERO);
         ret.setReason(request.getReason().trim());
         ret.setNote(trimToNull(request.getNote()));
@@ -329,6 +331,10 @@ public class ReturnPurchaseService {
             detail.setBaseQtyRestored(chunk.qty());
             detail.setUnitSellPrice(chunk.unitImportPrice());
             detail.setLineRefund(chunk.lineRefund());
+            // VAT split not tracked for supplier returns (input-VAT handled in the finance phase).
+            detail.setVatRate(BigDecimal.ZERO);
+            detail.setPreTaxAmount(chunk.lineRefund());
+            detail.setVatAmount(BigDecimal.ZERO);
             detail.setRestockable(false);
             returndetailRepository.save(detail);
         }

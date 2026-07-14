@@ -114,6 +114,7 @@ public class TypeController {
             TypeCreateRequest form = new TypeCreateRequest();
             form.setSortType(type.getSortType());
             form.setName(type.getName());
+            form.setDefaultVATRate(type.getDefaultVATRate());
             model.addAttribute("typeForm", form);
         }
 
