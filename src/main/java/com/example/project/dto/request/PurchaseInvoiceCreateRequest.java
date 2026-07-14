@@ -2,12 +2,14 @@ package com.example.project.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,12 @@ public class PurchaseInvoiceCreateRequest {
     private BigDecimal paid = BigDecimal.ZERO;
 
     private String note;
+
+    @NotBlank(message = "Vui lòng nhập số hóa đơn GTGT")
+    private String vatInvoiceNumber;
+
+    @NotNull(message = "Vui lòng nhập ngày hóa đơn GTGT")
+    private LocalDate vatInvoiceDate;
 
     @Valid
     @NotEmpty(message = "Phiếu nhập phải có ít nhất một sản phẩm")

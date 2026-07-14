@@ -146,6 +146,7 @@ public class PurchaseinvoiceService {
         BigDecimal subtotal = calculateSubtotal(details);
         BigDecimal additionCost = safe(invoice.getAdditionCost());
         BigDecimal discount = safe(invoice.getDiscount());
+        BigDecimal totalVATInput = safe(invoice.getTotalVATInput());
         BigDecimal totalAmount = safeTotalAmount(invoice);
         BigDecimal paid = safePaid(invoice);
         BigDecimal debtAmount = totalAmount.subtract(paid);
@@ -180,11 +181,14 @@ public class PurchaseinvoiceService {
                 subtotal,
                 additionCost,
                 discount,
+                totalVATInput,
                 totalAmount,
                 paid,
                 debtAmount,
                 paymentStatus,
                 statusCssClass(paymentStatus),
+                invoice.getVatInvoiceNumber(),
+                formatLocalDate(invoice.getVatInvoiceDate()),
                 invoice.getNote(),
                 details.size(),
                 totalQuantity,
@@ -202,6 +206,7 @@ public class PurchaseinvoiceService {
         BigDecimal subtotal = calculateSubtotal(details);
         BigDecimal additionCost = safe(invoice.getAdditionCost());
         BigDecimal discount = safe(invoice.getDiscount());
+        BigDecimal totalVATInput = safe(invoice.getTotalVATInput());
         BigDecimal totalAmount = safeTotalAmount(invoice);
 
         int totalQuantity = details.stream()
@@ -227,7 +232,10 @@ public class PurchaseinvoiceService {
                 subtotal,
                 additionCost,
                 discount,
+                totalVATInput,
                 totalAmount,
+                invoice.getVatInvoiceNumber(),
+                formatLocalDate(invoice.getVatInvoiceDate()),
                 invoice.getNote(),
                 lines
         );
@@ -243,7 +251,9 @@ public class PurchaseinvoiceService {
                 product != null ? product.getName() : "Không rõ",
                 detail.getImportPrice(),
                 detail.getQuantity(),
-                lineTotal
+                lineTotal,
+                detail.getVatRate(),
+                detail.getVatAmount()
         );
     }
 
@@ -263,9 +273,14 @@ public class PurchaseinvoiceService {
                         .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        BigDecimal totalVATInput = request.getDetails()
+                .stream()
+                .map(this::calculateLineVatAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         BigDecimal additionCost = safe(request.getAdditionCost());
         BigDecimal discount = safe(request.getDiscount());
-        BigDecimal totalAmount = subtotal.add(additionCost).subtract(discount);
+        BigDecimal totalAmount = subtotal.add(totalVATInput).add(additionCost).subtract(discount);
 
         if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Tổng tiền phiếu nhập không hợp lệ");
@@ -290,12 +305,18 @@ public class PurchaseinvoiceService {
         invoice.setReturnStatus("NONE");
         invoice.setReturnQty(0);
         invoice.setNote(request.getNote());
+        invoice.setVatInvoiceNumber(trimToNull(request.getVatInvoiceNumber()));
+        invoice.setVatInvoiceDate(request.getVatInvoiceDate());
+        invoice.setTotalVATInput(totalVATInput);
 
         Purchaseinvoice savedInvoice = purchaseinvoiceRepository.save(invoice);
 
         for (PurchaseInvoiceDetailCreateRequest item : request.getDetails()) {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm: " + item.getProductId()));
+
+            BigDecimal preTaxAmount = calculateLinePreTaxAmount(item);
+            BigDecimal vatAmount = calculateLineVatAmount(item);
 
             Purchasedetail detail = new Purchasedetail();
             detail.setPurchaseID(savedInvoice);
@@ -305,6 +326,9 @@ public class PurchaseinvoiceService {
             detail.setProductionDate(item.getProductionDate());
             detail.setExpirationDate(item.getExpirationDate());
             detail.setLotNumber(trimToNull(item.getLotNumber()));
+            detail.setVatRate(item.getVatRate());
+            detail.setPreTaxAmount(preTaxAmount);
+            detail.setVatAmount(vatAmount);
 
             Purchasedetail savedDetail = purchasedetailRepository.save(detail);
 
@@ -313,6 +337,44 @@ public class PurchaseinvoiceService {
         }
 
         return savedInvoice.getId();
+    }
+
+    /** "Tiền hàng" of one purchase line before VAT — importPrice × quantity. */
+    private BigDecimal calculateLinePreTaxAmount(PurchaseInvoiceDetailCreateRequest item) {
+        return safe(item.getImportPrice())
+                .multiply(BigDecimal.valueOf(item.getQuantity() == null ? 0 : item.getQuantity()));
+    }
+
+    /** VAT amount of one purchase line — preTaxAmount × vatRate / 100, rounded to đồng-cent precision. */
+    private BigDecimal calculateLineVatAmount(PurchaseInvoiceDetailCreateRequest item) {
+        return calculateLinePreTaxAmount(item)
+                .multiply(safe(item.getVatRate()))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Per-product VAT-rate suggestion for the Purchase Invoice create form:
+     * {@link Product#getVatRateOverride()} wins when set, else the product's
+     * {@code Type.defaultVATRate}. Feeds the client-side "gợi ý" auto-fill, same role as
+     * {@code costPriceBySupplierAndProduct}.
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, BigDecimal> getVatRateByProduct() {
+        Map<Integer, BigDecimal> result = new HashMap<>();
+
+        for (Object[] row : productRepository.findVatRateSuggestions()) {
+            Integer productId = (Integer) row[0];
+            BigDecimal vatRateOverride = (BigDecimal) row[1];
+            BigDecimal defaultVATRate = (BigDecimal) row[2];
+
+            BigDecimal effectiveRate = vatRateOverride != null
+                    ? vatRateOverride
+                    : (defaultVATRate != null ? defaultVATRate : BigDecimal.ZERO);
+
+            result.put(productId, effectiveRate);
+        }
+
+        return result;
     }
 
     /**
@@ -540,6 +602,14 @@ public class PurchaseinvoiceService {
     }
 
     private void validateCreateRequest(PurchaseInvoiceCreateRequest request) {
+        if (request.getVatInvoiceNumber() == null || request.getVatInvoiceNumber().isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập số hóa đơn GTGT");
+        }
+
+        if (request.getVatInvoiceDate() == null) {
+            throw new IllegalArgumentException("Vui lòng nhập ngày hóa đơn GTGT");
+        }
+
         if (request.getDetails() == null || request.getDetails().isEmpty()) {
             throw new IllegalArgumentException("Phiếu nhập phải có ít nhất một sản phẩm");
         }
@@ -572,6 +642,15 @@ public class PurchaseinvoiceService {
             if (detail.getProductionDate() != null
                     && detail.getExpirationDate().isBefore(detail.getProductionDate())) {
                 throw new IllegalArgumentException("Hạn sử dụng không được trước ngày sản xuất");
+            }
+
+            if (detail.getVatRate() == null) {
+                throw new IllegalArgumentException("Vui lòng nhập thuế suất VAT cho tất cả sản phẩm");
+            }
+
+            if (detail.getVatRate().compareTo(BigDecimal.ZERO) < 0
+                    || detail.getVatRate().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new IllegalArgumentException("Thuế suất VAT phải trong khoảng 0-100%");
             }
         }
     }
@@ -618,7 +697,10 @@ public class PurchaseinvoiceService {
                 formatLocalDate(detail.getExpirationDate()),
                 detail.getQuantity(),
                 detail.getImportPrice(),
-                lineTotal
+                lineTotal,
+                detail.getVatRate(),
+                detail.getPreTaxAmount(),
+                detail.getVatAmount()
         );
     }
 
