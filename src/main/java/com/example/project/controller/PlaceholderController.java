@@ -34,7 +34,6 @@ public class PlaceholderController {
             "/owner/suppliers",
             "/owner/debts",
             "/owner/vat-invoices",
-            "/owner/financial-setting",
             "/owner/customers",
             "/owner/approvals",
             "/owner/notifications",
@@ -65,8 +64,7 @@ public class PlaceholderController {
             "/accountant/expenses",
             "/accountant/daily-reports",
             "/accountant/vat-invoices",
-            "/accountant/notifications",
-            "/accountant/financial-setting"
+            "/accountant/notifications"
     })
     public String accountant(HttpServletRequest request, Model model) {
         return render(request, model);

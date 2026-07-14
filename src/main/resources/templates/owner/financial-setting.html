@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8"/>
+  <title>Thiết lập tài chính</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/images/apple-touch-icon.png" th:href="@{/assets/images/apple-touch-icon.png}">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" th:href="@{/assets/images/favicon-32x32.png}">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png" th:href="@{/assets/images/favicon-16x16.png}">
+  <link rel="manifest" href="./assets/site.webmanifest" th:href="@{/assets/site.webmanifest}">
+  <script type="module" crossorigin src="./assets/js/main.js" th:src="@{/assets/js/main.js}"></script>
+  <link rel="stylesheet" crossorigin href="./assets/css/main.css" th:href="@{/assets/css/main.css}">
+
+  <style>
+    :root {
+      --sup-green:      #059669;
+      --sup-green-dark: #047857;
+      --sup-border:     #e5e7eb;
+      --sup-muted:      #6b7280;
+    }
+    body { background: #f6f7f9; }
+    .sup-card {
+      background: #fff; border: 1px solid var(--sup-border);
+      border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    }
+    .form-label { font-size: 13px; color: #111827; margin-bottom: 6px; }
+    .form-control, .form-select {
+      min-height: 40px; border-radius: 10px;
+      border-color: var(--sup-border); font-size: 13px;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #6ee7b7; box-shadow: 0 0 0 3px rgba(5,150,105,.1);
+    }
+    .form-control:disabled { background-color: #f9fafb; color: #6b7280; }
+    /* method toggle */
+    .type-toggle { display: flex; gap: 10px; flex-wrap: wrap; }
+    .type-option {
+      flex: 1 1 200px; border: 1px solid var(--sup-border); border-radius: 10px;
+      padding: 12px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+      transition: border-color .15s, background .15s;
+    }
+    .type-option input { accent-color: var(--sup-green); }
+    .type-option.active { border-color: var(--sup-green); background: #f0fdf9; }
+    .type-option.disabled { cursor: not-allowed; opacity: .7; }
+    .type-option .ti { font-size: 1.3rem; color: var(--sup-green); }
+    .type-option .t-title { font-size: 13px; font-weight: 600; color: #111827; }
+    .type-toggle.locked { pointer-events: none; opacity: .6; }
+    .btn-sup-primary {
+      background: var(--sup-green); border-color: var(--sup-green); color: #fff;
+      border-radius: 10px; min-height: 42px; font-size: 13px; font-weight: 500;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    }
+    .btn-sup-primary:hover { background: var(--sup-green-dark); border-color: var(--sup-green-dark); color: #fff; }
+    .form-check-input:checked { background-color: var(--sup-green); border-color: var(--sup-green); }
+  </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+<div th:replace="~{fragments/toast :: flash}"></div>
+
+<main id="content" class="content py-8">
+  <div class="container-fluid">
+
+    <div class="mb-4">
+      <h1 class="fs-4 mb-0">Thiết lập tài chính</h1>
+    </div>
+
+    <form th:action="@{/owner/financial-setting}" th:object="${financialSettingForm}" method="post" novalidate>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="sup-card p-4 p-md-5">
+            <h2 class="fs-6 mb-4">Thuế &amp; hóa đơn</h2>
+
+            <!-- Nhóm doanh thu & ngưỡng áp dụng -->
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-4">
+                <label for="fsRevenueGroup" class="form-label">Nhóm doanh thu hộ kinh doanh <span class="text-danger">*</span></label>
+                <select id="fsRevenueGroup" class="form-select"
+                        th:field="*{revenueGroup}"
+                        th:classappend="${#fields.hasErrors('revenueGroup')} ? ' is-invalid'"
+                        th:disabled="${!editable}">
+                  <option value="1">Nhóm 1 — dưới ngưỡng 1 (miễn thuế)</option>
+                  <option value="2">Nhóm 2 — từ ngưỡng 1 đến ngưỡng 2 (được chọn phương thức)</option>
+                  <option value="3">Nhóm 3 — trên ngưỡng 2 (bắt buộc theo lợi nhuận)</option>
+                </select>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('revenueGroup')}" th:errors="*{revenueGroup}"></div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="fsThreshold1" class="form-label">Ngưỡng doanh thu miễn thuế (nhóm 1) <span class="text-danger">*</span></label>
+                <input id="fsThreshold1" type="number" class="form-control"
+                       th:field="*{annualRevenueThreshold1}"
+                       th:classappend="${#fields.hasErrors('annualRevenueThreshold1')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       min="0" step="1000000">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('annualRevenueThreshold1')}" th:errors="*{annualRevenueThreshold1}"></div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="fsThreshold2" class="form-label">Ngưỡng doanh thu bắt buộc theo lợi nhuận (nhóm 3) <span class="text-danger">*</span></label>
+                <input id="fsThreshold2" type="number" class="form-control"
+                       th:field="*{annualRevenueThreshold2}"
+                       th:classappend="${#fields.hasErrors('annualRevenueThreshold2')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       min="0" step="1000000">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('annualRevenueThreshold2')}" th:errors="*{annualRevenueThreshold2}"></div>
+              </div>
+            </div>
+
+            <!-- Phương thức tính thuế -->
+            <div class="mb-3">
+              <label class="form-label">Phương thức tính thuế <span class="text-danger">*</span></label>
+              <div class="type-toggle" id="taxMethodToggle">
+                <label class="type-option" id="optRevenue" th:classappend="${!editable} ? ' disabled'">
+                  <input type="radio" th:field="*{taxCalculationMethod}" value="1" th:disabled="${!editable}">
+                  <i class="ti ti-report-money"></i>
+                  <span class="t-title">Theo doanh thu</span>
+                </label>
+                <label class="type-option" id="optProfit" th:classappend="${!editable} ? ' disabled'">
+                  <input type="radio" th:field="*{taxCalculationMethod}" value="2" th:disabled="${!editable}">
+                  <i class="ti ti-chart-line"></i>
+                  <span class="t-title">Theo lợi nhuận</span>
+                </label>
+              </div>
+              <div class="text-danger small mt-1" th:if="${#fields.hasErrors('taxCalculationMethod')}" th:errors="*{taxCalculationMethod}"></div>
+              <div class="alert alert-info small p-3 mt-3 mb-0">
+                <i class="ti ti-info-circle me-1"></i>
+                Theo quy mô hộ kinh doanh: doanh thu dưới ngưỡng 1 được miễn thuế; từ ngưỡng 1 đến ngưỡng 2 được
+                chọn 1 trong 2 cách tính trên; trên ngưỡng 2 bắt buộc tính theo lợi nhuận — phương thức tự khoá
+                theo nhóm doanh thu đã chọn ở trên. Công thức và mức thuế suất cụ thể được áp dụng cố định trong
+                hệ thống.
+              </div>
+            </div>
+
+            <div class="row g-3 mb-0">
+              <div class="col-12 col-md-6">
+                <label for="fsRate" class="form-label">Tỷ lệ phần trăm hàng trả so với giá trị hóa đơn</label>
+                <div class="input-group">
+                  <input id="fsRate" type="number" class="form-control"
+                         th:field="*{returnProductOnInvoiceValueRate}"
+                         th:classappend="${#fields.hasErrors('returnProductOnInvoiceValueRate')} ? ' is-invalid'"
+                         th:disabled="${!editable}"
+                         min="0" max="100" step="0.01">
+                  <span class="input-group-text">%</span>
+                </div>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('returnProductOnInvoiceValueRate')}" th:errors="*{returnProductOnInvoiceValueRate}"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="fsVatSeries" class="form-label">Ký hiệu mẫu số hóa đơn VAT <span class="text-danger">*</span></label>
+                <input id="fsVatSeries" type="text" class="form-control"
+                       th:field="*{vatInvoiceSeries}"
+                       th:classappend="${#fields.hasErrors('vatInvoiceSeries')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       maxlength="10" placeholder="VD: 1C25TYY">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('vatInvoiceSeries')}" th:errors="*{vatInvoiceSeries}"></div>
+              </div>
+            </div>
+
+            <div class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" id="fsAutoVat"
+                     th:field="*{autoGenerateVATInvoice}" th:disabled="${!editable}">
+              <label class="form-check-label" for="fsAutoVat">Tự động phát hành hóa đơn VAT</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="sup-card p-4 p-md-5">
+            <h2 class="fs-6 mb-4">Vận hành &amp; thông tin đơn vị</h2>
+
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6">
+                <label for="fsOpeningCash" class="form-label">Tiền mặt mở ca mặc định <span class="text-danger">*</span></label>
+                <input id="fsOpeningCash" type="number" class="form-control"
+                       th:field="*{openingCashDefault}"
+                       th:classappend="${#fields.hasErrors('openingCashDefault')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       min="0" step="1000">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('openingCashDefault')}" th:errors="*{openingCashDefault}"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="fsTaxCode" class="form-label">Mã số thuế <span class="text-danger">*</span></label>
+                <input id="fsTaxCode" type="text" class="form-control"
+                       th:field="*{taxCode}"
+                       th:classappend="${#fields.hasErrors('taxCode')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       maxlength="100">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></div>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6">
+                <label for="fsLocationCode" class="form-label">Mã địa điểm kinh doanh <span class="text-danger">*</span></label>
+                <input id="fsLocationCode" type="text" class="form-control"
+                       th:field="*{locationCode}"
+                       th:classappend="${#fields.hasErrors('locationCode')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       maxlength="20">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('locationCode')}" th:errors="*{locationCode}"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="fsLocationName" class="form-label">Tên địa điểm kinh doanh <span class="text-danger">*</span></label>
+                <input id="fsLocationName" type="text" class="form-control"
+                       th:field="*{locationName}"
+                       th:classappend="${#fields.hasErrors('locationName')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       maxlength="100">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('locationName')}" th:errors="*{locationName}"></div>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6">
+                <label for="fsPhone" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                <input id="fsPhone" type="tel" class="form-control"
+                       th:field="*{phoneNumber}"
+                       th:classappend="${#fields.hasErrors('phoneNumber')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       inputmode="numeric" maxlength="10">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="fsEmail" class="form-label">Địa chỉ email <span class="text-danger">*</span></label>
+                <input id="fsEmail" type="email" class="form-control"
+                       th:field="*{email}"
+                       th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       maxlength="100">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-0">
+              <div class="col-12 col-md-6">
+                <label for="fsBankAcc" class="form-label">Số tài khoản ngân hàng <span class="text-danger">*</span></label>
+                <input id="fsBankAcc" type="text" class="form-control"
+                       th:field="*{bankAccountNumber}"
+                       th:classappend="${#fields.hasErrors('bankAccountNumber')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       maxlength="20">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="fsBankName" class="form-label">Tên ngân hàng <span class="text-danger">*</span></label>
+                <input id="fsBankName" type="text" class="form-control"
+                       th:field="*{bankName}"
+                       th:classappend="${#fields.hasErrors('bankName')} ? ' is-invalid'"
+                       th:disabled="${!editable}"
+                       maxlength="100">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12" th:if="${editable}">
+          <button type="submit" class="btn btn-sup-primary w-auto px-4">
+            <i class="ti ti-device-floppy"></i>Lưu thiết lập
+          </button>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</main>
+
+<script th:inline="javascript">
+  (function () {
+    var optRevenue = document.getElementById('optRevenue');
+    var optProfit = document.getElementById('optProfit');
+    var toggle = document.getElementById('taxMethodToggle');
+    var revenueGroupSelect = document.getElementById('fsRevenueGroup');
+    var revenueRadio = document.querySelector('input[name="taxCalculationMethod"][value="1"]');
+    var profitRadio = document.querySelector('input[name="taxCalculationMethod"][value="2"]');
+
+    function applyActiveStyles() {
+      var checked = document.querySelector('input[name="taxCalculationMethod"]:checked');
+      var value = checked ? checked.value : '1';
+      optRevenue.classList.toggle('active', value === '1');
+      optProfit.classList.toggle('active', value === '2');
+    }
+
+    // Nhóm 1 (miễn thuế) và nhóm 3 (bắt buộc lợi nhuận) khoá lựa chọn; nhóm 2 được chọn tự do.
+    // Server-side vẫn tự chuẩn hoá lại giá trị khi lưu (xem FinancialsettingService.saveSettings),
+    // JS này chỉ là UX — không phải cơ chế bảo vệ chính.
+    function applyRevenueGroupLock() {
+      if (!revenueGroupSelect) {
+        return;
+      }
+      var group = revenueGroupSelect.value;
+      if (group === '3') {
+        profitRadio.checked = true;
+        toggle.classList.add('locked');
+      } else if (group === '1') {
+        toggle.classList.add('locked');
+      } else {
+        toggle.classList.remove('locked');
+      }
+      applyActiveStyles();
+    }
+
+    document.querySelectorAll('input[name="taxCalculationMethod"]').forEach(function (r) {
+      r.addEventListener('change', applyActiveStyles);
+    });
+    if (revenueGroupSelect) {
+      revenueGroupSelect.addEventListener('change', applyRevenueGroupLock);
+    }
+    applyRevenueGroupLock();
+  })();
+</script>
+</body>
+</html>
