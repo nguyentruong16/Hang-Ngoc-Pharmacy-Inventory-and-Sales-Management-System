@@ -15,6 +15,7 @@ import com.example.project.entity.Invoice;
 import com.example.project.entity.Invoicedetail;
 import com.example.project.entity.Product;
 import com.example.project.entity.Productunit;
+import com.example.project.entity.Type;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.BatchRepository;
 import com.example.project.repository.CustomerRepository;
@@ -369,8 +370,11 @@ public class InvoiceService {
         Invoice savedInvoice = invoiceRepository.save(invoice);
 
         BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalVATOutput = BigDecimal.ZERO;
         for (InvoiceDetailCreateRequest item : request.getDetails()) {
-            subtotal = subtotal.add(saveLineAndDeductStock(savedInvoice, item));
+            SavedLineTotals lineTotals = saveLineAndDeductStock(savedInvoice, item);
+            subtotal = subtotal.add(lineTotals.subtotal());
+            totalVATOutput = totalVATOutput.add(lineTotals.vatAmount());
         }
 
         BigDecimal discount = maxZero(request.getDiscount());
@@ -397,14 +401,15 @@ public class InvoiceService {
         savedInvoice.setPaidByCash(paidByCash);
         savedInvoice.setPaidByBanking(paidByBanking);
         savedInvoice.setDebtAmount(debt);
+        savedInvoice.setTotalVATOutput(totalVATOutput);
         savedInvoice.setStatus(debt.compareTo(BigDecimal.ZERO) > 0 ? STATUS_DEBT : STATUS_COMPLETED);
         invoiceRepository.save(savedInvoice);
 
         return savedInvoice.getId();
     }
 
-    /** Persists one line, deducts its base quantity across batches (FEFO), returns its subtotal. */
-    private BigDecimal saveLineAndDeductStock(Invoice invoice, InvoiceDetailCreateRequest item) {
+    /** Persists one line, deducts its base quantity across batches (FEFO), returns its priced totals. */
+    private SavedLineTotals saveLineAndDeductStock(Invoice invoice, InvoiceDetailCreateRequest item) {
         if (item.getProductId() == null || item.getProductUnitId() == null) {
             throw new IllegalArgumentException("Dòng hàng chưa chọn sản phẩm hoặc đơn vị bán");
         }
@@ -412,7 +417,7 @@ public class InvoiceService {
             throw new IllegalArgumentException("Số lượng bán phải lớn hơn 0");
         }
 
-        Product product = productRepository.findById(item.getProductId())
+        Product product = productRepository.findDetailById(item.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
         Productunit unit = productunitRepository.findById(item.getProductUnitId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn vị bán"));
@@ -429,6 +434,9 @@ public class InvoiceService {
                 ? item.getUnitSellPrice()
                 : (unit.getSellPrice() != null ? unit.getSellPrice() : BigDecimal.ZERO);
         BigDecimal lineSubtotal = unitSellPrice.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal vatRate = resolveVatRateSnapshot(product);
+        BigDecimal preTaxAmount = calculateSaleLinePreTaxAmount(lineSubtotal, vatRate);
+        BigDecimal vatAmount = calculateSaleLineVatAmount(preTaxAmount, vatRate);
 
         Batch firstBatch = deductStock(product, baseQty, quantity, ratio, unit.getUnitName());
 
@@ -443,10 +451,54 @@ public class InvoiceService {
         detail.setUnitSellPrice(unitSellPrice);
         detail.setSubtotal(lineSubtotal);
         detail.setReturnedQty(0);
+        detail.setVatRate(vatRate);
+        detail.setPreTaxAmount(preTaxAmount);
+        detail.setVatAmount(vatAmount);
         invoicedetailRepository.save(detail);
 
-        return lineSubtotal;
+        return new SavedLineTotals(lineSubtotal, vatAmount);
     }
+
+    /**
+     * Snapshot thuế suất GTGT tại thời điểm bán: {@code Product.vatRateOverride} nếu có,
+     * ngược lại {@code Type.defaultVATRate}; lưu vào dòng hóa đơn, không tham chiếu động tới Product.
+     */
+    private BigDecimal resolveVatRateSnapshot(Product product) {
+        if (product.getVatRateOverride() != null) {
+            return product.getVatRateOverride();
+        }
+        Type type = product.getTypeID();
+        if (type != null && type.getDefaultVATRate() != null) {
+            return type.getDefaultVATRate();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    /** Giá trị dòng hàng chưa gồm thuế GTGT — subtotal đã gồm thuế: subtotal ÷ (1 + vatRate/100). */
+    private BigDecimal calculateSaleLinePreTaxAmount(BigDecimal grossSubtotal, BigDecimal vatRatePercent) {
+        if (grossSubtotal == null || grossSubtotal.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal rate = vatRatePercent != null ? vatRatePercent : BigDecimal.ZERO;
+        if (rate.compareTo(BigDecimal.ZERO) <= 0) {
+            return grossSubtotal.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal divisor = BigDecimal.ONE.add(
+                rate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
+        return grossSubtotal.divide(divisor, 2, RoundingMode.HALF_UP);
+    }
+
+    /** Số tiền thuế GTGT đầu ra của dòng hàng — preTaxAmount × vatRate / 100. */
+    private BigDecimal calculateSaleLineVatAmount(BigDecimal preTaxAmount, BigDecimal vatRatePercent) {
+        BigDecimal preTax = preTaxAmount != null ? preTaxAmount : BigDecimal.ZERO;
+        BigDecimal rate = vatRatePercent != null ? vatRatePercent : BigDecimal.ZERO;
+        if (rate.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return preTax.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    private record SavedLineTotals(BigDecimal subtotal, BigDecimal vatAmount) {}
 
     /** Deducts {@code baseQty} from a product's in-stock batches (FEFO); returns the first batch used. */
     private Batch deductStock(Product product, int baseQty, int sellQuantity, BigDecimal ratio, String unitName) {
