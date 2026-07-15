@@ -389,12 +389,11 @@
                       th:text="${item.statusName}">Hoàn thành</span>
               </td>
               <td style="text-align:center;">
-                <button type="button" class="view-link invoice-view-btn"
-                        data-bs-toggle="modal" data-bs-target="#invoiceLinesModal"
-                        th:attr="data-invoice-id=${item.id},data-invoice-code=${item.code}"
-                        title="Xem chi tiết hóa đơn">
+                <a class="view-link"
+                   th:href="${basePath + '/' + item.id}"
+                   title="Xem chi tiết hóa đơn">
                   <i class="ti ti-eye"></i>
-                </button>
+                </a>
               </td>
             </tr>
 
@@ -439,103 +438,5 @@
 
   </div>
 </main>
-
-<!-- Quick view: the lines of one invoice -->
-<div class="modal fade" id="invoiceLinesModal" tabindex="-1" aria-labelledby="invoiceLinesModalLabel"
-     aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
-    <div class="modal-content" style="border-radius:16px;">
-      <div class="modal-header">
-        <h5 class="modal-title" id="invoiceLinesModalLabel">
-          Chi tiết hóa đơn <span id="invoiceLinesCode" style="color:#059669;"></span>
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-      </div>
-      <div class="modal-body">
-        <div style="overflow-x:auto;">
-          <table class="sup-table" style="min-width:720px;">
-            <thead>
-              <tr>
-                <th>Sản phẩm</th>
-                <th>Số lô</th>
-                <th>HSD</th>
-                <th>Đơn vị</th>
-                <th style="text-align:right;">SL</th>
-                <th style="text-align:right;">Đơn giá</th>
-                <th style="text-align:right;">Thành tiền</th>
-                <th style="text-align:right;">Đã trả</th>
-              </tr>
-            </thead>
-            <tbody id="invoiceLinesBody">
-              <tr>
-                <td colspan="8" style="text-align:center;padding:32px 0;color:#6b7280;">Đang tải...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script th:inline="javascript">
-  document.addEventListener('DOMContentLoaded', function () {
-    const basePath = /*[[${basePath}]]*/ '/owner/invoices';
-    const linesBody = document.getElementById('invoiceLinesBody');
-    const codeLabel = document.getElementById('invoiceLinesCode');
-
-    function money(value) {
-      return Number(value || 0).toLocaleString('vi-VN') + 'đ';
-    }
-
-    function escapeHtml(value) {
-      const div = document.createElement('div');
-      div.textContent = value == null ? '' : String(value);
-      return div.innerHTML;
-    }
-
-    function renderLines(lines) {
-      if (!lines || lines.length === 0) {
-        linesBody.innerHTML =
-          '<tr><td colspan="8" style="text-align:center;padding:32px 0;color:#6b7280;">Hóa đơn không có dòng hàng nào.</td></tr>';
-        return;
-      }
-      linesBody.innerHTML = lines.map(function (line) {
-        return '<tr>'
-          + '<td class="sup-name">' + escapeHtml(line.productName) + '</td>'
-          + '<td>' + escapeHtml(line.lotNumber) + '</td>'
-          + '<td>' + escapeHtml(line.expirationDate) + '</td>'
-          + '<td>' + escapeHtml(line.unitName) + '</td>'
-          + '<td style="text-align:right;">' + escapeHtml(line.quantity) + '</td>'
-          + '<td style="text-align:right;">' + money(line.unitSellPrice) + '</td>'
-          + '<td style="text-align:right;" class="sup-name">' + money(line.subtotal) + '</td>'
-          + '<td style="text-align:right;">' + escapeHtml(line.returnedQty) + '</td>'
-          + '</tr>';
-      }).join('');
-    }
-
-    document.querySelectorAll('.invoice-view-btn').forEach(function (button) {
-      button.addEventListener('click', function () {
-        codeLabel.textContent = button.getAttribute('data-invoice-code') || '';
-        linesBody.innerHTML =
-          '<tr><td colspan="8" style="text-align:center;padding:32px 0;color:#6b7280;">Đang tải...</td></tr>';
-
-        fetch(basePath + '/' + button.getAttribute('data-invoice-id') + '/lines',
-          {headers: {'Accept': 'application/json'}})
-          .then(function (response) {
-            return response.json();
-          })
-          .then(renderLines)
-          .catch(function () {
-            linesBody.innerHTML =
-              '<tr><td colspan="8" style="text-align:center;padding:32px 0;color:#dc2626;">Không tải được chi tiết hóa đơn.</td></tr>';
-          });
-      });
-    });
-  });
-</script>
 </body>
 </html>

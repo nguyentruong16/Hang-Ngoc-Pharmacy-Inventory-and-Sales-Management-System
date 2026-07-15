@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">Chi tiết hóa đơn | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .invoice-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .invoice-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: #6b7280;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .status-badge.status-completed { background: #e8f7f1; color: #059669; }
+        .status-badge.status-debt { background: #dbeafe; color: #2563eb; }
+        .status-badge.status-cancelled { background: #fee2e2; color: #dc2626; }
+        .status-badge.status-return-partial { background: #fef3c7; color: #d97706; }
+        .status-badge.status-return-full { background: #ede9fe; color: #7c3aed; }
+        .status-badge.status-default { background: #f3f4f6; color: #6b7280; }
+
+        .rx-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: #ede9fe;
+            color: #7c3aed;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .btn-invoice-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-invoice-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #ffffff;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        @media (max-width: 991.98px) {
+            .invoice-page-content {
+                padding-top: 84px !important;
+            }
+
+            .info-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content invoice-page-content">
+    <div class="container-fluid">
+
+        <div class="mb-4">
+            <h1 class="fs-4 mb-1">
+                Chi tiết hóa đơn –
+                <span class="text-success" th:text="${detail.invoiceCode}">HD000046</span>
+                <span class="rx-badge ms-2" th:if="${detail.prescriptionRequired}">Rx</span>
+            </h1>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-9">
+
+                <div class="invoice-card mb-4">
+                    <div class="p-4 border-bottom">
+                        <div class="section-title">
+                            <i class="ti ti-info-circle text-success me-1"></i>
+                            Thông tin hóa đơn
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <div class="info-row">
+                            <div class="info-label">Số hóa đơn</div>
+                            <div class="fw-semibold text-success" th:text="${detail.invoiceCode}">HD000046</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Ký hiệu hóa đơn</div>
+                            <div th:text="${detail.invoicePattern}">2K26MAA</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Thời gian lập</div>
+                            <div th:text="${detail.dateDisplay}">01/07/2026 14:10</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Loại hóa đơn</div>
+                            <div th:text="${detail.invoiceTypeDisplay}">Bán hàng</div>
+                        </div>
+
+                        <div class="info-row" th:if="${detail.originalInvoiceId != null}">
+                            <div class="info-label">Hóa đơn gốc</div>
+                            <div>
+                                <a th:href="${basePath + '/' + detail.originalInvoiceId}"
+                                   class="text-success fw-semibold text-decoration-none"
+                                   th:text="${detail.originalInvoiceCode}">HD000040</a>
+                            </div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Khách hàng</div>
+                            <div th:text="${detail.customerName}">Khách lẻ</div>
+                        </div>
+
+                        <div class="info-row" th:if="${detail.customerPhone != null && !detail.customerPhone.isBlank()}">
+                            <div class="info-label">Số điện thoại</div>
+                            <div th:text="${detail.customerPhone}">0901234567</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Người bán</div>
+                            <div th:text="${detail.employeeName}">Dược sĩ A</div>
+                        </div>
+
+                        <div class="info-row" th:if="${detail.prescriptionRequired}">
+                            <div class="info-label">Mã đơn thuốc</div>
+                            <div th:text="${detail.prescriptionCode}">ABC123456789-c</div>
+                        </div>
+
+                        <div class="info-row">
+                            <div class="info-label">Trạng thái</div>
+                            <div>
+                                <span class="status-badge"
+                                      th:classappend="${' ' + detail.statusCssClass}"
+                                      th:text="${detail.statusName}">Hoàn thành</span>
+                            </div>
+                        </div>
+
+                        <div class="info-row" th:if="${detail.note != null && !detail.note.isBlank()}">
+                            <div class="info-label">Ghi chú</div>
+                            <div th:text="${detail.note}">Ghi chú</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invoice-card">
+                    <div class="p-4 border-bottom">
+                        <div class="section-title">
+                            <i class="ti ti-shopping-cart text-success me-1"></i>
+                            Hàng hóa bán
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Mã hàng</th>
+                                <th>Tên hàng hóa</th>
+                                <th>Số lô</th>
+                                <th>HSD</th>
+                                <th>Đơn vị</th>
+                                <th>SL</th>
+                                <th>Đơn giá</th>
+                                <th>Thuế suất (%)</th>
+                                <th>Tiền trước thuế</th>
+                                <th>Tiền thuế GTGT</th>
+                                <th>Thành tiền</th>
+                                <th>Số lượng trả</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            <tr th:each="item : ${detail.items}">
+                                <td class="fw-semibold text-success" th:text="${item.productCode}">SP001</td>
+                                <td th:text="${item.productName}">Paracetamol 500mg</td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary"
+                                          th:text="${item.lotNumber == null || item.lotNumber.isBlank() ? '—' : item.lotNumber}">
+                                        LOT-001
+                                    </span>
+                                </td>
+                                <td th:text="${item.expirationDateDisplay}">01/06/2028</td>
+                                <td th:text="${item.unitName}">Hộp</td>
+                                <td th:text="${item.quantity}">2</td>
+                                <td th:text="${#numbers.formatDecimal(item.unitSellPrice, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    0đ
+                                </td>
+                                <td th:text="${item.vatRate != null ? #numbers.formatDecimal(item.vatRate, 1, 2) : '0'}">5</td>
+                                <td th:text="${item.preTaxAmount != null ? #numbers.formatDecimal(item.preTaxAmount, 0, 'POINT', 0, 'COMMA') + 'đ' : '—'}">
+                                    0đ
+                                </td>
+                                <td th:text="${item.vatAmount != null ? #numbers.formatDecimal(item.vatAmount, 0, 'POINT', 0, 'COMMA') + 'đ' : '—'}">
+                                    0đ
+                                </td>
+                                <td class="fw-semibold"
+                                    th:text="${#numbers.formatDecimal(item.subtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    0đ
+                                </td>
+                                <td th:text="${item.returnedQty}">0</td>
+                            </tr>
+
+                            <tr class="fw-semibold">
+                                <td colspan="5">Tổng cộng</td>
+                                <td th:text="${detail.totalQuantity}">0</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-success"
+                                    th:text="${#numbers.formatDecimal(detail.subtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    0đ
+                                </td>
+                                <td></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-12 col-xl-3">
+
+                <div class="invoice-card mb-4">
+                    <div class="p-4 border-bottom">
+                        <div class="section-title">
+                            <i class="ti ti-receipt text-success me-1"></i>
+                            Tóm tắt hóa đơn
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tổng mặt hàng</span>
+                            <strong th:text="${detail.totalItems}">0</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tổng số lượng</span>
+                            <strong th:text="${detail.totalQuantity}">0</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tiền hàng</span>
+                            <strong th:text="${#numbers.formatDecimal(detail.subtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Giảm giá</span>
+                            <strong th:text="${#numbers.formatDecimal(detail.discount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Thuế GTGT đầu ra</span>
+                            <strong th:text="${#numbers.formatDecimal(detail.totalVATOutput, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tổng thanh toán</span>
+                            <strong class="text-success"
+                                    th:text="${#numbers.formatDecimal(detail.total, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Tiền mặt</span>
+                            <strong th:text="${#numbers.formatDecimal(detail.paidByCash, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Chuyển khoản</span>
+                            <strong th:text="${#numbers.formatDecimal(detail.paidByBanking, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Còn nợ</span>
+                            <strong class="text-warning"
+                                    th:text="${#numbers.formatDecimal(detail.debtAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                0đ
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Hình thức TT</span>
+                            <strong th:text="${detail.paymentDisplay}">Tiền mặt</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <span class="text-secondary">Trạng thái</span>
+                            <span class="status-badge"
+                                  th:classappend="${' ' + detail.statusCssClass}"
+                                  th:text="${detail.statusName}">
+                                Hoàn thành
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invoice-card p-4">
+                    <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
+                        <i class="ti ti-arrow-left me-1"></i>
+                        Quay lại danh sách
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>

@@ -2,6 +2,7 @@ package com.example.project.controller;
 
 import com.example.project.context.CurrentUserContext;
 import com.example.project.dto.request.InvoiceCreateRequest;
+import com.example.project.dto.response.InvoiceDetailPageResponse;
 import com.example.project.dto.response.InvoiceLineResponse;
 import com.example.project.dto.response.InvoiceListItemResponse;
 import com.example.project.dto.response.InvoiceResponse;
@@ -103,6 +104,19 @@ public class InvoiceController {
     @ResponseBody
     public List<InvoiceLineResponse> invoiceLines(@PathVariable Integer invoiceId) {
         return invoiceService.loadLines(invoiceId);
+    }
+
+    @GetMapping({"/owner/invoices/{invoiceId}",
+            "/pharmacist/invoices/{invoiceId}",
+            "/accountant/invoices/{invoiceId}"})
+    public String invoiceDetail(@PathVariable Integer invoiceId,
+                                HttpServletRequest request,
+                                Model model) {
+        InvoiceDetailPageResponse detail = invoiceService.getDetail(invoiceId);
+        model.addAttribute("detail", detail);
+        model.addAttribute("basePath", resolveBasePath(request));
+        model.addAttribute("pageTitle", "Chi tiết hóa đơn " + detail.getInvoiceCode());
+        return "invoice-detail";
     }
 
     @GetMapping({"/owner/selling", "/pharmacist/selling"})

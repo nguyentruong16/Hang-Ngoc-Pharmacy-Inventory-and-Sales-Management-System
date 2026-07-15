@@ -3,6 +3,8 @@ package com.example.project.service;
 import com.example.project.dto.request.InvoiceCreateRequest;
 import com.example.project.dto.request.InvoiceDetailCreateRequest;
 import com.example.project.dto.response.CustomerOptionResponse;
+import com.example.project.dto.response.InvoiceDetailItemResponse;
+import com.example.project.dto.response.InvoiceDetailPageResponse;
 import com.example.project.dto.response.InvoiceLineResponse;
 import com.example.project.dto.response.InvoiceListItemResponse;
 import com.example.project.dto.response.InvoiceResponse;
@@ -594,6 +596,69 @@ public class InvoiceService {
                 .toList();
     }
 
+    /** Full sale-invoice detail for the detail page. */
+    @Transactional(readOnly = true)
+    public InvoiceDetailPageResponse getDetail(Integer invoiceId) {
+        Invoice invoice = invoiceRepository.findByIdWithRelations(invoiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn"));
+
+        List<Invoicedetail> lines = invoicedetailRepository.findByInvoiceIdWithRelations(invoiceId);
+        Map<Integer, String> returnStates = returnStateByInvoice();
+        String returnCode = returnStates.getOrDefault(invoiceId, RETURN_NONE);
+
+        List<InvoiceDetailItemResponse> items = lines.stream()
+                .map(this::toDetailItem)
+                .toList();
+
+        int totalQuantity = lines.stream()
+                .map(Invoicedetail::getQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        BigDecimal totalVATOutput = invoice.getTotalVATOutput();
+        if (totalVATOutput == null) {
+            totalVATOutput = lines.stream()
+                    .map(Invoicedetail::getVatAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+
+        Customer customer = invoice.getCustomerID();
+        Invoice original = invoice.getOriginalInvoiceID();
+
+        return new InvoiceDetailPageResponse(
+                invoice.getId(),
+                invoiceCode(invoice),
+                invoice.getInvoicePattern(),
+                invoice.getDate(),
+                formatInstant(invoice.getDate()),
+                customer != null ? customer.getName() : "Khách lẻ",
+                customer != null ? customer.getPhoneNumber() : null,
+                invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
+                invoiceTypeDisplay(invoice.getInvoiceType()),
+                invoice.getStatus() != null ? invoice.getStatus() : "Không rõ",
+                statusCssClass(invoice.getStatus()),
+                Boolean.TRUE.equals(invoice.getPrescriptionRequired()),
+                invoice.getPrescriptionCode(),
+                returnStatusDisplay(returnCode),
+                returnStatusCssClass(returnCode),
+                original != null ? original.getId() : null,
+                original != null ? invoiceCode(original) : null,
+                invoice.getSubtotal(),
+                invoice.getDiscount() != null ? invoice.getDiscount() : BigDecimal.ZERO,
+                totalVATOutput,
+                invoice.getTotal(),
+                invoice.getPaidByCash(),
+                invoice.getPaidByBanking(),
+                invoice.getDebtAmount() != null ? invoice.getDebtAmount() : BigDecimal.ZERO,
+                paymentDisplay(invoice),
+                invoice.getNote(),
+                lines.size(),
+                totalQuantity,
+                items);
+    }
+
     private InvoiceListItemResponse toListItem(Invoice invoice, Map<Integer, String> returnStates) {
         String statusName = invoice.getStatus() != null ? invoice.getStatus() : "Không rõ";
         String returnCode = returnStates.getOrDefault(invoice.getId(), RETURN_NONE);
@@ -629,6 +694,26 @@ public class InvoiceService {
                 line.getQuantity(),
                 line.getUnitSellPrice(),
                 line.getSubtotal(),
+                line.getReturnedQty() != null ? line.getReturnedQty() : 0);
+    }
+
+    private InvoiceDetailItemResponse toDetailItem(Invoicedetail line) {
+        Product product = line.getProductID();
+        Batch batch = line.getBatchID();
+
+        return new InvoiceDetailItemResponse(
+                product != null ? product.getProductID() : null,
+                product != null ? product.getCode() : "",
+                product != null ? product.getName() : "Không rõ",
+                batch != null ? batch.getLotNumber() : "",
+                batch != null ? formatLocalDate(batch.getExpirationDate()) : "",
+                line.getUnitName(),
+                line.getQuantity(),
+                line.getUnitSellPrice(),
+                line.getSubtotal(),
+                line.getVatRate(),
+                line.getPreTaxAmount(),
+                line.getVatAmount(),
                 line.getReturnedQty() != null ? line.getReturnedQty() : 0);
     }
 

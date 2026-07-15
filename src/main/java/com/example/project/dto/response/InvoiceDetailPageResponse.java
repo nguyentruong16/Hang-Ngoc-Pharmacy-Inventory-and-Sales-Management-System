@@ -1,0 +1,57 @@
+package com.example.project.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+
+/** Full sale-invoice detail page payload. */
+@Getter
+@AllArgsConstructor
+public class InvoiceDetailPageResponse {
+
+    private Integer id;
+    private String invoiceCode;
+    private String invoicePattern;
+
+    private Instant date;
+    private String dateDisplay;
+
+    private String customerName;
+    private String customerPhone;
+
+    private String employeeName;
+
+    private String invoiceTypeDisplay;
+
+    private String statusName;
+    private String statusCssClass;
+
+    private boolean prescriptionRequired;
+    private String prescriptionCode;
+
+    private String returnStatusDisplay;
+    private String returnStatusCssClass;
+
+    private Integer originalInvoiceId;
+    private String originalInvoiceCode;
+
+    private BigDecimal subtotal;
+    private BigDecimal discount;
+    private BigDecimal totalVATOutput;
+    private BigDecimal total;
+
+    private BigDecimal paidByCash;
+    private BigDecimal paidByBanking;
+    private BigDecimal debtAmount;
+    private String paymentDisplay;
+
+    private String note;
+
+    private long totalItems;
+    private int totalQuantity;
+
+    private List<InvoiceDetailItemResponse> items;
+}
