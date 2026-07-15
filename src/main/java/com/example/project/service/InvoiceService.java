@@ -18,6 +18,7 @@ import com.example.project.entity.Productunit;
 import com.example.project.repository.AccountRepository;
 import com.example.project.repository.BatchRepository;
 import com.example.project.repository.CustomerRepository;
+import com.example.project.repository.FinancialsettingRepository;
 import com.example.project.repository.InvoiceRepository;
 import com.example.project.repository.InvoicedetailRepository;
 import com.example.project.repository.ProductRepository;
@@ -63,7 +64,7 @@ public class InvoiceService {
     private static final String STATUS_DEBT = "Còn nợ";
     private static final String STATUS_RETURNED_FULL = "Đã trả hàng toàn bộ";
     private static final String STATUS_RETURNED_PARTIAL = "Đã trả hàng 1 phần";
-    private static final String INVOICE_PATTERN = "HD";
+    private static final String INVOICE_NUMBER_PREFIX = "HD";
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final InvoiceRepository invoiceRepository;
@@ -73,6 +74,7 @@ public class InvoiceService {
     private final BatchRepository batchRepository;
     private final CustomerRepository customerRepository;
     private final AccountRepository accountRepository;
+    private final FinancialsettingRepository financialsettingRepository;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                           InvoicedetailRepository invoicedetailRepository,
@@ -80,7 +82,8 @@ public class InvoiceService {
                           ProductunitRepository productunitRepository,
                           BatchRepository batchRepository,
                           CustomerRepository customerRepository,
-                          AccountRepository accountRepository) {
+                          AccountRepository accountRepository,
+                          FinancialsettingRepository financialsettingRepository) {
         this.invoiceRepository = invoiceRepository;
         this.invoicedetailRepository = invoicedetailRepository;
         this.productRepository = productRepository;
@@ -88,6 +91,7 @@ public class InvoiceService {
         this.batchRepository = batchRepository;
         this.customerRepository = customerRepository;
         this.accountRepository = accountRepository;
+        this.financialsettingRepository = financialsettingRepository;
     }
 
     @Transactional(readOnly = true)
@@ -338,12 +342,14 @@ public class InvoiceService {
                     "Mã đơn thuốc không đúng định dạng (12 ký tự chữ/số, dấu \"-\", rồi c/n/h/y)");
         }
 
+        LocalDateTime invoiceDateTime = LocalDateTime.now(VN_ZONE);
+
         Invoice invoice = new Invoice();
-        invoice.setInvoicePattern(INVOICE_PATTERN);
+        invoice.setInvoicePattern(buildInvoicePattern(invoiceDateTime.toLocalDate()));
         invoice.setInvoiceNumber(generateInvoiceNumber());
         // Store Vietnam wall-clock time (mirrors ProcurementplanService using LocalDateTime.now(VN_ZONE));
         // the date column is an Instant, so map the VN local time onto UTC to avoid the -7h drift.
-        invoice.setDate(LocalDateTime.now(VN_ZONE).toInstant(ZoneOffset.UTC));
+        invoice.setDate(invoiceDateTime.toInstant(ZoneOffset.UTC));
         invoice.setEmployeeID(employee);
         invoice.setCustomerID(customer);
         invoice.setInvoiceType(INVOICE_TYPE_NORMAL);
@@ -485,7 +491,33 @@ public class InvoiceService {
                 .filter(Objects::nonNull)
                 .max(Integer::compareTo)
                 .orElse(0) + 1;
-        return INVOICE_PATTERN + String.format("%06d", nextId);
+        return INVOICE_NUMBER_PREFIX + String.format("%06d", nextId);
+    }
+
+    /**
+     * Ký hiệu hóa đơn 7 ký tự: 2 (bán hàng) + K (không mã CQT) + YY (năm) + M (máy tính tiền) + AA.
+     * Hai ký tự cuối lấy từ {@code vatInvoiceSeries} trong thiết lập tài chính.
+     */
+    private String buildInvoicePattern(LocalDate date) {
+        String vatInvoiceSeries = financialsettingRepository.findFirstByOrderByIdAsc()
+                .map(setting -> setting.getVatInvoiceSeries())
+                .orElse(null);
+        if (vatInvoiceSeries == null || vatInvoiceSeries.isBlank()) {
+            throw new IllegalArgumentException("Chưa cấu hình ký hiệu mẫu số hóa đơn (vatInvoiceSeries)");
+        }
+
+        String series = vatInvoiceSeries.trim().toUpperCase(Locale.ROOT);
+        if (series.length() < 2) {
+            throw new IllegalArgumentException("Ký hiệu mẫu số hóa đơn phải có ít nhất 2 ký tự chữ cái cuối");
+        }
+        String sellerSuffix = series.substring(series.length() - 2);
+        if (!sellerSuffix.matches("[A-Z]{2}")) {
+            throw new IllegalArgumentException(
+                    "Hai ký tự cuối của ký hiệu mẫu số hóa đơn phải là chữ cái (VD: AA, YY)");
+        }
+
+        String yearPart = String.format("%02d", date.getYear() % 100);
+        return "2K" + yearPart + "M" + sellerSuffix;
     }
 
     private BigDecimal maxZero(BigDecimal value) {

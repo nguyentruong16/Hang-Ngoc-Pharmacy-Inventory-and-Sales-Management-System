@@ -20,9 +20,9 @@ public class Invoice {
     @Column(name = "invoiceID", nullable = false)
     private Integer id;
 
-    @Size(max = 6)
+    @Size(max = 7)
     @NotNull
-    @Column(name = "invoicePattern", nullable = false, length = 6)
+    @Column(name = "invoicePattern", nullable = false, length = 7)
     private String invoicePattern;
 
     @Size(max = 50)
