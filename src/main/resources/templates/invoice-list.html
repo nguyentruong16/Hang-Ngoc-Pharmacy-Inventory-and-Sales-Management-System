@@ -180,9 +180,9 @@
     .status-badge.status-completed { background: #e8f7f1; color: #059669; }
     .status-badge.status-debt { background: #dbeafe; color: #2563eb; }
     .status-badge.status-cancelled { background: #fee2e2; color: #dc2626; }
-    .status-badge.return-none { background: #f3f4f6; color: #6b7280; }
-    .status-badge.return-partial { background: #fef3c7; color: #d97706; }
-    .status-badge.return-full { background: #fee2e2; color: #dc2626; }
+    .status-badge.status-return-partial { background: #fef3c7; color: #d97706; }
+    .status-badge.status-return-full { background: #ede9fe; color: #7c3aed; }
+    .status-badge.status-default { background: #f3f4f6; color: #6b7280; }
 
     .rx-badge {
       display: inline-flex;
@@ -384,15 +384,9 @@
                 </div>
               </td>
               <td>
-                <div class="d-flex flex-column gap-1 align-items-start">
-                  <span class="status-badge"
-                        th:classappend="${' ' + item.statusCssClass}"
-                        th:text="${item.statusName}">Hoàn thành</span>
-                  <span class="status-badge"
-                        th:if="${item.returnStatusDisplay != 'Không'}"
-                        th:classappend="${' ' + item.returnStatusCssClass}"
-                        th:text="${item.returnStatusDisplay}">Trả một phần</span>
-                </div>
+                <span class="status-badge"
+                      th:classappend="${' ' + item.statusCssClass}"
+                      th:text="${item.statusName}">Hoàn thành</span>
               </td>
               <td style="text-align:center;">
                 <button type="button" class="view-link invoice-view-btn"

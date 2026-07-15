@@ -61,6 +61,8 @@ public class InvoiceService {
 
     private static final String STATUS_COMPLETED = "Hoàn thành";
     private static final String STATUS_DEBT = "Còn nợ";
+    private static final String STATUS_RETURNED_FULL = "Đã trả hàng toàn bộ";
+    private static final String STATUS_RETURNED_PARTIAL = "Đã trả hàng 1 phần";
     private static final String INVOICE_PATTERN = "HD";
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -656,6 +658,12 @@ public class InvoiceService {
     }
 
     private String statusCssClass(String statusName) {
+        if (isStatus(statusName, STATUS_RETURNED_FULL)) {
+            return "status-return-full";
+        }
+        if (isStatus(statusName, STATUS_RETURNED_PARTIAL)) {
+            return "status-return-partial";
+        }
         String normalized = normalize(statusName);
         if (normalized.contains("hoan thanh")) {
             return "status-completed";
@@ -663,10 +671,14 @@ public class InvoiceService {
         if (normalized.contains("huy")) {
             return "status-cancelled";
         }
-        if (normalized.contains("no") || normalized.contains("cho")) {
+        if (isStatus(statusName, STATUS_DEBT) || normalized.contains("con no")) {
             return "status-debt";
         }
         return "status-default";
+    }
+
+    private boolean isStatus(String actual, String expected) {
+        return normalize(actual).equals(normalize(expected));
     }
 
     private boolean isPositive(BigDecimal value) {
