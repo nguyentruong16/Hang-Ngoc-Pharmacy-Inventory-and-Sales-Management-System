@@ -721,8 +721,9 @@ public class InvoiceService {
         if (instant == null) {
             return "";
         }
+        // Stored as VN wall-clock mapped onto UTC (see create()); format with UTC to show the same digits.
         return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-                .withZone(ZoneId.systemDefault())
+                .withZone(ZoneOffset.UTC)
                 .format(instant);
     }
 
@@ -731,7 +732,7 @@ public class InvoiceService {
     }
 
     private LocalDate toLocalDate(Instant instant) {
-        return instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        return instant.atZone(ZoneOffset.UTC).toLocalDate();
     }
 
     private LocalDate parseDate(String value) {
