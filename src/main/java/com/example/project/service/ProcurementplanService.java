@@ -2,6 +2,8 @@ package com.example.project.service;
 
 import com.example.project.dto.request.ProcurementPlanCreateRequest;
 import com.example.project.dto.request.ProcurementPlanDetailCreateRequest;
+import com.example.project.dto.response.ProcurementPlanPrintLineResponse;
+import com.example.project.dto.response.ProcurementPlanPrintPageResponse;
 import com.example.project.dto.response.ProcurementProductSearchResponse;
 import com.example.project.dto.response.ProcurementSupplierSearchResponse;
 import com.example.project.dto.response.ProcurementplanResponse;
@@ -31,6 +33,7 @@ import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -169,6 +172,56 @@ public class ProcurementplanService {
         }
         form.setDetails(details);
         return form;
+    }
+
+    @Transactional(readOnly = true)
+    public ProcurementPlanPrintPageResponse getPrintPage(Integer id) {
+        Procurementplan plan = procurementplanRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
+
+        List<Procurementplandetail> details = procurementplandetailRepository.findByProcurementID_IdWithRelations(id);
+        List<ProcurementPlanPrintLineResponse> lines = details.stream()
+                .map(this::toPrintLine)
+                .toList();
+
+        BigDecimal totalEstimated = details.stream()
+                .map(Procurementplandetail::getEstimatedPrice)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new ProcurementPlanPrintPageResponse(
+                plan.getId(),
+                plan.getProcurementCode(),
+                formatDateTime(plan.getDate()),
+                plan.getStatus(),
+                plan.getNote(),
+                lines.size(),
+                totalEstimated,
+                lines
+        );
+    }
+
+    private ProcurementPlanPrintLineResponse toPrintLine(Procurementplandetail detail) {
+        Product product = detail.getProductID();
+        Supplier supplier = detail.getSupplierID();
+        Integer quantity = detail.getRequestedQuantity();
+        BigDecimal estimatedPrice = detail.getEstimatedPrice();
+        BigDecimal unitPrice = null;
+
+        if (estimatedPrice != null && quantity != null && quantity > 0) {
+            unitPrice = estimatedPrice.divide(BigDecimal.valueOf(quantity.longValue()), 2, RoundingMode.HALF_UP);
+        }
+
+        return new ProcurementPlanPrintLineResponse(
+                product != null ? product.getCode() : "",
+                product != null ? product.getName() : "Không rõ",
+                detail.getCurrentStock(),
+                quantity,
+                detail.getUnit(),
+                unitPrice,
+                estimatedPrice,
+                supplier != null ? supplier.getName() : "—"
+        );
     }
 
     @Transactional(readOnly = true)
@@ -526,5 +579,12 @@ public class ProcurementplanService {
             return null;
         }
         return LocalDate.parse(value);
+    }
+
+    private String formatDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").format(dateTime);
     }
 }

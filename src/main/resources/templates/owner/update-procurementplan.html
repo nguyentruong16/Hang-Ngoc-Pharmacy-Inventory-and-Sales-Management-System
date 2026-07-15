@@ -890,6 +890,12 @@
                     </div>
 
                     <div class="owner-card p-4">
+                        <button type="button" id="printProcurementPlanBtn"
+                                th:data-print-url="${basePath + '/' + procurementPlan.id + '/print'}"
+                                class="btn btn-outline-secondary w-100 mb-2">
+                            <i class="ti ti-printer me-1"></i>
+                            In dự trù
+                        </button>
                         <button th:unless="${viewOnly}" type="submit" class="btn btn-owner-primary w-100 mb-2">
                             Cập nhật dự trù mua hàng
                         </button>
@@ -1761,6 +1767,22 @@
         });
     })();
     }
+</script>
+
+<script th:inline="none">
+    document.getElementById('printProcurementPlanBtn').addEventListener('click', function () {
+        var printUrl = this.dataset.printUrl;
+        var existing = document.getElementById('procurementPrintFrame');
+        if (existing) {
+            existing.remove();
+        }
+
+        var iframe = document.createElement('iframe');
+        iframe.id = 'procurementPrintFrame';
+        iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;left:-9999px;';
+        iframe.src = printUrl;
+        document.body.appendChild(iframe);
+    });
 </script>
 
 </body>

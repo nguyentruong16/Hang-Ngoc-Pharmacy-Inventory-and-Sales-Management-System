@@ -1,6 +1,7 @@
 package com.example.project.controller;
 
 import com.example.project.dto.request.ProcurementPlanCreateRequest;
+import com.example.project.dto.response.ProcurementPlanPrintPageResponse;
 import com.example.project.dto.response.ProcurementPlanDetailRowView;
 import com.example.project.dto.response.ProcurementProductSearchResponse;
 import com.example.project.dto.response.ProcurementSupplierSearchResponse;
@@ -221,6 +222,16 @@ public class ProcurementplanController {
                     : "Cập nhật dự trù mua hàng");
             return "owner/update-procurementplan";
         }
+    }
+
+    @GetMapping("/owner/procurements/{id}/print")
+    public String printPage(@PathVariable Integer id,
+                            HttpServletRequest request,
+                            Model model) {
+        ProcurementPlanPrintPageResponse printData = procurementplanService.getPrintPage(id);
+        model.addAttribute("printData", printData);
+        model.addAttribute("basePath", resolveBasePath(request));
+        return "owner/procurement-plan-print";
     }
 
     @PostMapping("/owner/procurements/delete/{id}")
