@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -119,6 +120,42 @@ public class InvoiceController {
         return "invoice-detail";
     }
 
+    @PostMapping({"/owner/invoices/{invoiceId}/sign", "/accountant/invoices/{invoiceId}/sign"})
+    public String signInvoice(@PathVariable Integer invoiceId,
+                              HttpServletRequest request,
+                              RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            invoiceService.sign(invoiceId);
+            redirectAttributes.addFlashAttribute("success", "Đã ký hóa đơn thành công");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + basePath + "/" + invoiceId;
+    }
+
+    @PostMapping({"/owner/invoices/sign-bulk", "/accountant/invoices/sign-bulk"})
+    public String signInvoicesBulk(@RequestParam(name = "invoiceIds", required = false) List<Integer> invoiceIds,
+                                   @RequestParam(name = "search", required = false) String search,
+                                   @RequestParam(name = "fromDate", required = false) String fromDate,
+                                   @RequestParam(name = "toDate", required = false) String toDate,
+                                   @RequestParam(name = "paymentType", required = false) String paymentType,
+                                   @RequestParam(name = "status", required = false) String status,
+                                   @RequestParam(name = "sellerId", required = false) Integer sellerId,
+                                   @RequestParam(name = "page", defaultValue = "0") int page,
+                                   @RequestParam(name = "size", defaultValue = "5") int size,
+                                   HttpServletRequest request,
+                                   RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            int signed = invoiceService.signMany(invoiceIds);
+            redirectAttributes.addFlashAttribute("success", "Đã ký " + signed + " hóa đơn thành công");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + listRedirectUrl(basePath, search, fromDate, toDate, paymentType, status, sellerId, page, size);
+    }
+
     @GetMapping({"/owner/selling", "/pharmacist/selling"})
     public String sellingPage(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("form")) {
@@ -173,5 +210,42 @@ public class InvoiceController {
         }
 
         return "/owner/invoices";
+    }
+
+    private String listRedirectUrl(String basePath,
+                                   String search,
+                                   String fromDate,
+                                   String toDate,
+                                   String paymentType,
+                                   String status,
+                                   Integer sellerId,
+                                   int page,
+                                   int size) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath(basePath);
+        if (search != null && !search.isBlank()) {
+            builder.queryParam("search", search.trim());
+        }
+        if (fromDate != null && !fromDate.isBlank()) {
+            builder.queryParam("fromDate", fromDate);
+        }
+        if (toDate != null && !toDate.isBlank()) {
+            builder.queryParam("toDate", toDate);
+        }
+        if (paymentType != null && !paymentType.isBlank()) {
+            builder.queryParam("paymentType", paymentType);
+        }
+        if (status != null && !status.isBlank()) {
+            builder.queryParam("status", status);
+        }
+        if (sellerId != null) {
+            builder.queryParam("sellerId", sellerId);
+        }
+        if (page > 0) {
+            builder.queryParam("page", page);
+        }
+        if (size != 5) {
+            builder.queryParam("size", size);
+        }
+        return builder.build().toUriString();
     }
 }

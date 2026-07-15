@@ -65,6 +65,7 @@ public class InvoiceService {
 
     private static final String STATUS_COMPLETED = "Hoàn thành";
     private static final String STATUS_DEBT = "Còn nợ";
+    private static final String STATUS_SIGNED = "Đã ký";
     private static final String STATUS_RETURNED_FULL = "Đã trả hàng toàn bộ";
     private static final String STATUS_RETURNED_PARTIAL = "Đã trả hàng 1 phần";
     private static final String INVOICE_NUMBER_PREFIX = "HD";
@@ -596,6 +597,42 @@ public class InvoiceService {
                 .toList();
     }
 
+    /** Marks a sale invoice as signed ({@code status = Đã ký}). Owner and Accountant only. */
+    @Transactional
+    public void sign(Integer invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn"));
+        if (isStatus(invoice.getStatus(), STATUS_SIGNED)) {
+            throw new IllegalArgumentException("Hóa đơn đã được ký");
+        }
+        invoice.setStatus(STATUS_SIGNED);
+        invoiceRepository.save(invoice);
+    }
+
+    /** Signs multiple sale invoices. Skips ones already signed; returns how many were updated. */
+    @Transactional
+    public int signMany(List<Integer> invoiceIds) {
+        if (invoiceIds == null || invoiceIds.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một hóa đơn");
+        }
+
+        int signed = 0;
+        for (Integer invoiceId : invoiceIds.stream().distinct().toList()) {
+            Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
+            if (invoice == null || isStatus(invoice.getStatus(), STATUS_SIGNED)) {
+                continue;
+            }
+            invoice.setStatus(STATUS_SIGNED);
+            invoiceRepository.save(invoice);
+            signed++;
+        }
+
+        if (signed == 0) {
+            throw new IllegalArgumentException("Không có hóa đơn nào được ký (có thể đã ký trước đó)");
+        }
+        return signed;
+    }
+
     /** Full sale-invoice detail for the detail page. */
     @Transactional(readOnly = true)
     public InvoiceDetailPageResponse getDetail(Integer invoiceId) {
@@ -832,6 +869,9 @@ public class InvoiceService {
         }
         if (isStatus(statusName, STATUS_RETURNED_PARTIAL)) {
             return "status-return-partial";
+        }
+        if (isStatus(statusName, STATUS_SIGNED)) {
+            return "status-signed";
         }
         String normalized = normalize(statusName);
         if (normalized.contains("hoan thanh")) {
