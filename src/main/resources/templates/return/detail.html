@@ -132,11 +132,17 @@
 <main id="content" class="content return-page-content">
     <div class="container-fluid">
 
-        <div class="mb-4">
-            <h1 class="fs-4 mb-1">
-                Chi tiết trả hàng –
-                <span th:text="${detail.code}">TH-000001</span>
-            </h1>
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">
+                    Chi tiết trả hàng –
+                    <span th:text="${detail.code}">TH-000001</span>
+                </h1>
+            </div>
+            <a th:href="${basePath}" class="btn btn-outline-secondary">
+                <i class="ti ti-arrow-left me-1"></i>
+                Quay lại danh sách
+            </a>
         </div>
 
         <div th:replace="~{fragments/toast :: flash}"></div>
@@ -348,7 +354,8 @@
                     </div>
                 </div>
 
-                <div class="stock-card p-4">
+                <div class="stock-card p-4"
+                     th:if="${detail.statusName == 'Nháp' or (#strings.startsWith(basePath, '/owner') and detail.statusName == 'Chờ duyệt')}">
                     <!-- Draft: the creator sends it forward (Owner → Nợ, Pharmacist → Chờ duyệt). -->
                     <form th:if="${detail.statusName == 'Nháp'}"
                           id="submitForm"
@@ -386,11 +393,6 @@
                             </button>
                         </form>
                     </th:block>
-
-                    <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
-                        <i class="ti ti-arrow-left me-1"></i>
-                        Quay lại danh sách
-                    </a>
                 </div>
 
             </div>
