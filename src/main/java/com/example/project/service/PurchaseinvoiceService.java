@@ -594,53 +594,10 @@ public class PurchaseinvoiceService {
     }
 
     /**
-     * Known (lotNumber, expirationDate) pairs per product, with stock summed across every
-     * {@link Batch} row sharing that pair — offered on the create-invoice form so re-supplying an
-     * existing lot can reuse its label instead of the user retyping it (and risking a typo that
-     * fragments the same physical lot under two labels).
-     */
-    @Transactional(readOnly = true)
-    public Map<Integer, List<PurchaseInvoiceExistingLotResponse>> buildExistingLotsByProduct() {
-        record LotKey(Integer productId, String lotNumber, LocalDate expirationDate) {
-        }
-
-        Map<LotKey, long[]> totalsByLot = new LinkedHashMap<>();
-        Map<LotKey, LocalDate> productionDateByLot = new LinkedHashMap<>();
-
-        for (Batch batch : batchRepository.findAll()) {
-            if (batch.getProductID() == null
-                    || batch.getLotNumber() == null
-                    || batch.getLotNumber().isBlank()) {
-                continue;
-            }
-
-            LotKey key = new LotKey(batch.getProductID().getProductID(), batch.getLotNumber(), batch.getExpirationDate());
-            totalsByLot.computeIfAbsent(key, k -> new long[1])[0] +=
-                    batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity();
-            productionDateByLot.putIfAbsent(key, batch.getProductionDate());
-        }
-
-        Map<Integer, List<PurchaseInvoiceExistingLotResponse>> result = new LinkedHashMap<>();
-
-        totalsByLot.forEach((key, total) -> result
-                .computeIfAbsent(key.productId(), id -> new ArrayList<>())
-                .add(new PurchaseInvoiceExistingLotResponse(
-                        key.lotNumber(),
-                        toIso(productionDateByLot.get(key)),
-                        formatLocalDate(productionDateByLot.get(key)),
-                        toIso(key.expirationDate()),
-                        formatLocalDate(key.expirationDate()),
-                        total[0]
-                )));
-
-        return result;
-    }
-
-    /**
      * "Giá nhập" gợi ý cho trang tạo phiếu nhập, theo từng cặp (nhà cung cấp, sản phẩm) đã từng
      * nhập — lấy từ {@code SupplierProduct.costPrice} (giá nhập gần nhất được lưu lại, xem
-     * {@link #upsertSupplierProductCostPrice}). Bake sẵn thành model attribute giống
-     * {@link #buildExistingLotsByProduct()}, JS đọc trực tiếp thay vì gọi AJAX.
+     * {@link #upsertSupplierProductCostPrice}). Bake sẵn thành model attribute, JS đọc trực tiếp
+     * thay vì gọi AJAX.
      */
     @Transactional(readOnly = true)
     public Map<Integer, Map<Integer, BigDecimal>> buildCostPriceBySupplierAndProduct() {
@@ -900,11 +857,6 @@ public class PurchaseinvoiceService {
         }
 
         return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-    }
-
-    /** ISO ({@code yyyy-MM-dd}) form, or {@code null} — matches what {@code <input type="date">} needs. */
-    private String toIso(LocalDate date) {
-        return date == null ? null : date.toString();
     }
 
     private LocalDate parseDate(String value) {
