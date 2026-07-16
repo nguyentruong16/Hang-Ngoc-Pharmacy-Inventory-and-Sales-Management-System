@@ -4,8 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /** Full sale-invoice detail page payload. */
 @Getter
@@ -16,7 +17,7 @@ public class InvoiceDetailPageResponse {
     private String invoiceCode;
     private String invoicePattern;
 
-    private Instant date;
+    private LocalDateTime date;
     private String dateDisplay;
 
     private String customerName;
@@ -34,6 +35,9 @@ public class InvoiceDetailPageResponse {
 
     private String returnStatusDisplay;
     private String returnStatusCssClass;
+
+    /** Return slip id → code (e.g. TH-000001), insertion order preserved. */
+    private Map<Integer, String> returnSlips;
 
     private Integer originalInvoiceId;
     private String originalInvoiceCode;

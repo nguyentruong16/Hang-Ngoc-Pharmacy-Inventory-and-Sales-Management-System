@@ -197,6 +197,23 @@
                         </div>
 
                         <div class="info-row">
+                            <div class="info-label">Mã trả hàng</div>
+                            <div>
+                                <span th:if="${#maps.isEmpty(detail.returnSlips)}" class="text-secondary">—</span>
+                                <span th:each="entry, stat : ${detail.returnSlips}">
+                                    <a th:if="${returnBasePath != null}"
+                                       th:href="${returnBasePath + '/' + entry.key}"
+                                       class="text-success fw-semibold text-decoration-none"
+                                       th:text="${entry.value}">TH-000001</a>
+                                    <span th:if="${returnBasePath == null}"
+                                          class="fw-semibold text-success"
+                                          th:text="${entry.value}">TH-000001</span>
+                                    <span th:if="${!stat.last}">, </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="info-row">
                             <div class="info-label">Trạng thái</div>
                             <div>
                                 <span class="status-badge"
@@ -320,13 +337,6 @@
                         <div class="d-flex justify-content-between mb-3">
                             <span class="text-secondary">Giảm giá</span>
                             <strong th:text="${#numbers.formatDecimal(detail.discount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
-                                0đ
-                            </strong>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="text-secondary">Thuế GTGT đầu ra</span>
-                            <strong th:text="${#numbers.formatDecimal(detail.totalVATOutput, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                 0đ
                             </strong>
                         </div>

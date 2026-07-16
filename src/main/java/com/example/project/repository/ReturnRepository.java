@@ -30,4 +30,7 @@ public interface ReturnRepository extends JpaRepository<Return, Integer> {
        where r.id = :id
        """)
     Optional<Return> findByIdWithRelations(@Param("id") Integer id);
+
+    /** Customer returns for a sale invoice, newest first. */
+    List<Return> findByInvoiceID_IdOrderByReturnDateDesc(Integer invoiceId);
 }

@@ -270,11 +270,6 @@
             <div th:text="${#numbers.formatDecimal(printData.discount, 0, 'POINT', 0, 'COMMA')}">0</div>
         </div>
 
-        <div class="summary-row">
-            <div>Tiền thuế VAT:</div>
-            <div th:text="${#numbers.formatDecimal(printData.totalVATInput, 0, 'POINT', 0, 'COMMA')}">0</div>
-        </div>
-
         <div class="summary-row total">
             <div>Tiền cần trả NCC:</div>
             <div th:text="${#numbers.formatDecimal(printData.totalAmount, 0, 'POINT', 0, 'COMMA')}">0</div>

@@ -42,6 +42,10 @@ public class ReturnService {
     /** A customer return is allowed only within this many days of the original invoice date. */
     private static final int RETURN_WINDOW_DAYS = 3;
 
+    // Invoice.date is stored as VN wall-clock LocalDateTime (see InvoiceService) — the adjustment
+    // invoice's own date must use the same convention, not a real UTC Instant.
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
     /** Only completed sale invoices are returnable. Matched accent/case-insensitively. */
     private static final String INVOICE_STATUS_COMPLETED = "Hoàn thành";
     // A signed invoice ("Đã ký") has been pushed to the tax authority — it must NOT be edited, so a
@@ -52,10 +56,14 @@ public class ReturnService {
     private static final String INVOICE_STATUS_RETURNED_FULL = "Đã trả hàng toàn bộ";
     private static final String INVOICE_STATUS_RETURNED_PARTIAL = "Đã trả hàng 1 phần";
 
-    // Only normal sale invoices are returnable. DB invoiceType: normal/adjustment — a return must not be
+    // Only sale invoices are returnable. DB invoiceType: Bán hàng/Điều chỉnh — a return must not be
     // opened against an adjustment invoice (the negative slip emitted by TH2).
-    private static final String INVOICE_TYPE_NORMAL = "normal";
-    private static final String INVOICE_TYPE_ADJUSTMENT = "adjustment";
+    private static final String INVOICE_TYPE_NORMAL = "Bán hàng";
+    /** Legacy DB value before invoiceType was stored in Vietnamese. */
+    private static final String INVOICE_TYPE_NORMAL_LEGACY = "normal";
+    private static final String INVOICE_TYPE_ADJUSTMENT = "Điều chỉnh";
+    /** Legacy DB value before invoiceType was stored in Vietnamese. */
+    private static final String INVOICE_TYPE_ADJUSTMENT_LEGACY = "adjustment";
 
     private static final String INVOICE_RETURN_NONE = "NONE";
     private static final String INVOICE_RETURN_PARTIAL = "PARTIAL";
@@ -186,7 +194,7 @@ public class ReturnService {
                 .map(invoice -> new ReturnableInvoiceResponse(
                         invoice.getId(),
                         invoice.getInvoicePattern(),
-                        formatInstant(invoice.getDate()),
+                        formatLocalDateTime(invoice.getDate()),
                         invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                         invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
                         invoice.getTotal(),
@@ -434,7 +442,7 @@ public class ReturnService {
     }
 
     /**
-     * TH2 — emits the adjustment invoice (invoiceType=adjustment) for a return against a signed invoice.
+     * TH2 — emits the adjustment invoice (invoiceType=Điều chỉnh) for a return against a signed invoice.
      * Lines carry NEGATIVE quantities/amounts (a reduction of the customer's original invoice); it does NOT
      * deduct stock (the returned goods were already restocked into a fresh batch above). The signed original
      * is left untouched. Linked both ways via {@code originalInvoiceID} + {@code returnID}.
@@ -447,7 +455,7 @@ public class ReturnService {
         // Cùng ký hiệu (mẫu số / serie) với hóa đơn gốc; số hóa đơn mới, duy nhất.
         adj.setInvoicePattern(original.getInvoicePattern());
         adj.setInvoiceNumber(generateInvoiceNumber());
-        adj.setDate(Instant.now());
+        adj.setDate(LocalDateTime.now(VN_ZONE));
         adj.setEmployeeID(ret.getReturnedBy());
         adj.setCustomerID(original.getCustomerID());
         adj.setInvoiceType(INVOICE_TYPE_ADJUSTMENT);
@@ -760,10 +768,15 @@ public class ReturnService {
         return invoice != null && isStatus(invoice.getStatus(), INVOICE_STATUS_SIGNED);
     }
 
-    /** Only normal sale invoices can be returned — never an adjustment invoice. (invoiceType is NOT NULL.) */
+    /** Only sale invoices can be returned — never an adjustment invoice. (invoiceType is NOT NULL.) */
     private boolean isNormalInvoice(Invoice invoice) {
-        return invoice != null
-                && (invoice.getInvoiceType() == null || INVOICE_TYPE_NORMAL.equalsIgnoreCase(invoice.getInvoiceType()));
+        if (invoice == null) {
+            return false;
+        }
+        String type = invoice.getInvoiceType();
+        return type == null
+                || INVOICE_TYPE_NORMAL.equalsIgnoreCase(type)
+                || INVOICE_TYPE_NORMAL_LEGACY.equalsIgnoreCase(type);
     }
 
     /** Current tax revenue group of the household (1/2/3/4), read from the financial setting singleton. */
@@ -813,7 +826,7 @@ public class ReturnService {
         }
     }
 
-    private boolean withinReturnWindow(Instant invoiceDate) {
+    private boolean withinReturnWindow(LocalDateTime invoiceDate) {
         if (invoiceDate == null) {
             return false;
         }
@@ -986,11 +999,11 @@ public class ReturnService {
     }
 
     /** "ngày dd tháng MM năm yyyy" theo giờ VN — dùng cho nội dung hóa đơn điều chỉnh. */
-    private String formatVnDateWords(Instant instant) {
-        if (instant == null) {
+    private String formatVnDateWords(LocalDateTime dateTime) {
+        if (dateTime == null) {
             return "";
         }
-        LocalDate date = toLocalDate(instant);
+        LocalDate date = toLocalDate(dateTime);
         return String.format("ngày %02d tháng %02d năm %04d",
                 date.getDayOfMonth(), date.getMonthValue(), date.getYear());
     }
@@ -1009,12 +1022,24 @@ public class ReturnService {
                 .format(instant);
     }
 
+    /** Invoice.date is stored as a VN wall-clock LocalDateTime — format directly, no zone conversion. */
+    private String formatLocalDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").format(dateTime);
+    }
+
     private String formatLocalDate(LocalDate date) {
         return date == null ? "" : date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
     private LocalDate toLocalDate(Instant instant) {
         return instant.atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private LocalDate toLocalDate(LocalDateTime dateTime) {
+        return dateTime.toLocalDate();
     }
 
     private LocalDate parseDate(String value) {
