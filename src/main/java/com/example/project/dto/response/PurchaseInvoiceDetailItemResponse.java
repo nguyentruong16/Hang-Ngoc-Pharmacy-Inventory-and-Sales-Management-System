@@ -18,6 +18,7 @@ public class PurchaseInvoiceDetailItemResponse {
     private LocalDate expirationDate;
     private String expirationDateDisplay;
     private Integer quantity;
+    private String unitName;
     private BigDecimal importPrice;
     private BigDecimal lineTotal;
     private BigDecimal vatRate;

@@ -142,6 +142,7 @@ public class PurchaseinvoiceService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập"));
 
         List<Purchasedetail> details = purchasedetailRepository.findByPurchaseIdWithProduct(purchaseId);
+        Map<Integer, String> unitNameByDetailId = importUnitNameByPurchaseDetailId(details);
 
         BigDecimal subtotal = calculateSubtotal(details);
         BigDecimal additionCost = safe(invoice.getAdditionCost());
@@ -156,7 +157,7 @@ public class PurchaseinvoiceService {
         }
 
         List<PurchaseInvoiceDetailItemResponse> items = details.stream()
-                .map(this::toDetailItem)
+                .map(detail -> toDetailItem(detail, unitNameByDetailId.get(detail.getId())))
                 .toList();
 
         int totalQuantity = details.stream()
@@ -202,6 +203,7 @@ public class PurchaseinvoiceService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập"));
 
         List<Purchasedetail> details = purchasedetailRepository.findByPurchaseIdWithProduct(purchaseId);
+        Map<Integer, String> unitNameByDetailId = importUnitNameByPurchaseDetailId(details);
 
         BigDecimal subtotal = calculateSubtotal(details);
         BigDecimal additionCost = safe(invoice.getAdditionCost());
@@ -218,7 +220,7 @@ public class PurchaseinvoiceService {
         Supplier supplier = invoice.getSupplierID();
 
         List<PurchaseInvoicePrintLineResponse> lines = details.stream()
-                .map(this::toPrintLine)
+                .map(detail -> toPrintLine(detail, unitNameByDetailId.get(detail.getId())))
                 .toList();
 
         return new PurchaseInvoicePrintPageResponse(
@@ -241,7 +243,7 @@ public class PurchaseinvoiceService {
         );
     }
 
-    private PurchaseInvoicePrintLineResponse toPrintLine(Purchasedetail detail) {
+    private PurchaseInvoicePrintLineResponse toPrintLine(Purchasedetail detail, String unitName) {
         Product product = detail.getProductID();
         BigDecimal lineTotal = safe(detail.getImportPrice())
                 .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity()));
@@ -251,10 +253,37 @@ public class PurchaseinvoiceService {
                 product != null ? product.getName() : "Không rõ",
                 detail.getImportPrice(),
                 detail.getQuantity(),
+                unitName != null ? unitName : "—",
                 lineTotal,
                 detail.getVatRate(),
                 detail.getVatAmount()
         );
+    }
+
+    /**
+     * Đơn vị thực tế đã dùng để tạo lô hàng của mỗi dòng phiếu nhập — đọc từ {@code Batch
+     * .importUnitID} (mỗi Purchasedetail luôn có đúng 1 Batch được tạo cùng transaction, xem
+     * {@link #createBatchForDetail}), không suy đoán lại từ Product như gợi ý trên trang tạo phiếu.
+     */
+    private Map<Integer, String> importUnitNameByPurchaseDetailId(List<Purchasedetail> details) {
+        List<Integer> detailIds = details.stream()
+                .map(Purchasedetail::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (detailIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Integer, String> result = new HashMap<>();
+
+        for (Batch batch : batchRepository.findByPurchaseDetailIds(detailIds)) {
+            if (batch.getPurchaseDetailID() != null && batch.getImportUnitID() != null) {
+                result.put(batch.getPurchaseDetailID().getId(), batch.getImportUnitID().getUnitName());
+            }
+        }
+
+        return result;
     }
 
     @Transactional
@@ -407,6 +436,34 @@ public class PurchaseinvoiceService {
     }
 
     /**
+     * Per-product default import-unit name for the Purchase Invoice create form's "Đơn vị" column —
+     * purely informational, showing which unit {@link #resolveImportUnit(Product)} will actually use
+     * for that product's "Số lượng" (same priority: isDefault > isBaseUnit > lowest id), so the
+     * pharmacist can see what unit their quantity is in before saving.
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, String> getImportUnitNameByProduct() {
+        Map<Integer, List<Productunit>> unitsByProduct = new HashMap<>();
+
+        for (Productunit unit : productunitRepository.findAll()) {
+            if (unit.getProductID() == null || Boolean.FALSE.equals(unit.getIsActive())) {
+                continue;
+            }
+            unitsByProduct.computeIfAbsent(unit.getProductID().getProductID(), id -> new ArrayList<>()).add(unit);
+        }
+
+        Map<Integer, String> result = new HashMap<>();
+
+        unitsByProduct.forEach((productId, units) -> units.stream()
+                .min(Comparator
+                        .comparingInt(this::importUnitPriority)
+                        .thenComparing(unit -> unit.getId() == null ? Integer.MAX_VALUE : unit.getId()))
+                .ifPresent(unit -> result.put(productId, unit.getUnitName())));
+
+        return result;
+    }
+
+    /**
      * "Giá nhập" của phiếu nhập luôn phản ánh giá thực tế của lần giao dịch (thực hiện ngoài hệ
      * thống), nên mỗi lần lưu phiếu sẽ ghi đè {@code SupplierProduct.costPrice} bằng giá vừa nhập
      * — không chỉ cập nhật khi trước đó chưa có — để costPrice luôn là "giá nhập mới nhất" dùng
@@ -537,53 +594,10 @@ public class PurchaseinvoiceService {
     }
 
     /**
-     * Known (lotNumber, expirationDate) pairs per product, with stock summed across every
-     * {@link Batch} row sharing that pair — offered on the create-invoice form so re-supplying an
-     * existing lot can reuse its label instead of the user retyping it (and risking a typo that
-     * fragments the same physical lot under two labels).
-     */
-    @Transactional(readOnly = true)
-    public Map<Integer, List<PurchaseInvoiceExistingLotResponse>> buildExistingLotsByProduct() {
-        record LotKey(Integer productId, String lotNumber, LocalDate expirationDate) {
-        }
-
-        Map<LotKey, long[]> totalsByLot = new LinkedHashMap<>();
-        Map<LotKey, LocalDate> productionDateByLot = new LinkedHashMap<>();
-
-        for (Batch batch : batchRepository.findAll()) {
-            if (batch.getProductID() == null
-                    || batch.getLotNumber() == null
-                    || batch.getLotNumber().isBlank()) {
-                continue;
-            }
-
-            LotKey key = new LotKey(batch.getProductID().getProductID(), batch.getLotNumber(), batch.getExpirationDate());
-            totalsByLot.computeIfAbsent(key, k -> new long[1])[0] +=
-                    batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity();
-            productionDateByLot.putIfAbsent(key, batch.getProductionDate());
-        }
-
-        Map<Integer, List<PurchaseInvoiceExistingLotResponse>> result = new LinkedHashMap<>();
-
-        totalsByLot.forEach((key, total) -> result
-                .computeIfAbsent(key.productId(), id -> new ArrayList<>())
-                .add(new PurchaseInvoiceExistingLotResponse(
-                        key.lotNumber(),
-                        toIso(productionDateByLot.get(key)),
-                        formatLocalDate(productionDateByLot.get(key)),
-                        toIso(key.expirationDate()),
-                        formatLocalDate(key.expirationDate()),
-                        total[0]
-                )));
-
-        return result;
-    }
-
-    /**
      * "Giá nhập" gợi ý cho trang tạo phiếu nhập, theo từng cặp (nhà cung cấp, sản phẩm) đã từng
      * nhập — lấy từ {@code SupplierProduct.costPrice} (giá nhập gần nhất được lưu lại, xem
-     * {@link #upsertSupplierProductCostPrice}). Bake sẵn thành model attribute giống
-     * {@link #buildExistingLotsByProduct()}, JS đọc trực tiếp thay vì gọi AJAX.
+     * {@link #upsertSupplierProductCostPrice}). Bake sẵn thành model attribute, JS đọc trực tiếp
+     * thay vì gọi AJAX.
      */
     @Transactional(readOnly = true)
     public Map<Integer, Map<Integer, BigDecimal>> buildCostPriceBySupplierAndProduct() {
@@ -702,7 +716,7 @@ public class PurchaseinvoiceService {
         );
     }
 
-    private PurchaseInvoiceDetailItemResponse toDetailItem(Purchasedetail detail) {
+    private PurchaseInvoiceDetailItemResponse toDetailItem(Purchasedetail detail, String unitName) {
         Product product = detail.getProductID();
         BigDecimal lineTotal = safe(detail.getImportPrice())
                 .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity()));
@@ -716,6 +730,7 @@ public class PurchaseinvoiceService {
                 detail.getExpirationDate(),
                 formatLocalDate(detail.getExpirationDate()),
                 detail.getQuantity(),
+                unitName != null ? unitName : "—",
                 detail.getImportPrice(),
                 lineTotal,
                 detail.getVatRate(),
@@ -842,11 +857,6 @@ public class PurchaseinvoiceService {
         }
 
         return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-    }
-
-    /** ISO ({@code yyyy-MM-dd}) form, or {@code null} — matches what {@code <input type="date">} needs. */
-    private String toIso(LocalDate date) {
-        return date == null ? null : date.toString();
     }
 
     private LocalDate parseDate(String value) {

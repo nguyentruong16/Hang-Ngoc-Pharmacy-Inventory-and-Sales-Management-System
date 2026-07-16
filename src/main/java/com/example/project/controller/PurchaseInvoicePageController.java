@@ -164,9 +164,9 @@ public class PurchaseInvoicePageController {
     private void addCreatePageData(HttpServletRequest request, Model model) {
         model.addAttribute("suppliers", purchaseinvoiceService.listSuppliers());
         model.addAttribute("products", purchaseinvoiceService.listProducts());
-        model.addAttribute("existingLotsByProduct", purchaseinvoiceService.buildExistingLotsByProduct());
         model.addAttribute("costPriceBySupplierAndProduct", purchaseinvoiceService.buildCostPriceBySupplierAndProduct());
         model.addAttribute("vatRateByProduct", purchaseinvoiceService.getVatRateByProduct());
+        model.addAttribute("importUnitByProduct", purchaseinvoiceService.getImportUnitNameByProduct());
         model.addAttribute("basePath", resolveBasePath(request));
     }
 
