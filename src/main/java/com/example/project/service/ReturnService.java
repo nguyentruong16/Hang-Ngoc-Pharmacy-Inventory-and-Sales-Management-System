@@ -65,9 +65,6 @@ public class ReturnService {
     /** Legacy DB value before invoiceType was stored in Vietnamese. */
     private static final String INVOICE_TYPE_ADJUSTMENT_LEGACY = "adjustment";
 
-    // Thời gian: cả hệ thống (InvoiceService/purchase) lưu GIỜ VN gán lên UTC và đọc lại bằng UTC để tránh
-    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-
     private static final String INVOICE_RETURN_NONE = "NONE";
     private static final String INVOICE_RETURN_PARTIAL = "PARTIAL";
     private static final String INVOICE_RETURN_FULL = "FULL";
@@ -506,7 +503,7 @@ public class ReturnService {
         // Cùng ký hiệu (mẫu số / serie) với hóa đơn gốc; số hóa đơn mới, duy nhất.
         adj.setInvoicePattern(original.getInvoicePattern());
         adj.setInvoiceNumber(generateInvoiceNumber());
-        adj.setDate(nowVn());
+        adj.setDate(LocalDateTime.now(VN_ZONE));
         adj.setEmployeeID(ret.getReturnedBy());
         adj.setCustomerID(original.getCustomerID());
         adj.setInvoiceType(INVOICE_TYPE_ADJUSTMENT);
