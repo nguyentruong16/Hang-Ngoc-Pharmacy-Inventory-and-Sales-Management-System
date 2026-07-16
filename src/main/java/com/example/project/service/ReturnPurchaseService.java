@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -61,6 +62,8 @@ public class ReturnPurchaseService {
     // Purchasing module is owned by another member — consumed read-only via its repositories.
     private final PurchaseinvoiceRepository purchaseinvoiceRepository;
     private final PurchasedetailRepository purchasedetailRepository;
+    // Read-only: current tax revenue group (Nhóm 2/3) — Nhóm 3 records the reversed input VAT.
+    private final FinancialsettingRepository financialsettingRepository;
 
     public ReturnPurchaseService(ReturnRepository returnRepository,
                                  ReturndetailRepository returndetailRepository,
@@ -68,7 +71,8 @@ public class ReturnPurchaseService {
                                  BatchRepository batchRepository,
                                  ProductunitRepository productunitRepository,
                                  PurchaseinvoiceRepository purchaseinvoiceRepository,
-                                 PurchasedetailRepository purchasedetailRepository) {
+                                 PurchasedetailRepository purchasedetailRepository,
+                                 FinancialsettingRepository financialsettingRepository) {
         this.returnRepository = returnRepository;
         this.returndetailRepository = returndetailRepository;
         this.accountRepository = accountRepository;
@@ -76,6 +80,19 @@ public class ReturnPurchaseService {
         this.productunitRepository = productunitRepository;
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.purchasedetailRepository = purchasedetailRepository;
+        this.financialsettingRepository = financialsettingRepository;
+    }
+
+    /** Current tax revenue group of the household (1/2/3/4), read from the financial setting singleton. */
+    private int revenueGroup() {
+        return financialsettingRepository.findFirstByOrderByIdAsc()
+                .map(Financialsetting::getRevenueGroup)
+                .orElse(2);
+    }
+
+    /** Nhóm 3/4 = deduction method → the reversed input VAT is tracked on the slip; Nhóm 2 has nothing to reverse. */
+    private boolean isDeductionGroup() {
+        return revenueGroup() >= 3;
     }
 
     // ------------------------------------------------------------------ list / search
@@ -219,9 +236,18 @@ public class ReturnPurchaseService {
                     orZero(line.getQuantity()),
                     returnedByDetail.getOrDefault(line.getId(), 0L).intValue(),
                     onHand,
-                    importPricePerBase(primary)));
+                    importPricePerBase(primary),
+                    grossUnitPrice(importPricePerBase(primary), line.getVatRate())));
         }
         return lines;
+    }
+
+    /** Gross unit refund price = net × (1 + vatRate%) — NCC hoàn cả phần thuế đầu vào. */
+    private BigDecimal grossUnitPrice(BigDecimal net, BigDecimal vatRate) {
+        BigDecimal base = net != null ? net : BigDecimal.ZERO;
+        BigDecimal rate = vatRate != null ? vatRate : BigDecimal.ZERO;
+        BigDecimal vatUnit = base.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        return base.add(vatUnit);
     }
 
     // ------------------------------------------------------------------ create
@@ -280,7 +306,7 @@ public class ReturnPurchaseService {
                 if (take <= 0) {
                     continue;
                 }
-                chunks.add(new Chunk(line, batch, take, importPricePerBase(batch)));
+                chunks.add(new Chunk(line, batch, take, importPricePerBase(batch), line.getVatRate()));
                 remaining -= take;
             }
         }
@@ -289,9 +315,14 @@ public class ReturnPurchaseService {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một dòng hàng cần trả");
         }
 
+        // NCC hoàn 100% = gross (chưa thuế + thuế) cho cả Nhóm 2 và 3.
         BigDecimal totalRefund = chunks.stream()
-                .map(Chunk::lineRefund)
+                .map(Chunk::grossRefund)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Nhóm 3 (khấu trừ): ghi giảm thuế GTGT đầu vào đã khấu trừ; Nhóm 2 chưa từng khấu trừ → 0.
+        BigDecimal totalVATRefund = isDeductionGroup()
+                ? chunks.stream().map(Chunk::vatAmount).reduce(BigDecimal.ZERO, BigDecimal::add)
+                : BigDecimal.ZERO;
 
         String returnType = resolveReturnType(request.getReturnType());
         String status = asDraft ? ReturnPurchaseStatus.DRAFT : ReturnPurchaseStatus.APPROVED;
@@ -307,8 +338,7 @@ public class ReturnPurchaseService {
         ret.setRefundBanking(TYPE_BANKING.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setRefundCredit(TYPE_DEBT.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setTotalRefund(totalRefund);
-        // Supplier-return input-VAT adjustment is deferred to the finance phase — no output VAT here.
-        ret.setTotalVATRefund(BigDecimal.ZERO);
+        ret.setTotalVATRefund(totalVATRefund);
         ret.setOffsetDebtAmount(BigDecimal.ZERO);
         ret.setReason(request.getReason().trim());
         ret.setNote(trimToNull(request.getNote()));
@@ -329,12 +359,12 @@ public class ReturnPurchaseService {
             detail.setBatchID(chunk.batch());
             detail.setReturnQty(chunk.qty());
             detail.setBaseQtyRestored(chunk.qty());
-            detail.setUnitSellPrice(chunk.unitImportPrice());
-            detail.setLineRefund(chunk.lineRefund());
-            // VAT split not tracked for supplier returns (input-VAT handled in the finance phase).
-            detail.setVatRate(BigDecimal.ZERO);
-            detail.setPreTaxAmount(chunk.lineRefund());
-            detail.setVatAmount(BigDecimal.ZERO);
+            detail.setUnitSellPrice(chunk.grossUnitPrice());
+            detail.setLineRefund(chunk.grossRefund());
+            // Tách net/VAT theo hóa đơn nhập gốc: preTax = net, vatAmount = thuế GTGT đầu vào của dòng.
+            detail.setVatRate(chunk.vatRate() != null ? chunk.vatRate() : BigDecimal.ZERO);
+            detail.setPreTaxAmount(chunk.netAmount());
+            detail.setVatAmount(chunk.vatAmount());
             detail.setRestockable(false);
             returndetailRepository.save(detail);
         }
@@ -757,10 +787,33 @@ public class ReturnPurchaseService {
         return normalized.toLowerCase(Locale.ROOT).trim();
     }
 
-    /** A validated, priced return chunk (one batch worth of a returned purchase line). */
-    private record Chunk(Purchasedetail line, Batch batch, int qty, BigDecimal unitImportPrice) {
-        BigDecimal lineRefund() {
-            return unitImportPrice.multiply(BigDecimal.valueOf(qty));
+    /**
+     * A validated, priced return chunk (one batch worth of a returned purchase line). The supplier refunds
+     * 100% of the import value = <b>gross</b> (chưa thuế + thuế) for both tax groups; {@code unitImportPrice}
+     * is the NET per-base import cost and {@code vatRate} the input-VAT rate from the purchase line.
+     */
+    private record Chunk(Purchasedetail line, Batch batch, int qty, BigDecimal unitImportPrice, BigDecimal vatRate) {
+        /** Net (pre-tax) value of this chunk = importPricePerBase × qty. */
+        BigDecimal netAmount() {
+            return unitImportPrice.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        /** Input VAT of this chunk = netAmount × vatRate% (đầu vào đã khấu trừ, dùng cho Nhóm 3). */
+        BigDecimal vatAmount() {
+            BigDecimal rate = vatRate != null ? vatRate : BigDecimal.ZERO;
+            return netAmount().multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        }
+
+        /** Gross refund of this chunk = net + input VAT (số tiền NCC hoàn 100%). */
+        BigDecimal grossRefund() {
+            return netAmount().add(vatAmount());
+        }
+
+        /** Gross unit import price = net × (1 + vatRate%), for display/line unit price. */
+        BigDecimal grossUnitPrice() {
+            BigDecimal rate = vatRate != null ? vatRate : BigDecimal.ZERO;
+            BigDecimal vatUnit = unitImportPrice.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            return unitImportPrice.add(vatUnit);
         }
     }
 }
