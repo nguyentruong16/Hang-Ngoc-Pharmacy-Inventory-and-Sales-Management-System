@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -18,8 +17,8 @@ import java.time.format.DateTimeFormatter;
 @NoArgsConstructor
 public class CustomerInvoiceResponse {
 
-    private static final DateTimeFormatter DATE_FMT =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
+    // Invoice.date is stored as a VN wall-clock LocalDateTime — format directly, no zone conversion.
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private Integer id;
     private String invoiceCode;

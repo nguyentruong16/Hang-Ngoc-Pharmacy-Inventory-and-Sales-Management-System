@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /** One row in the sale-invoice list. */
 @Getter
@@ -14,7 +14,7 @@ public class InvoiceListItemResponse {
     private Integer id;
     private String code;
 
-    private Instant date;
+    private LocalDateTime date;
     private String dateDisplay;
 
     private String customerName;

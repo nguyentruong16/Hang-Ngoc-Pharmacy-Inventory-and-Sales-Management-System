@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +17,7 @@ public class InvoiceDetailPageResponse {
     private String invoiceCode;
     private String invoicePattern;
 
-    private Instant date;
+    private LocalDateTime date;
     private String dateDisplay;
 
     private String customerName;
