@@ -35,11 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.Normalizer;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -315,9 +313,10 @@ public class InvoiceService {
     /**
      * Creates one sale invoice + its lines, deducting stock from the product's batches soonest-expiry
      * first (FEFO). Each line's stored quantity is in the chosen sell unit; {@code baseQtyDeducted}
-     * is that quantity times the unit ratio. When a line spans several batches its {@code batchID}
-     * references the first (soonest-expiry) batch consumed, matching how the schema keeps one batch
-     * per detail row.
+     * is that quantity times the unit ratio. When a line's deduction spans several batches, it is
+     * persisted as one {@code Invoicedetail} row per batch actually touched (each expressed in the
+     * product's base unit, money split proportionally by base quantity) so stock-history reporting can
+     * show every lot involved — see {@link #saveLineAndDeductStock}.
      *
      * @return the new invoice id, for the redirect.
      */
@@ -351,9 +350,8 @@ public class InvoiceService {
         Invoice invoice = new Invoice();
         invoice.setInvoicePattern(buildInvoicePattern(invoiceDateTime.toLocalDate()));
         invoice.setInvoiceNumber(generateInvoiceNumber());
-        // Store Vietnam wall-clock time (mirrors ProcurementplanService using LocalDateTime.now(VN_ZONE));
-        // the date column is an Instant, so map the VN local time onto UTC to avoid the -7h drift.
-        invoice.setDate(invoiceDateTime.toInstant(ZoneOffset.UTC));
+        // Store Vietnam wall-clock time directly (mirrors ProcurementplanService using LocalDateTime.now(VN_ZONE)).
+        invoice.setDate(invoiceDateTime);
         invoice.setEmployeeID(employee);
         invoice.setCustomerID(customer);
         invoice.setInvoiceType(INVOICE_TYPE_NORMAL);
@@ -441,25 +439,91 @@ public class InvoiceService {
         BigDecimal preTaxAmount = calculateSaleLinePreTaxAmount(lineSubtotal, vatRate);
         BigDecimal vatAmount = calculateSaleLineVatAmount(preTaxAmount, vatRate);
 
-        Batch firstBatch = deductStock(product, baseQty, quantity, ratio, unit.getUnitName());
+        List<BatchAllocation> allocations = deductStock(product, baseQty, quantity, ratio, unit.getUnitName());
 
-        Invoicedetail detail = new Invoicedetail();
-        detail.setInvoiceID(invoice);
-        detail.setProductID(product);
-        detail.setProductUnitID(unit);
-        detail.setBatchID(firstBatch);
-        detail.setQuantity(quantity);
-        detail.setUnitName(unit.getUnitName());
-        detail.setBaseQtyDeducted(baseQty);
-        detail.setUnitSellPrice(unitSellPrice);
-        detail.setSubtotal(lineSubtotal);
-        detail.setReturnedQty(0);
-        detail.setVatRate(vatRate);
-        detail.setPreTaxAmount(preTaxAmount);
-        detail.setVatAmount(vatAmount);
-        invoicedetailRepository.save(detail);
+        if (allocations.size() <= 1) {
+            Batch batch = allocations.isEmpty() ? null : allocations.get(0).batch();
+            Invoicedetail detail = new Invoicedetail();
+            detail.setInvoiceID(invoice);
+            detail.setProductID(product);
+            detail.setProductUnitID(unit);
+            detail.setBatchID(batch);
+            detail.setQuantity(quantity);
+            detail.setUnitName(unit.getUnitName());
+            detail.setBaseQtyDeducted(baseQty);
+            detail.setUnitSellPrice(unitSellPrice);
+            detail.setSubtotal(lineSubtotal);
+            detail.setReturnedQty(0);
+            detail.setVatRate(vatRate);
+            detail.setPreTaxAmount(preTaxAmount);
+            detail.setVatAmount(vatAmount);
+            invoicedetailRepository.save(detail);
+            return new SavedLineTotals(lineSubtotal, vatAmount);
+        }
+
+        // Deduction spanned more than one batch — persist one row per batch actually touched, in the
+        // product's base unit, so stock-history reporting can show every lot involved. Money is split
+        // proportionally by base quantity, with the last chunk absorbing any rounding remainder so the
+        // split rows reconcile exactly to lineSubtotal/preTaxAmount/vatAmount.
+        Productunit baseUnit = resolveBaseUnit(product);
+        BigDecimal remainingSubtotal = lineSubtotal;
+        BigDecimal remainingPreTax = preTaxAmount;
+        BigDecimal remainingVat = vatAmount;
+        int remainingBaseQty = baseQty;
+
+        for (int i = 0; i < allocations.size(); i++) {
+            BatchAllocation allocation = allocations.get(i);
+            boolean lastChunk = i == allocations.size() - 1;
+
+            BigDecimal chunkSubtotal;
+            BigDecimal chunkPreTax;
+            BigDecimal chunkVat;
+            if (lastChunk) {
+                chunkSubtotal = remainingSubtotal;
+                chunkPreTax = remainingPreTax;
+                chunkVat = remainingVat;
+            } else {
+                BigDecimal share = BigDecimal.valueOf(allocation.baseQtyTaken())
+                        .divide(BigDecimal.valueOf(remainingBaseQty == 0 ? 1 : remainingBaseQty), 10, RoundingMode.HALF_UP);
+                chunkSubtotal = lineSubtotal.multiply(share).setScale(2, RoundingMode.HALF_UP);
+                chunkPreTax = preTaxAmount.multiply(share).setScale(2, RoundingMode.HALF_UP);
+                chunkVat = vatAmount.multiply(share).setScale(2, RoundingMode.HALF_UP);
+            }
+
+            Invoicedetail detail = new Invoicedetail();
+            detail.setInvoiceID(invoice);
+            detail.setProductID(product);
+            detail.setProductUnitID(baseUnit);
+            detail.setBatchID(allocation.batch());
+            detail.setQuantity(allocation.baseQtyTaken());
+            detail.setUnitName(baseUnit.getUnitName());
+            detail.setBaseQtyDeducted(allocation.baseQtyTaken());
+            detail.setUnitSellPrice(allocation.baseQtyTaken() == 0
+                    ? BigDecimal.ZERO
+                    : chunkSubtotal.divide(BigDecimal.valueOf(allocation.baseQtyTaken()), 2, RoundingMode.HALF_UP));
+            detail.setSubtotal(chunkSubtotal);
+            detail.setReturnedQty(0);
+            detail.setVatRate(vatRate);
+            detail.setPreTaxAmount(chunkPreTax);
+            detail.setVatAmount(chunkVat);
+            invoicedetailRepository.save(detail);
+
+            remainingSubtotal = remainingSubtotal.subtract(chunkSubtotal);
+            remainingPreTax = remainingPreTax.subtract(chunkPreTax);
+            remainingVat = remainingVat.subtract(chunkVat);
+            remainingBaseQty -= allocation.baseQtyTaken();
+        }
 
         return new SavedLineTotals(lineSubtotal, vatAmount);
+    }
+
+    /** The product's single base {@code Productunit} — required for splitting a multi-batch deduction. */
+    private Productunit resolveBaseUnit(Product product) {
+        return productunitRepository.findByProductId(product.getProductID()).stream()
+                .filter(unit -> Boolean.TRUE.equals(unit.getIsBaseUnit()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Sản phẩm \"" + product.getName() + "\" chưa có đơn vị cơ bản"));
     }
 
     /**
@@ -503,8 +567,11 @@ public class InvoiceService {
 
     private record SavedLineTotals(BigDecimal subtotal, BigDecimal vatAmount) {}
 
-    /** Deducts {@code baseQty} from a product's in-stock batches (FEFO); returns the first batch used. */
-    private Batch deductStock(Product product, int baseQty, int sellQuantity, BigDecimal ratio, String unitName) {
+    /** One batch's contribution to a single line's FEFO deduction. */
+    private record BatchAllocation(Batch batch, int baseQtyTaken) {}
+
+    /** Deducts {@code baseQty} from a product's in-stock batches (FEFO); returns every batch touched. */
+    private List<BatchAllocation> deductStock(Product product, int baseQty, int sellQuantity, BigDecimal ratio, String unitName) {
         List<Batch> batches = batchRepository.findInStockBatchesByProduct(product.getProductID());
         long available = batches.stream()
                 .mapToLong(batch -> batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity())
@@ -519,7 +586,7 @@ public class InvoiceService {
                     + ", cần " + sellQuantity + " " + unit + ")");
         }
 
-        Batch firstBatch = null;
+        List<BatchAllocation> allocations = new ArrayList<>();
         int remaining = baseQty;
         for (Batch batch : batches) {
             if (remaining <= 0) {
@@ -529,15 +596,13 @@ public class InvoiceService {
             if (inBatch <= 0) {
                 continue;
             }
-            if (firstBatch == null) {
-                firstBatch = batch;
-            }
             int take = Math.min(inBatch, remaining);
             batch.setStorageQuantity(inBatch - take);
             batchRepository.save(batch);
+            allocations.add(new BatchAllocation(batch, take));
             remaining -= take;
         }
-        return firstBatch;
+        return allocations;
     }
 
     private String generateInvoiceNumber() {
@@ -669,7 +734,7 @@ public class InvoiceService {
                 invoiceCode(invoice),
                 invoice.getInvoicePattern(),
                 invoice.getDate(),
-                formatInstant(invoice.getDate()),
+                formatDate(invoice.getDate()),
                 customer != null ? customer.getName() : "Khách lẻ",
                 customer != null ? customer.getPhoneNumber() : null,
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
@@ -704,7 +769,7 @@ public class InvoiceService {
                 invoice.getId(),
                 invoiceCode(invoice),
                 invoice.getDate(),
-                formatInstant(invoice.getDate()),
+                formatDate(invoice.getDate()),
                 invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                 invoiceTypeDisplay(invoice.getInvoiceType()),
@@ -894,22 +959,19 @@ public class InvoiceService {
         return value != null && value.compareTo(BigDecimal.ZERO) > 0;
     }
 
-    private String formatInstant(Instant instant) {
-        if (instant == null) {
+    private String formatDate(LocalDateTime dateTime) {
+        if (dateTime == null) {
             return "";
         }
-        // Stored as VN wall-clock mapped onto UTC (see create()); format with UTC to show the same digits.
-        return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-                .withZone(ZoneOffset.UTC)
-                .format(instant);
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").format(dateTime);
     }
 
     private String formatLocalDate(LocalDate date) {
         return date == null ? "" : date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
-    private LocalDate toLocalDate(Instant instant) {
-        return instant.atZone(ZoneOffset.UTC).toLocalDate();
+    private LocalDate toLocalDate(LocalDateTime dateTime) {
+        return dateTime.toLocalDate();
     }
 
     private LocalDate parseDate(String value) {

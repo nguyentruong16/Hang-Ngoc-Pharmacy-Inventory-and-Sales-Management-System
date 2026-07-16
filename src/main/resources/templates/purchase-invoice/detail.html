@@ -287,13 +287,6 @@
                         </div>
 
                         <div class="d-flex justify-content-between mb-3">
-                            <span class="text-secondary">Tiền thuế VAT</span>
-                            <strong th:text="${#numbers.formatDecimal(detail.totalVATInput, 0, 'POINT', 0, 'COMMA') + 'đ'}">
-                                0đ
-                            </strong>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-3">
                             <span class="text-secondary">Chi phí phát sinh</span>
                             <strong th:text="${#numbers.formatDecimal(detail.additionCost, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                 0đ

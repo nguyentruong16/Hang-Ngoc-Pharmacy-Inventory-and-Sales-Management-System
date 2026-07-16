@@ -232,7 +232,7 @@
                         <td th:text="${h.reference != null ? h.reference : '—'}">SO-000001</td>
                         <td th:text="${h.lotNumber != null ? h.lotNumber : '—'}">LOT-001</td>
                         <td class="text-end" th:classappend="${h.quantityChange >= 0} ? ' qty-in' : ' qty-out'"
-                            th:text="${h.quantityChange > 0 ? '+' + h.quantityChange : h.quantityChange}">+30</td>
+                            th:text="${(h.quantityChange > 0 ? '+' + h.quantityChange : h.quantityChange) + (h.unitName != null and !h.unitName.isEmpty() ? ' ' + h.unitName : '')}">+30 hộp</td>
                         <td th:text="${h.note != null and !h.note.isEmpty()} ? ${h.note} : '—'">—</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(product.recentHistory)}">
