@@ -54,6 +54,9 @@ public class ReturnPurchaseService {
     private static final String TYPE_BANKING = "BANKING";
     private static final String TYPE_DEBT = "DEBT";
 
+    // Thời gian: lưu GIỜ VN gán lên UTC + đọc lại bằng UTC (cùng quy ước InvoiceService/purchase).
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
     private final ReturnRepository returnRepository;
     private final ReturndetailRepository returndetailRepository;
     private final AccountRepository accountRepository;
@@ -332,7 +335,7 @@ public class ReturnPurchaseService {
         ret.setInvoiceID(null);
         ret.setPurchaseID(purchase);
         ret.setReturnedBy(creator);
-        ret.setReturnDate(Instant.now());
+        ret.setReturnDate(nowVn());
         ret.setReturnType(returnType);
         ret.setRefundCash(TYPE_CASH.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setRefundBanking(TYPE_BANKING.equals(returnType) ? totalRefund : BigDecimal.ZERO);
@@ -344,7 +347,7 @@ public class ReturnPurchaseService {
         ret.setNote(trimToNull(request.getNote()));
         ret.setStatus(status);
         if (ReturnPurchaseStatus.APPROVED.equals(status)) {
-            ret.setApprovedAt(Instant.now());
+            ret.setApprovedAt(nowVn());
         }
 
         Return savedReturn = returnRepository.save(ret);
@@ -386,7 +389,7 @@ public class ReturnPurchaseService {
             throw new IllegalArgumentException("Chỉ có thể duyệt phiếu đang ở trạng thái nháp");
         }
         ret.setStatus(ReturnPurchaseStatus.APPROVED);
-        ret.setApprovedAt(Instant.now());
+        ret.setApprovedAt(nowVn());
         returnRepository.save(ret);
         applyReturnEffect(ret);
     }
@@ -399,7 +402,7 @@ public class ReturnPurchaseService {
             throw new IllegalArgumentException("Chỉ có thể từ chối phiếu đang ở trạng thái nháp");
         }
         ret.setStatus(ReturnPurchaseStatus.REJECTED);
-        ret.setApprovedAt(Instant.now());
+        ret.setApprovedAt(nowVn());
         returnRepository.save(ret);
     }
 
@@ -745,12 +748,18 @@ public class ReturnPurchaseService {
         return value != null ? value : 0;
     }
 
+    /** Giờ VN "hiện tại" gán lên UTC — cùng quy ước lưu với InvoiceService/purchase. */
+    private Instant nowVn() {
+        return LocalDateTime.now(VN_ZONE).toInstant(ZoneOffset.UTC);
+    }
+
     private String formatInstant(Instant instant) {
         if (instant == null) {
             return "";
         }
+        // Đọc lại bằng UTC vì thời gian được lưu theo giờ VN gán lên UTC.
         return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-                .withZone(ZoneId.systemDefault())
+                .withZone(ZoneOffset.UTC)
                 .format(instant);
     }
 
@@ -759,7 +768,7 @@ public class ReturnPurchaseService {
     }
 
     private LocalDate toLocalDate(Instant instant) {
-        return instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        return instant.atZone(ZoneOffset.UTC).toLocalDate();
     }
 
     private LocalDate parseDate(String value) {
