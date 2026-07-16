@@ -134,8 +134,8 @@
                        placeholder="0900000000">
                 <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
               </div>
-              <div class="col-12 col-md-6 company-field">
-                <label for="cusTax" class="form-label">Mã số thuế</label>
+              <div class="col-12 col-md-6">
+                <label id="cusTaxLabel" for="cusTax" class="form-label">Mã số thuế</label>
                 <input id="cusTax" type="text" class="form-control"
                        th:field="*{taxCode}"
                        th:classappend="${#fields.hasErrors('taxCode')} ? ' is-invalid'"
@@ -211,6 +211,8 @@
     var companyFields = form.querySelectorAll('.company-field');
     var optIndividual = document.getElementById('optIndividual');
     var optCompany = document.getElementById('optCompany');
+    var taxLabel = document.getElementById('cusTaxLabel');
+    var taxInput = document.getElementById('cusTax');
 
     function selectedType() {
       var checked = form.querySelector('input[name="customerType"]:checked');
@@ -222,6 +224,9 @@
       companyFields.forEach(function (el) { el.style.display = isCompany ? '' : 'none'; });
       optIndividual.classList.toggle('active', !isCompany);
       optCompany.classList.toggle('active', isCompany);
+      // taxCode dùng cho cả 2 loại: doanh nghiệp = Mã số thuế, cá nhân = số CCCD/CMND.
+      if (taxLabel) { taxLabel.textContent = isCompany ? 'Mã số thuế' : 'Số CCCD/CMND'; }
+      if (taxInput) { taxInput.setAttribute('placeholder', isCompany ? 'Nhập mã số thuế' : 'Nhập số CCCD/CMND'); }
     }
 
     form.querySelectorAll('input[name="customerType"]').forEach(function (r) {

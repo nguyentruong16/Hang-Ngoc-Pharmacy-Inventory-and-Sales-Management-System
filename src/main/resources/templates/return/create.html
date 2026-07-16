@@ -391,13 +391,18 @@
         function selectInvoice(row) {
             const id = row.getAttribute('data-id');
             invoiceIdField.value = id;
+            fillInvoiceHeader(row);
+            modal.classList.remove('open');
+            loadLines(id);
+        }
+
+        // Điền panel thông tin hóa đơn đã chọn (dùng lại cả khi chọn ở modal lẫn khi server render lại sau lỗi validate).
+        function fillInvoiceHeader(row) {
             document.getElementById('pickedInvoiceCode').textContent = row.getAttribute('data-code');
             document.getElementById('pickedCustomer').textContent = row.getAttribute('data-customer');
             document.getElementById('pickedDate').textContent = row.getAttribute('data-date');
             document.getElementById('noInvoice').classList.add('d-none');
             document.getElementById('invoiceInfo').classList.remove('d-none');
-            modal.classList.remove('open');
-            loadLines(id);
         }
 
         // ---- Load returnable lines for the chosen invoice ----
@@ -507,10 +512,16 @@
             btn.addEventListener('click', () => { actionField.value = btn.getAttribute('data-action'); });
         });
 
-        // Re-render any lines the server kept on validation error (invoice already chosen).
+        // Re-render any lines the server kept on validation error (invoice already chosen) và điền lại
+        // panel thông tin hóa đơn từ dòng tương ứng trong modal (tránh mất thông tin HĐ khi báo lỗi).
         if (invoiceIdField.value) {
-            document.getElementById('noInvoice').classList.add('d-none');
-            document.getElementById('invoiceInfo').classList.remove('d-none');
+            const chosen = document.querySelector('#invoicePickBody .pick-row[data-id="' + invoiceIdField.value + '"]');
+            if (chosen) {
+                fillInvoiceHeader(chosen);
+            } else {
+                document.getElementById('noInvoice').classList.add('d-none');
+                document.getElementById('invoiceInfo').classList.remove('d-none');
+            }
             loadLines(invoiceIdField.value);
         }
     })();

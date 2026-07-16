@@ -143,9 +143,9 @@
               <div class="info-value" th:text="${customer.address != null ? customer.address : '—'}">—</div>
             </div>
 
-            <!-- Trường doanh nghiệp -->
-            <div th:if="${customer.customerType == 'COMPANY' or customer.taxCode != null}">
-              <div class="info-label">Mã số thuế</div>
+            <!-- Mã số thuế (doanh nghiệp) / Số CCCD-CMND (cá nhân) -->
+            <div th:if="${customer.taxCode != null}">
+              <div class="info-label" th:text="${customer.customerType == 'COMPANY' ? 'Mã số thuế' : 'Số CCCD/CMND'}">Mã số thuế</div>
               <div class="info-value" th:text="${customer.taxCode != null ? customer.taxCode : '—'}">—</div>
             </div>
             <div th:if="${customer.customerType == 'COMPANY' or customer.bankAccountNumber != null}">
@@ -223,8 +223,8 @@
                    placeholder="0900000000">
             <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
           </div>
-          <div class="col-12 col-md-6 company-field">
-            <label for="editTax" class="form-label">Mã số thuế</label>
+          <div class="col-12 col-md-6">
+            <label id="editTaxLabel" for="editTax" class="form-label">Mã số thuế</label>
             <input id="editTax" type="text" class="form-control"
                    th:field="*{taxCode}" maxlength="100" placeholder="Nhập mã số thuế">
           </div>
@@ -328,6 +328,8 @@
     var companyFields = editFormEl.querySelectorAll('.company-field');
     var optIndividual = document.getElementById('optIndividual');
     var optCompany = document.getElementById('optCompany');
+    var editTaxLabel = document.getElementById('editTaxLabel');
+    var editTaxInput = document.getElementById('editTax');
 
     function selectedType() {
       var checked = editFormEl.querySelector('input[name="customerType"]:checked');
@@ -338,6 +340,9 @@
       companyFields.forEach(function (el) { el.style.display = isCompany ? '' : 'none'; });
       if (optIndividual) optIndividual.classList.toggle('active', !isCompany);
       if (optCompany) optCompany.classList.toggle('active', isCompany);
+      // taxCode dùng cho cả 2 loại: doanh nghiệp = Mã số thuế, cá nhân = số CCCD/CMND.
+      if (editTaxLabel) { editTaxLabel.textContent = isCompany ? 'Mã số thuế' : 'Số CCCD/CMND'; }
+      if (editTaxInput) { editTaxInput.setAttribute('placeholder', isCompany ? 'Nhập mã số thuế' : 'Nhập số CCCD/CMND'); }
     }
     editFormEl.querySelectorAll('input[name="customerType"]').forEach(function (r) {
       r.addEventListener('change', applyType);

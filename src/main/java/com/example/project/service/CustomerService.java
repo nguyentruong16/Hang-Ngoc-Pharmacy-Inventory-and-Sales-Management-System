@@ -145,10 +145,33 @@ public class CustomerService {
         c.setPhoneNumber(trimToNull(req.getPhoneNumber()));
         c.setAddress(trimToNull(req.getAddress()));
         c.setNote(trimToNull(req.getNote()));
-        // Các trường doanh nghiệp chỉ lưu khi loại khách hàng = COMPANY
-        c.setTaxCode(company ? trimToNull(req.getTaxCode()) : null);
+        // taxCode dùng cho CẢ 2 loại (BA 2026-07-16): doanh nghiệp = Mã số thuế (MST),
+        // cá nhân = số CCCD/CMND — cần để xuất hóa đơn/hóa đơn điều chỉnh cho khách.
+        String taxCode = trimToNull(req.getTaxCode());
+        validateTaxCode(company, taxCode);
+        c.setTaxCode(taxCode);
+        // Thông tin ngân hàng chỉ áp dụng cho khách doanh nghiệp.
         c.setBankAccountNumber(company ? trimToNull(req.getBankAccountNumber()) : null);
         c.setBankName(company ? trimToNull(req.getBankName()) : null);
+    }
+
+    /**
+     * Định dạng {@code taxCode} theo loại khách (bỏ qua khi để trống — không bắt buộc):
+     * doanh nghiệp = Mã số thuế {@code 10} chữ số (tùy chọn {@code -3} chữ số chi nhánh, mirror Supplier);
+     * cá nhân = số CCCD {@code 12} chữ số hoặc CMND {@code 9} chữ số.
+     */
+    private void validateTaxCode(boolean company, String taxCode) {
+        if (taxCode == null) {
+            return;
+        }
+        if (company) {
+            if (!taxCode.matches("^[0-9]{10}(-[0-9]{3})?$")) {
+                throw new IllegalArgumentException(
+                        "Mã số thuế phải gồm 10 chữ số (hoặc 10 chữ số - 3 chữ số chi nhánh)");
+            }
+        } else if (!taxCode.matches("^([0-9]{9}|[0-9]{12})$")) {
+            throw new IllegalArgumentException("Số CCCD/CMND phải gồm 12 chữ số (CCCD) hoặc 9 chữ số (CMND)");
+        }
     }
 
     private void validatePhoneUnique(String phone, Integer excludeId) {
