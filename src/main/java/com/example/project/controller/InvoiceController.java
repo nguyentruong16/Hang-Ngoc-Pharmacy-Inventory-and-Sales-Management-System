@@ -116,6 +116,7 @@ public class InvoiceController {
         InvoiceDetailPageResponse detail = invoiceService.getDetail(invoiceId);
         model.addAttribute("detail", detail);
         model.addAttribute("basePath", resolveBasePath(request));
+        model.addAttribute("returnBasePath", resolveReturnBasePath(request));
         model.addAttribute("pageTitle", "Chi tiết hóa đơn " + detail.getInvoiceCode());
         return "invoice-detail";
     }
@@ -210,6 +211,19 @@ public class InvoiceController {
         }
 
         return "/owner/invoices";
+    }
+
+    private String resolveReturnBasePath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+
+        if (uri.startsWith("/pharmacist/invoices")) {
+            return "/pharmacist/returns";
+        }
+        if (uri.startsWith("/owner/invoices")) {
+            return "/owner/returns";
+        }
+
+        return null;
     }
 
     private String listRedirectUrl(String basePath,

@@ -56,10 +56,14 @@ public class ReturnService {
     private static final String INVOICE_STATUS_RETURNED_FULL = "Đã trả hàng toàn bộ";
     private static final String INVOICE_STATUS_RETURNED_PARTIAL = "Đã trả hàng 1 phần";
 
-    // Only normal sale invoices are returnable. DB invoiceType: normal/adjustment — a return must not be
+    // Only sale invoices are returnable. DB invoiceType: Bán hàng/Điều chỉnh — a return must not be
     // opened against an adjustment invoice (the negative slip emitted by TH2).
-    private static final String INVOICE_TYPE_NORMAL = "normal";
-    private static final String INVOICE_TYPE_ADJUSTMENT = "adjustment";
+    private static final String INVOICE_TYPE_NORMAL = "Bán hàng";
+    /** Legacy DB value before invoiceType was stored in Vietnamese. */
+    private static final String INVOICE_TYPE_NORMAL_LEGACY = "normal";
+    private static final String INVOICE_TYPE_ADJUSTMENT = "Điều chỉnh";
+    /** Legacy DB value before invoiceType was stored in Vietnamese. */
+    private static final String INVOICE_TYPE_ADJUSTMENT_LEGACY = "adjustment";
 
     private static final String INVOICE_RETURN_NONE = "NONE";
     private static final String INVOICE_RETURN_PARTIAL = "PARTIAL";
@@ -438,7 +442,7 @@ public class ReturnService {
     }
 
     /**
-     * TH2 — emits the adjustment invoice (invoiceType=adjustment) for a return against a signed invoice.
+     * TH2 — emits the adjustment invoice (invoiceType=Điều chỉnh) for a return against a signed invoice.
      * Lines carry NEGATIVE quantities/amounts (a reduction of the customer's original invoice); it does NOT
      * deduct stock (the returned goods were already restocked into a fresh batch above). The signed original
      * is left untouched. Linked both ways via {@code originalInvoiceID} + {@code returnID}.
@@ -764,10 +768,15 @@ public class ReturnService {
         return invoice != null && isStatus(invoice.getStatus(), INVOICE_STATUS_SIGNED);
     }
 
-    /** Only normal sale invoices can be returned — never an adjustment invoice. (invoiceType is NOT NULL.) */
+    /** Only sale invoices can be returned — never an adjustment invoice. (invoiceType is NOT NULL.) */
     private boolean isNormalInvoice(Invoice invoice) {
-        return invoice != null
-                && (invoice.getInvoiceType() == null || INVOICE_TYPE_NORMAL.equalsIgnoreCase(invoice.getInvoiceType()));
+        if (invoice == null) {
+            return false;
+        }
+        String type = invoice.getInvoiceType();
+        return type == null
+                || INVOICE_TYPE_NORMAL.equalsIgnoreCase(type)
+                || INVOICE_TYPE_NORMAL_LEGACY.equalsIgnoreCase(type);
     }
 
     /** Current tax revenue group of the household (1/2/3/4), read from the financial setting singleton. */
