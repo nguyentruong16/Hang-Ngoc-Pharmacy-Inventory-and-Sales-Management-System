@@ -316,7 +316,7 @@ public class ReturnService {
         ret.setInvoiceID(invoice);
         ret.setPurchaseID(null);
         ret.setReturnedBy(creator);
-        ret.setReturnDate(Instant.now());
+        ret.setReturnDate(nowVn());
         ret.setReturnType(returnType);
         ret.setRefundCash(TYPE_CASH.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setRefundBanking(TYPE_BANKING.equals(returnType) ? totalRefund : BigDecimal.ZERO);
@@ -328,7 +328,7 @@ public class ReturnService {
         ret.setNote(trimToNull(request.getNote()));
         ret.setStatus(status);
         if (approvedNow) {
-            ret.setApprovedAt(Instant.now());
+            ret.setApprovedAt(nowVn());
         }
 
         Return savedReturn = returnRepository.save(ret);
@@ -395,13 +395,13 @@ public class ReturnService {
             throw new IllegalArgumentException("Chỉ có thể từ chối phiếu đang ở trạng thái chờ duyệt");
         }
         ret.setStatus(ReturnStatus.REJECTED);
-        ret.setApprovedAt(Instant.now());
+        ret.setApprovedAt(nowVn());
         returnRepository.save(ret);
     }
 
     private void markApproved(Return ret) {
         ret.setStatus(ReturnStatus.DEBT);
-        ret.setApprovedAt(Instant.now());
+        ret.setApprovedAt(nowVn());
         returnRepository.save(ret);
         applyReturnEffect(ret, returndetailRepository.findByReturnIdWithRelations(ret.getId()));
     }
@@ -435,10 +435,58 @@ public class ReturnService {
             }
         }
         if (signed) {
+            // TH2 — hóa đơn đã ký (đã gửi thuế): KHÔNG sửa hóa đơn gốc, phát hành hóa đơn điều chỉnh.
             createAdjustmentInvoice(ret, ret.getInvoiceID(), details);
         } else {
+            // TH1 — hóa đơn chưa ký (chưa gửi thuế): điều chỉnh trực tiếp hóa đơn gốc — trừ tiền + đổi trạng thái.
+            reduceUnsignedInvoiceTotals(ret.getInvoiceID(), ret.getTotalRefund(), ret.getTotalVATRefund());
             updateInvoiceReturnStatus(ret.getInvoiceID());
         }
+    }
+
+    /**
+     * TH1 — trừ thẳng phần hàng trả vào các con số của hóa đơn gốc (BA 2026-07-16: hóa đơn chưa ký thì
+     * được điều chỉnh trực tiếp vì chưa gửi thuế). Trừ theo <em>delta</em> của phiếu trả này nên cộng dồn
+     * đúng qua nhiều lần trả một phần. Giữ nguyên các dòng chi tiết (quantity gốc + returnedQty) để truy
+     * vết; chỉ đổi phần header.
+     * <ul>
+     *   <li>{@code subtotal} (trước giảm giá) trừ đúng giá trị hàng trả (gross, trước giảm giá);</li>
+     *   <li>{@code discount} trừ theo tỉ trọng hàng trả để {@code total = subtotal − discount} vẫn khớp;</li>
+     *   <li>{@code totalVATOutput} trừ phần VAT hàng trả (Nhóm 2 = 0 nên không đổi);</li>
+     *   <li>{@code debtAmount} trừ phần giá trị (sau giảm giá) của hàng trả, sàn tại 0 — phần khách đã trả
+     *       dư sẽ hoàn bằng phiếu chi (phase Kế toán).</li>
+     * </ul>
+     */
+    private void reduceUnsignedInvoiceTotals(Invoice invoice, BigDecimal refundGross, BigDecimal vatRefund) {
+        if (invoice == null) {
+            return;
+        }
+        BigDecimal subtotal = nz(invoice.getSubtotal());
+        BigDecimal discount = nz(invoice.getDiscount());
+        BigDecimal refund = nz(refundGross);
+
+        // Phần giảm giá tương ứng với hàng trả (theo tỉ trọng giá trị trên subtotal hiện tại).
+        BigDecimal discountShare = subtotal.compareTo(BigDecimal.ZERO) > 0
+                ? discount.multiply(refund).divide(subtotal, 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal returnedNet = maxZero(refund.subtract(discountShare)); // giá trị sau giảm giá của hàng trả
+
+        BigDecimal newSubtotal = maxZero(subtotal.subtract(refund));
+        BigDecimal newDiscount = maxZero(discount.subtract(discountShare));
+        BigDecimal newTotal = maxZero(newSubtotal.subtract(newDiscount));
+        BigDecimal newVat = maxZero(nz(invoice.getTotalVATOutput()).subtract(nz(vatRefund)));
+        BigDecimal newDebt = maxZero(nz(invoice.getDebtAmount()).subtract(returnedNet));
+
+        invoice.setSubtotal(newSubtotal);
+        invoice.setDiscount(newDiscount);
+        invoice.setTotal(newTotal);
+        invoice.setTotalVATOutput(newVat);
+        invoice.setDebtAmount(newDebt);
+        invoiceRepository.save(invoice);
+    }
+
+    private BigDecimal maxZero(BigDecimal value) {
+        return value == null || value.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : value;
     }
 
     /**
@@ -532,7 +580,7 @@ public class ReturnService {
                 ? original.getImportPrice() : BigDecimal.ZERO);
         batch.setImportPricePerBase(original != null && original.getImportPricePerBase() != null
                 ? original.getImportPricePerBase() : BigDecimal.ZERO);
-        batch.setImportDate(Instant.now());
+        batch.setImportDate(nowVn());
         batch.setProductionDate(original != null ? original.getProductionDate() : null);
         batch.setExpirationDate(original != null ? original.getExpirationDate() : null);
         batch.setLotNumber(original != null ? original.getLotNumber() : null);
@@ -830,7 +878,7 @@ public class ReturnService {
         if (invoiceDate == null) {
             return false;
         }
-        LocalDate cutoff = LocalDate.now().minusDays(RETURN_WINDOW_DAYS);
+        LocalDate cutoff = LocalDate.now(VN_ZONE).minusDays(RETURN_WINDOW_DAYS);
         return !toLocalDate(invoiceDate).isBefore(cutoff);
     }
 
@@ -1013,12 +1061,18 @@ public class ReturnService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu trả hàng"));
     }
 
+    /** Giờ VN "hiện tại" gán lên UTC — cùng quy ước lưu với InvoiceService/purchase. */
+    private Instant nowVn() {
+        return LocalDateTime.now(VN_ZONE).toInstant(ZoneOffset.UTC);
+    }
+
     private String formatInstant(Instant instant) {
         if (instant == null) {
             return "";
         }
+        // Đọc lại bằng UTC vì thời gian được lưu theo giờ VN gán lên UTC.
         return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-                .withZone(ZoneId.systemDefault())
+                .withZone(ZoneOffset.UTC)
                 .format(instant);
     }
 
@@ -1035,7 +1089,7 @@ public class ReturnService {
     }
 
     private LocalDate toLocalDate(Instant instant) {
-        return instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        return instant.atZone(ZoneOffset.UTC).toLocalDate();
     }
 
     private LocalDate toLocalDate(LocalDateTime dateTime) {

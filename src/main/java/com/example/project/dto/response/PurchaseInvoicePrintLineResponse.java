@@ -13,6 +13,7 @@ public class PurchaseInvoicePrintLineResponse {
     private String productName;
     private BigDecimal importPrice;
     private Integer quantity;
+    private String unitName;
     private BigDecimal lineTotal;
     private BigDecimal vatRate;
     private BigDecimal vatAmount;

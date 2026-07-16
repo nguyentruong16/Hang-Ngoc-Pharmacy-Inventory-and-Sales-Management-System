@@ -212,6 +212,7 @@
                                 <th>Ngày sản xuất</th>
                                 <th>Hạn dùng</th>
                                 <th>Số lượng</th>
+                                <th>Đơn vị</th>
                                 <th>Giá nhập</th>
                                 <th>Thuế suất (%)</th>
                                 <th>Thành tiền</th>
@@ -231,6 +232,7 @@
                                 <td th:text="${item.productionDateDisplay}">01/06/2026</td>
                                 <td th:text="${item.expirationDateDisplay}">01/06/2028</td>
                                 <td th:text="${item.quantity}">10</td>
+                                <td th:text="${item.unitName}">Hộp</td>
                                 <td th:text="${#numbers.formatDecimal(item.importPrice, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     0đ
                                 </td>
@@ -244,6 +246,7 @@
                             <tr class="fw-semibold">
                                 <td colspan="5">Tổng cộng</td>
                                 <td th:text="${detail.totalQuantity}">0</td>
+                                <td></td>
                                 <td></td>
                                 <td></td>
                                 <td class="text-success"
