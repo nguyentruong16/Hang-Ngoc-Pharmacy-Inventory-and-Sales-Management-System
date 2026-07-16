@@ -77,7 +77,8 @@
 <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 
 <main id="content" class="content product-page-content">
-    <div class="container-fluid">
+    <div class="container-fluid"
+         th:with="baseUnitName=${product.units.?[isBaseUnit].isEmpty() ? '' : product.units.?[isBaseUnit][0].unitName}">
 
         <!-- Header -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
@@ -107,7 +108,8 @@
             </div>
             <div class="text-md-end">
                 <div class="info-label">Tổng tồn kho</div>
-                <div class="fs-3 fw-bold" th:text="${product.totalStock}">0</div>
+                <div class="fs-3 fw-bold"
+                     th:text="${product.totalStock + (#strings.isEmpty(baseUnitName) ? '' : ' ' + baseUnitName)}">0</div>
             </div>
         </div>
 
@@ -182,7 +184,7 @@
                         <th>Ngày nhập</th>
                         <th>Ngày SX</th>
                         <th>Hạn SD</th>
-                        <th class="text-end">Tồn kho</th>
+                        <th class="text-end">Tồn kho (đơn vị cơ bản)</th>
                         <th>Đơn vị nhập</th>
                         <th class="text-end">Giá nhập</th>
                         <th>Trạng thái</th>
@@ -195,7 +197,8 @@
                         <td th:text="${b.importDateDisplay}">01/06/2026 09:00</td>
                         <td th:text="${b.productionDateDisplay}">01/01/2026</td>
                         <td th:text="${b.expirationDateDisplay}">01/01/2028</td>
-                        <td class="text-end" th:text="${b.storageQuantity}">0</td>
+                        <td class="text-end"
+                            th:text="${b.storageQuantity + (#strings.isEmpty(baseUnitName) ? '' : ' ' + baseUnitName)}">0</td>
                         <td th:text="${b.importUnitName}">Hộp</td>
                         <td class="text-end" th:text="${b.importPrice != null ? #numbers.formatDecimal(b.importPrice, 0, 'POINT', 0, 'COMMA') + 'đ' : '—'}">50.000đ</td>
                         <td><span class="status-badge badge-soft" th:text="${b.statusLabel}">Còn hiệu lực</span></td>
