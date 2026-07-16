@@ -26,6 +26,7 @@ import com.example.project.repository.InvoiceRepository;
 import com.example.project.repository.InvoicedetailRepository;
 import com.example.project.repository.ProductRepository;
 import com.example.project.repository.ProductunitRepository;
+import com.example.project.repository.ReturnRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class InvoiceService {
@@ -84,6 +86,7 @@ public class InvoiceService {
     private final CustomerRepository customerRepository;
     private final AccountRepository accountRepository;
     private final FinancialsettingRepository financialsettingRepository;
+    private final ReturnRepository returnRepository;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                           InvoicedetailRepository invoicedetailRepository,
@@ -92,7 +95,8 @@ public class InvoiceService {
                           BatchRepository batchRepository,
                           CustomerRepository customerRepository,
                           AccountRepository accountRepository,
-                          FinancialsettingRepository financialsettingRepository) {
+                          FinancialsettingRepository financialsettingRepository,
+                          ReturnRepository returnRepository) {
         this.invoiceRepository = invoiceRepository;
         this.invoicedetailRepository = invoicedetailRepository;
         this.productRepository = productRepository;
@@ -101,6 +105,7 @@ public class InvoiceService {
         this.customerRepository = customerRepository;
         this.accountRepository = accountRepository;
         this.financialsettingRepository = financialsettingRepository;
+        this.returnRepository = returnRepository;
     }
 
     @Transactional(readOnly = true)
@@ -669,6 +674,15 @@ public class InvoiceService {
         Customer customer = invoice.getCustomerID();
         Invoice original = invoice.getOriginalInvoiceID();
 
+        Map<Integer, String> returnSlips = returnRepository
+                .findByInvoiceID_IdOrderByReturnDateDesc(invoiceId)
+                .stream()
+                .collect(Collectors.toMap(
+                        ret -> ret.getId(),
+                        ret -> ret.getReturnCode(),
+                        (a, b) -> a,
+                        LinkedHashMap::new));
+
         return new InvoiceDetailPageResponse(
                 invoice.getId(),
                 invoiceCode(invoice),
@@ -685,6 +699,7 @@ public class InvoiceService {
                 invoice.getPrescriptionCode(),
                 returnStatusDisplay(returnCode),
                 returnStatusCssClass(returnCode),
+                returnSlips,
                 original != null ? original.getId() : null,
                 original != null ? invoiceCode(original) : null,
                 invoice.getSubtotal(),
@@ -869,9 +884,9 @@ public class InvoiceService {
             return "return-none";
         }
         return switch (returnStatus.toUpperCase(Locale.ROOT)) {
-            case RETURN_PARTIAL -> "return-partial";
-            case RETURN_FULL -> "return-full";
-            default -> "return-none";
+            case RETURN_PARTIAL -> "status-return-partial";
+            case RETURN_FULL -> "status-return-full";
+            default -> "status-default";
         };
     }
 

@@ -197,6 +197,23 @@
                         </div>
 
                         <div class="info-row">
+                            <div class="info-label">Mã trả hàng</div>
+                            <div>
+                                <span th:if="${#maps.isEmpty(detail.returnSlips)}" class="text-secondary">—</span>
+                                <span th:each="entry, stat : ${detail.returnSlips}">
+                                    <a th:if="${returnBasePath != null}"
+                                       th:href="${returnBasePath + '/' + entry.key}"
+                                       class="text-success fw-semibold text-decoration-none"
+                                       th:text="${entry.value}">TH-000001</a>
+                                    <span th:if="${returnBasePath == null}"
+                                          class="fw-semibold text-success"
+                                          th:text="${entry.value}">TH-000001</span>
+                                    <span th:if="${!stat.last}">, </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="info-row">
                             <div class="info-label">Trạng thái</div>
                             <div>
                                 <span class="status-badge"
