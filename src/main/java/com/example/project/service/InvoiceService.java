@@ -626,6 +626,7 @@ public class InvoiceService {
 
     /**
      * Ký hiệu hóa đơn 7 ký tự: 2 (bán hàng) + K (không mã CQT) + YY (năm) + M (máy tính tiền) + AA.
+     * Khi ký đẩy lên CQT, ký hiệu K được chuyển thành C (xem {@link #toSignedInvoicePattern}).
      * Hai ký tự cuối lấy từ {@code vatInvoiceSeries} trong thiết lập tài chính.
      */
     private String buildInvoicePattern(LocalDate date) {
@@ -648,6 +649,14 @@ public class InvoiceService {
 
         String yearPart = String.format("%02d", date.getYear() % 100);
         return "2K" + yearPart + "M" + sellerSuffix;
+    }
+
+    /** Chuyển ký hiệu K (không mã CQT) → C (có mã CQT) khi hóa đơn được ký. */
+    private String toSignedInvoicePattern(String pattern) {
+        if (pattern == null || pattern.length() < 2) {
+            return pattern;
+        }
+        return pattern.charAt(0) + "C" + pattern.substring(2);
     }
 
     private BigDecimal maxZero(BigDecimal value) {
@@ -680,6 +689,7 @@ public class InvoiceService {
         if (isStatus(invoice.getStatus(), STATUS_SIGNED)) {
             throw new IllegalArgumentException("Hóa đơn đã được ký");
         }
+        invoice.setInvoicePattern(toSignedInvoicePattern(invoice.getInvoicePattern()));
         invoice.setStatus(STATUS_SIGNED);
         invoiceRepository.save(invoice);
     }
@@ -697,6 +707,7 @@ public class InvoiceService {
             if (invoice == null || isStatus(invoice.getStatus(), STATUS_SIGNED)) {
                 continue;
             }
+            invoice.setInvoicePattern(toSignedInvoicePattern(invoice.getInvoicePattern()));
             invoice.setStatus(STATUS_SIGNED);
             invoiceRepository.save(invoice);
             signed++;
