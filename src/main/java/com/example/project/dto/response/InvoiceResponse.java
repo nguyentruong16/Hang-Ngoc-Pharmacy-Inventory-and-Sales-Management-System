@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,7 +16,7 @@ public class InvoiceResponse {
     private Integer id;
     private String invoicePattern;
     private String invoiceNumber;
-    private Instant date;
+    private LocalDateTime date;
     private Integer employeeId;
     private Integer customerId;
     private BigDecimal subtotal;

@@ -30,5 +30,7 @@ public class ProductRecentHistoryResponse {
     private String lotNumber;
     /** Signed base-unit quantity change: positive = stock in, negative = stock out. */
     private int quantityChange;
+    /** Unit {@code quantityChange} is expressed in — the import unit for "Nhập kho", else the product's base unit. */
+    private String unitName;
     private String note;
 }

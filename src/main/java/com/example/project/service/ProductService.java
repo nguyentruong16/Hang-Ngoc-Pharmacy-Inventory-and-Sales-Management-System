@@ -38,6 +38,7 @@ import java.text.Normalizer;
 import java.util.Arrays;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -69,6 +70,9 @@ public class ProductService {
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final int RECENT_HISTORY_LIMIT = 10;
+    // Invoice.date is stored as a VN wall-clock LocalDateTime (see InvoiceService) — used only to
+    // convert it back to a real Instant for cross-source sorting in loadRecentHistory().
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final ProductRepository productRepository;
     private final BatchRepository batchRepository;
@@ -811,20 +815,24 @@ public class ProductService {
     private List<ProductRecentHistoryResponse> loadRecentHistory(Integer productId) {
         Pageable top = PageRequest.of(0, RECENT_HISTORY_LIMIT);
         List<ProductRecentHistoryResponse> rows = new ArrayList<>();
+        // Sales/stock-outs/returns all report base-unit counts (baseQtyDeducted/baseQtyRestored) —
+        // resolve once per call and reuse, since loadRecentHistory is scoped to a single product.
+        String baseUnit = baseUnitName(productId);
 
         for (Batch batch : batchRepository.findRecentImportsByProduct(productId, top)) {
+            String importUnit = batch.getImportUnitID() != null ? batch.getImportUnitID().getUnitName() : baseUnit;
             rows.add(new ProductRecentHistoryResponse(
                     batch.getImportDate(), formatInstant(batch.getImportDate()), "Nhập kho",
                     batch.getBatchName(), batch.getLotNumber(),
-                    importQuantity(batch), null));
+                    importQuantity(batch), importUnit, null));
         }
 
         for (Invoicedetail detail : invoicedetailRepository.findRecentSalesByProduct(productId, top)) {
             Invoice invoice = detail.getInvoiceID();
             rows.add(new ProductRecentHistoryResponse(
-                    invoice.getDate(), formatInstant(invoice.getDate()), "Bán hàng",
+                    toInstantForSort(invoice.getDate()), formatLocalDateTime(invoice.getDate()), "Bán hàng",
                     invoice.getInvoiceNumber(),
-                    lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), null));
+                    lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), baseUnit, null));
         }
 
         for (Stockadjustmentdetail detail : stockadjustmentdetailRepository.findRecentStockOutsByProduct(productId, top)) {
@@ -833,7 +841,7 @@ public class ProductService {
                     stockOut.getDate(), formatInstant(stockOut.getDate()),
                     "Xuất kho - " + formatOutType(stockOut.getAdjustmentType()),
                     formatCode("SO", stockOut.getId()),
-                    lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), detail.getNote()));
+                    lotNumber(detail.getBatchID()), -nullSafe(detail.getBaseQtyDeducted()), baseUnit, detail.getNote()));
         }
 
         for (Returndetail detail : returndetailRepository.findRecentReturnsByProduct(productId, top)) {
@@ -841,7 +849,7 @@ public class ProductService {
                     detail.getReturnID().getReturnDate(), formatInstant(detail.getReturnID().getReturnDate()),
                     "Trả hàng",
                     formatCode("RT", detail.getReturnID().getId()),
-                    lotNumber(detail.getBatchID()), nullSafe(detail.getBaseQtyRestored()), null));
+                    lotNumber(detail.getBatchID()), nullSafe(detail.getBaseQtyRestored()), baseUnit, null));
         }
 
         return rows.stream()
@@ -849,6 +857,15 @@ public class ProductService {
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(RECENT_HISTORY_LIMIT)
                 .toList();
+    }
+
+    /** The product's single base ProductUnit's name, or "" if the product has none set up yet. */
+    private String baseUnitName(Integer productId) {
+        return productunitRepository.findByProductId(productId).stream()
+                .filter(unit -> Boolean.TRUE.equals(unit.getIsBaseUnit()))
+                .findFirst()
+                .map(Productunit::getUnitName)
+                .orElse("");
     }
 
     private int importQuantity(Batch batch) {
@@ -889,6 +906,19 @@ public class ProductService {
             return "";
         }
         return DATE_TIME.withZone(ZoneId.systemDefault()).format(instant);
+    }
+
+    /** Invoice.date is stored as a VN wall-clock LocalDateTime — format directly, no zone conversion. */
+    private String formatLocalDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        return DATE_TIME.format(dateTime);
+    }
+
+    /** Converts Invoice.date (VN wall-clock LocalDateTime) to a real Instant, only for cross-source sorting. */
+    private Instant toInstantForSort(LocalDateTime dateTime) {
+        return dateTime == null ? null : dateTime.atZone(VN_ZONE).toInstant();
     }
 
     private String formatDate(LocalDate date) {
