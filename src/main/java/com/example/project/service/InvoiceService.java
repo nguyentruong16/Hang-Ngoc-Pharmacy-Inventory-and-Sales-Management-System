@@ -55,7 +55,12 @@ public class InvoiceService {
     private static final String RETURN_PARTIAL = "PARTIAL";
     private static final String RETURN_FULL = "FULL";
 
-    private static final String INVOICE_TYPE_NORMAL = "normal";
+    private static final String INVOICE_TYPE_NORMAL = "Bán hàng";
+    /** Legacy DB value before invoiceType was stored in Vietnamese. */
+    private static final String INVOICE_TYPE_NORMAL_LEGACY = "normal";
+    private static final String INVOICE_TYPE_ADJUSTMENT = "Điều chỉnh";
+    /** Legacy DB value before invoiceType was stored in Vietnamese. */
+    private static final String INVOICE_TYPE_ADJUSTMENT_LEGACY = "adjustment";
     private static final String INVOICE_TYPE_RETURN = "return";
 
     private static final String PAYMENT_CASH = "CASH";
@@ -813,8 +818,15 @@ public class InvoiceService {
         if (invoiceType == null || invoiceType.isBlank()) {
             return "—";
         }
+        if (INVOICE_TYPE_NORMAL.equalsIgnoreCase(invoiceType)
+                || INVOICE_TYPE_NORMAL_LEGACY.equalsIgnoreCase(invoiceType)) {
+            return "Bán hàng";
+        }
+        if (INVOICE_TYPE_ADJUSTMENT.equalsIgnoreCase(invoiceType)
+                || INVOICE_TYPE_ADJUSTMENT_LEGACY.equalsIgnoreCase(invoiceType)) {
+            return "Điều chỉnh";
+        }
         return switch (invoiceType.toLowerCase(Locale.ROOT)) {
-            case INVOICE_TYPE_NORMAL -> "Bán hàng";
             case INVOICE_TYPE_RETURN -> "Trả hàng";
             default -> invoiceType;
         };
