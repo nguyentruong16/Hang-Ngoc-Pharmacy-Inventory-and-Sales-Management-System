@@ -142,6 +142,7 @@ public class PurchaseinvoiceService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập"));
 
         List<Purchasedetail> details = purchasedetailRepository.findByPurchaseIdWithProduct(purchaseId);
+        Map<Integer, String> unitNameByDetailId = importUnitNameByPurchaseDetailId(details);
 
         BigDecimal subtotal = calculateSubtotal(details);
         BigDecimal additionCost = safe(invoice.getAdditionCost());
@@ -156,7 +157,7 @@ public class PurchaseinvoiceService {
         }
 
         List<PurchaseInvoiceDetailItemResponse> items = details.stream()
-                .map(this::toDetailItem)
+                .map(detail -> toDetailItem(detail, unitNameByDetailId.get(detail.getId())))
                 .toList();
 
         int totalQuantity = details.stream()
@@ -202,6 +203,7 @@ public class PurchaseinvoiceService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập"));
 
         List<Purchasedetail> details = purchasedetailRepository.findByPurchaseIdWithProduct(purchaseId);
+        Map<Integer, String> unitNameByDetailId = importUnitNameByPurchaseDetailId(details);
 
         BigDecimal subtotal = calculateSubtotal(details);
         BigDecimal additionCost = safe(invoice.getAdditionCost());
@@ -218,7 +220,7 @@ public class PurchaseinvoiceService {
         Supplier supplier = invoice.getSupplierID();
 
         List<PurchaseInvoicePrintLineResponse> lines = details.stream()
-                .map(this::toPrintLine)
+                .map(detail -> toPrintLine(detail, unitNameByDetailId.get(detail.getId())))
                 .toList();
 
         return new PurchaseInvoicePrintPageResponse(
@@ -241,7 +243,7 @@ public class PurchaseinvoiceService {
         );
     }
 
-    private PurchaseInvoicePrintLineResponse toPrintLine(Purchasedetail detail) {
+    private PurchaseInvoicePrintLineResponse toPrintLine(Purchasedetail detail, String unitName) {
         Product product = detail.getProductID();
         BigDecimal lineTotal = safe(detail.getImportPrice())
                 .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity()));
@@ -251,10 +253,37 @@ public class PurchaseinvoiceService {
                 product != null ? product.getName() : "Không rõ",
                 detail.getImportPrice(),
                 detail.getQuantity(),
+                unitName != null ? unitName : "—",
                 lineTotal,
                 detail.getVatRate(),
                 detail.getVatAmount()
         );
+    }
+
+    /**
+     * Đơn vị thực tế đã dùng để tạo lô hàng của mỗi dòng phiếu nhập — đọc từ {@code Batch
+     * .importUnitID} (mỗi Purchasedetail luôn có đúng 1 Batch được tạo cùng transaction, xem
+     * {@link #createBatchForDetail}), không suy đoán lại từ Product như gợi ý trên trang tạo phiếu.
+     */
+    private Map<Integer, String> importUnitNameByPurchaseDetailId(List<Purchasedetail> details) {
+        List<Integer> detailIds = details.stream()
+                .map(Purchasedetail::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (detailIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Integer, String> result = new HashMap<>();
+
+        for (Batch batch : batchRepository.findByPurchaseDetailIds(detailIds)) {
+            if (batch.getPurchaseDetailID() != null && batch.getImportUnitID() != null) {
+                result.put(batch.getPurchaseDetailID().getId(), batch.getImportUnitID().getUnitName());
+            }
+        }
+
+        return result;
     }
 
     @Transactional
@@ -402,6 +431,34 @@ public class PurchaseinvoiceService {
             BigDecimal defaultVATRate = (BigDecimal) row[2];
             result.put(productId, defaultVATRate != null ? defaultVATRate : BigDecimal.ZERO);
         }
+
+        return result;
+    }
+
+    /**
+     * Per-product default import-unit name for the Purchase Invoice create form's "Đơn vị" column —
+     * purely informational, showing which unit {@link #resolveImportUnit(Product)} will actually use
+     * for that product's "Số lượng" (same priority: isDefault > isBaseUnit > lowest id), so the
+     * pharmacist can see what unit their quantity is in before saving.
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, String> getImportUnitNameByProduct() {
+        Map<Integer, List<Productunit>> unitsByProduct = new HashMap<>();
+
+        for (Productunit unit : productunitRepository.findAll()) {
+            if (unit.getProductID() == null || Boolean.FALSE.equals(unit.getIsActive())) {
+                continue;
+            }
+            unitsByProduct.computeIfAbsent(unit.getProductID().getProductID(), id -> new ArrayList<>()).add(unit);
+        }
+
+        Map<Integer, String> result = new HashMap<>();
+
+        unitsByProduct.forEach((productId, units) -> units.stream()
+                .min(Comparator
+                        .comparingInt(this::importUnitPriority)
+                        .thenComparing(unit -> unit.getId() == null ? Integer.MAX_VALUE : unit.getId()))
+                .ifPresent(unit -> result.put(productId, unit.getUnitName())));
 
         return result;
     }
@@ -702,7 +759,7 @@ public class PurchaseinvoiceService {
         );
     }
 
-    private PurchaseInvoiceDetailItemResponse toDetailItem(Purchasedetail detail) {
+    private PurchaseInvoiceDetailItemResponse toDetailItem(Purchasedetail detail, String unitName) {
         Product product = detail.getProductID();
         BigDecimal lineTotal = safe(detail.getImportPrice())
                 .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity()));
@@ -716,6 +773,7 @@ public class PurchaseinvoiceService {
                 detail.getExpirationDate(),
                 formatLocalDate(detail.getExpirationDate()),
                 detail.getQuantity(),
+                unitName != null ? unitName : "—",
                 detail.getImportPrice(),
                 lineTotal,
                 detail.getVatRate(),

@@ -33,6 +33,7 @@ public interface BatchRepository extends JpaRepository<Batch, Integer> {
            select b
            from Batch b
            left join fetch b.purchaseDetailID
+           left join fetch b.importUnitID
            where b.purchaseDetailID.id in :purchaseDetailIds
            """)
     List<Batch> findByPurchaseDetailIds(@Param("purchaseDetailIds") List<Integer> purchaseDetailIds);

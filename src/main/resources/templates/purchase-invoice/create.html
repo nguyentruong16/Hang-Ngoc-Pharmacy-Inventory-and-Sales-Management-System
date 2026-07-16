@@ -211,6 +211,7 @@
                                 <tr>
                                     <th style="min-width: 220px;">Sản phẩm</th>
                                     <th style="min-width: 110px;">Số lượng</th>
+                                    <th style="min-width: 100px;">Đơn vị</th>
                                     <th style="min-width: 140px;">Giá nhập</th>
                                     <th style="min-width: 110px;">Thuế suất VAT (%)</th>
                                     <th style="min-width: 180px;">Số lô <span class="text-danger">*</span></th>
@@ -240,6 +241,13 @@
                                                class="form-control quantity-input"
                                                th:field="*{details[__${iterStat.index}__].quantity}"
                                                oninput="calculateSummary()">
+                                    </td>
+
+                                    <td>
+                                        <input type="text"
+                                               class="form-control import-unit-display"
+                                               readonly
+                                               placeholder="—">
                                     </td>
 
                                     <td>
@@ -383,6 +391,7 @@
     const existingLotsByProduct = /*[[${existingLotsByProduct}]]*/ {};
     const costPriceBySupplierAndProduct = /*[[${costPriceBySupplierAndProduct}]]*/ {};
     const vatRateByProduct = /*[[${vatRateByProduct}]]*/ {};
+    const importUnitByProduct = /*[[${importUnitByProduct}]]*/ {};
 
     // Repopulate a row's "chọn lô có sẵn" dropdown from the row's currently selected product.
     function refreshLotPicker(row) {
@@ -488,6 +497,23 @@
         applySuggestedVatRate(row);
     }
 
+    // "Đơn vị" chỉ để xem — đối chiếu với đơn vị mặc định của sản phẩm trong ProductUnit (đơn vị
+    // thực tế lô hàng sẽ được tạo, xem PurchaseinvoiceService.resolveImportUnit), không phải lựa chọn.
+    function applyImportUnitDisplay(row) {
+        const productSelect = row.querySelector('.product-select');
+        const unitDisplay = row.querySelector('.import-unit-display');
+        if (!productSelect || !unitDisplay) return;
+
+        const unitName = importUnitByProduct[productSelect.value];
+        unitDisplay.value = unitName || '';
+    }
+
+    function wireImportUnitDisplay(row) {
+        const productSelect = row.querySelector('.product-select');
+        if (productSelect) productSelect.addEventListener('change', () => applyImportUnitDisplay(row));
+        applyImportUnitDisplay(row);
+    }
+
     function formatMoney(value) {
         value = Number(value || 0);
         return value.toLocaleString('vi-VN') + 'đ';
@@ -581,6 +607,10 @@
             </td>
 
             <td>
+                <input type="text" class="form-control import-unit-display" readonly placeholder="—">
+            </td>
+
+            <td>
                 <input type="number" min="0" step="1000" class="form-control price-input"
                        data-field="importPrice" name="details[${index}].importPrice"
                        oninput="calculateSummary()">
@@ -658,6 +688,7 @@
             wireLotPicker(row);
             wirePriceSuggestion(row);
             wireVatRateSuggestion(row);
+            wireImportUnitDisplay(row);
         });
 
         const supplierSelect = document.getElementById('supplierId');
