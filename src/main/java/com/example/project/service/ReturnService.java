@@ -42,6 +42,10 @@ public class ReturnService {
     /** A customer return is allowed only within this many days of the original invoice date. */
     private static final int RETURN_WINDOW_DAYS = 3;
 
+    // Invoice.date is stored as VN wall-clock LocalDateTime (see InvoiceService) — the adjustment
+    // invoice's own date must use the same convention, not a real UTC Instant.
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
     /** Only completed sale invoices are returnable. Matched accent/case-insensitively. */
     private static final String INVOICE_STATUS_COMPLETED = "Hoàn thành";
     // A signed invoice ("Đã ký") has been pushed to the tax authority — it must NOT be edited, so a
@@ -193,7 +197,7 @@ public class ReturnService {
                 .map(invoice -> new ReturnableInvoiceResponse(
                         invoice.getId(),
                         invoice.getInvoicePattern(),
-                        formatInstant(invoice.getDate()),
+                        formatLocalDateTime(invoice.getDate()),
                         invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                         invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
                         invoice.getTotal(),
@@ -873,7 +877,7 @@ public class ReturnService {
         }
     }
 
-    private boolean withinReturnWindow(Instant invoiceDate) {
+    private boolean withinReturnWindow(LocalDateTime invoiceDate) {
         if (invoiceDate == null) {
             return false;
         }
@@ -1046,11 +1050,11 @@ public class ReturnService {
     }
 
     /** "ngày dd tháng MM năm yyyy" theo giờ VN — dùng cho nội dung hóa đơn điều chỉnh. */
-    private String formatVnDateWords(Instant instant) {
-        if (instant == null) {
+    private String formatVnDateWords(LocalDateTime dateTime) {
+        if (dateTime == null) {
             return "";
         }
-        LocalDate date = toLocalDate(instant);
+        LocalDate date = toLocalDate(dateTime);
         return String.format("ngày %02d tháng %02d năm %04d",
                 date.getDayOfMonth(), date.getMonthValue(), date.getYear());
     }
@@ -1075,12 +1079,24 @@ public class ReturnService {
                 .format(instant);
     }
 
+    /** Invoice.date is stored as a VN wall-clock LocalDateTime — format directly, no zone conversion. */
+    private String formatLocalDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").format(dateTime);
+    }
+
     private String formatLocalDate(LocalDate date) {
         return date == null ? "" : date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
     private LocalDate toLocalDate(Instant instant) {
         return instant.atZone(ZoneOffset.UTC).toLocalDate();
+    }
+
+    private LocalDate toLocalDate(LocalDateTime dateTime) {
+        return dateTime.toLocalDate();
     }
 
     private LocalDate parseDate(String value) {

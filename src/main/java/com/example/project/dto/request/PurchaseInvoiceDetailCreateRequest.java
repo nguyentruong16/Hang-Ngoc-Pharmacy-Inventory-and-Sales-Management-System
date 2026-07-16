@@ -1,6 +1,5 @@
 package com.example.project.dto.request;
 
-import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -31,8 +30,10 @@ public class PurchaseInvoiceDetailCreateRequest {
 
     private String lotNumber;
 
-    @NotNull(message = "Vui lòng nhập thuế suất VAT")
-    @DecimalMin(value = "0.0", message = "Thuế suất VAT không được âm")
-    @DecimalMax(value = "100.0", message = "Thuế suất VAT không được lớn hơn 100%")
+    /**
+     * Not a validated/trusted input — the server always resolves the real VAT rate from the
+     * product's {@code Type.defaultVATRate} (see {@code PurchaseinvoiceService.resolvePurchaseVatRate}).
+     * Kept only so a validation-error re-render can echo back the read-only field's displayed value.
+     */
     private BigDecimal vatRate;
 }

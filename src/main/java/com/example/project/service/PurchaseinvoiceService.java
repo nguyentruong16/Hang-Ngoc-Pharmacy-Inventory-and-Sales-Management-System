@@ -267,20 +267,24 @@ public class PurchaseinvoiceService {
         Account employee = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
-        BigDecimal subtotal = request.getDetails()
-                .stream()
-                .map(detail -> safe(detail.getImportPrice())
-                        .multiply(BigDecimal.valueOf(detail.getQuantity() == null ? 0 : detail.getQuantity())))
+        // Resolve every line's product + VAT rate up front (from Type, never the client) so totals can
+        // be computed before the invoice's first save — see prepareLine().
+        List<PreparedPurchaseLine> lines = request.getDetails().stream()
+                .map(this::prepareLine)
+                .toList();
+
+        BigDecimal subtotal = lines.stream()
+                .map(PreparedPurchaseLine::grossAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalVATInput = request.getDetails()
-                .stream()
-                .map(this::calculateLineVatAmount)
+        BigDecimal totalVATInput = lines.stream()
+                .map(PreparedPurchaseLine::vatAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal additionCost = safe(request.getAdditionCost());
         BigDecimal discount = safe(request.getDiscount());
-        BigDecimal totalAmount = subtotal.add(totalVATInput).add(additionCost).subtract(discount);
+        // importPrice is already VAT-inclusive (gross) — nothing is added on top of subtotal.
+        BigDecimal totalAmount = subtotal.add(additionCost).subtract(discount);
 
         if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Tổng tiền phiếu nhập không hợp lệ");
@@ -311,12 +315,9 @@ public class PurchaseinvoiceService {
 
         Purchaseinvoice savedInvoice = purchaseinvoiceRepository.save(invoice);
 
-        for (PurchaseInvoiceDetailCreateRequest item : request.getDetails()) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm: " + item.getProductId()));
-
-            BigDecimal preTaxAmount = calculateLinePreTaxAmount(item);
-            BigDecimal vatAmount = calculateLineVatAmount(item);
+        for (PreparedPurchaseLine line : lines) {
+            PurchaseInvoiceDetailCreateRequest item = line.item();
+            Product product = line.product();
 
             Purchasedetail detail = new Purchasedetail();
             detail.setPurchaseID(savedInvoice);
@@ -326,9 +327,9 @@ public class PurchaseinvoiceService {
             detail.setProductionDate(item.getProductionDate());
             detail.setExpirationDate(item.getExpirationDate());
             detail.setLotNumber(trimToNull(item.getLotNumber()));
-            detail.setVatRate(item.getVatRate());
-            detail.setPreTaxAmount(preTaxAmount);
-            detail.setVatAmount(vatAmount);
+            detail.setVatRate(line.vatRate());
+            detail.setPreTaxAmount(line.preTaxAmount());
+            detail.setVatAmount(line.vatAmount());
 
             Purchasedetail savedDetail = purchasedetailRepository.save(detail);
 
@@ -339,24 +340,58 @@ public class PurchaseinvoiceService {
         return savedInvoice.getId();
     }
 
-    /** "Tiền hàng" of one purchase line before VAT — importPrice × quantity. */
-    private BigDecimal calculateLinePreTaxAmount(PurchaseInvoiceDetailCreateRequest item) {
+    /** One purchase line with its product and VAT breakdown resolved, ready to price and persist. */
+    private record PreparedPurchaseLine(PurchaseInvoiceDetailCreateRequest item, Product product,
+                                        BigDecimal grossAmount, BigDecimal vatRate,
+                                        BigDecimal preTaxAmount, BigDecimal vatAmount) {}
+
+    private PreparedPurchaseLine prepareLine(PurchaseInvoiceDetailCreateRequest item) {
+        Product product = productRepository.findById(item.getProductId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm: " + item.getProductId()));
+
+        BigDecimal vatRate = resolvePurchaseVatRate(product);
+        BigDecimal grossAmount = calculateLineGrossAmount(item);
+        BigDecimal preTaxAmount = calculateLinePreTaxAmount(grossAmount, vatRate);
+        BigDecimal vatAmount = grossAmount.subtract(preTaxAmount);
+
+        return new PreparedPurchaseLine(item, product, grossAmount, vatRate, preTaxAmount, vatAmount);
+    }
+
+    /**
+     * "Thuế suất VAT" của phiếu nhập luôn khớp {@code Type.defaultVATRate} của sản phẩm — không dùng
+     * {@code Product.vatRateOverride} (khác với bên bán hàng) và không tin giá trị client gửi lên;
+     * server luôn tự tính lại theo Type để đảm bảo khớp đúng loại hàng hóa đã đăng ký.
+     */
+    private BigDecimal resolvePurchaseVatRate(Product product) {
+        Type type = product.getTypeID();
+        if (type == null || type.getDefaultVATRate() == null) {
+            throw new IllegalArgumentException("Sản phẩm \"" + (product.getName() != null ? product.getName() : "")
+                    + "\" chưa có loại hàng hoặc thuế suất VAT mặc định");
+        }
+        return type.getDefaultVATRate();
+    }
+
+    /** "Tiền hàng" of one purchase line — importPrice × quantity. importPrice is already VAT-inclusive (gross). */
+    private BigDecimal calculateLineGrossAmount(PurchaseInvoiceDetailCreateRequest item) {
         return safe(item.getImportPrice())
                 .multiply(BigDecimal.valueOf(item.getQuantity() == null ? 0 : item.getQuantity()));
     }
 
-    /** VAT amount of one purchase line — preTaxAmount × vatRate / 100, rounded to đồng-cent precision. */
-    private BigDecimal calculateLineVatAmount(PurchaseInvoiceDetailCreateRequest item) {
-        return calculateLinePreTaxAmount(item)
-                .multiply(safe(item.getVatRate()))
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    /** Reverse-splits a VAT-inclusive gross amount into its pre-tax portion — gross ÷ (1 + vatRate/100). */
+    private BigDecimal calculateLinePreTaxAmount(BigDecimal grossAmount, BigDecimal vatRate) {
+        BigDecimal rate = safe(vatRate);
+        if (rate.compareTo(BigDecimal.ZERO) <= 0) {
+            return grossAmount.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal divisor = BigDecimal.ONE.add(rate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
+        return grossAmount.divide(divisor, 2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Per-product VAT-rate suggestion for the Purchase Invoice create form:
-     * {@link Product#getVatRateOverride()} wins when set, else the product's
-     * {@code Type.defaultVATRate}. Feeds the client-side "gợi ý" auto-fill, same role as
-     * {@code costPriceBySupplierAndProduct}.
+     * Per-product VAT-rate lookup for the Purchase Invoice create form's read-only "Thuế suất VAT"
+     * field: always {@code Type.defaultVATRate} (ignores {@code Product.vatRateOverride} — that's a
+     * sale-side-only concept, see {@code InvoiceService.resolveVatRateSnapshot}). Purely a display
+     * value; {@link #resolvePurchaseVatRate} is what the server actually trusts on save.
      */
     @Transactional(readOnly = true)
     public Map<Integer, BigDecimal> getVatRateByProduct() {
@@ -364,14 +399,8 @@ public class PurchaseinvoiceService {
 
         for (Object[] row : productRepository.findVatRateSuggestions()) {
             Integer productId = (Integer) row[0];
-            BigDecimal vatRateOverride = (BigDecimal) row[1];
             BigDecimal defaultVATRate = (BigDecimal) row[2];
-
-            BigDecimal effectiveRate = vatRateOverride != null
-                    ? vatRateOverride
-                    : (defaultVATRate != null ? defaultVATRate : BigDecimal.ZERO);
-
-            result.put(productId, effectiveRate);
+            result.put(productId, defaultVATRate != null ? defaultVATRate : BigDecimal.ZERO);
         }
 
         return result;
@@ -642,15 +671,6 @@ public class PurchaseinvoiceService {
             if (detail.getProductionDate() != null
                     && detail.getExpirationDate().isBefore(detail.getProductionDate())) {
                 throw new IllegalArgumentException("Hạn sử dụng không được trước ngày sản xuất");
-            }
-
-            if (detail.getVatRate() == null) {
-                throw new IllegalArgumentException("Vui lòng nhập thuế suất VAT cho tất cả sản phẩm");
-            }
-
-            if (detail.getVatRate().compareTo(BigDecimal.ZERO) < 0
-                    || detail.getVatRate().compareTo(BigDecimal.valueOf(100)) > 0) {
-                throw new IllegalArgumentException("Thuế suất VAT phải trong khoảng 0-100%");
             }
         }
     }
