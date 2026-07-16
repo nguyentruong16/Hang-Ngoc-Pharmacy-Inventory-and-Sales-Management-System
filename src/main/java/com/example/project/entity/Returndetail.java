@@ -66,5 +66,16 @@ public class Returndetail {
     @Column(name = "restockable")
     private Boolean restockable;
 
+    @NotNull
+    @Column(name = "vatRate", nullable = false, precision = 5, scale = 2)
+    private BigDecimal vatRate;
+
+    @NotNull
+    @Column(name = "preTaxAmount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal preTaxAmount;
+
+    @NotNull
+    @Column(name = "vatAmount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal vatAmount;
 
 }

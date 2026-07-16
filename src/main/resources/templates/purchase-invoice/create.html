@@ -116,6 +116,29 @@
                                 </div>
                             </div>
 
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Số hóa đơn GTGT <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control"
+                                       th:field="*{vatInvoiceNumber}"
+                                       placeholder="VD: 0000123">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('vatInvoiceNumber')}"
+                                     th:errors="*{vatInvoiceNumber}">
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Ngày hóa đơn GTGT <span class="text-danger">*</span></label>
+                                <input type="date"
+                                       class="form-control"
+                                       th:field="*{vatInvoiceDate}">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('vatInvoiceDate')}"
+                                     th:errors="*{vatInvoiceDate}">
+                                </div>
+                            </div>
+
                             <div class="col-12 col-md-4">
                                 <label class="form-label">Chi phí phát sinh</label>
                                 <input type="number"
@@ -189,6 +212,7 @@
                                     <th style="min-width: 220px;">Sản phẩm</th>
                                     <th style="min-width: 110px;">Số lượng</th>
                                     <th style="min-width: 140px;">Giá nhập</th>
+                                    <th style="min-width: 110px;">Thuế suất VAT (%)</th>
                                     <th style="min-width: 180px;">Số lô <span class="text-danger">*</span></th>
                                     <th style="min-width: 140px;">Ngày sản xuất</th>
                                     <th style="min-width: 140px;">Hạn dùng <span class="text-danger">*</span></th>
@@ -224,6 +248,16 @@
                                                step="1000"
                                                class="form-control price-input"
                                                th:field="*{details[__${iterStat.index}__].importPrice}"
+                                               oninput="calculateSummary()">
+                                    </td>
+
+                                    <td>
+                                        <input type="number"
+                                               min="0"
+                                               max="100"
+                                               step="0.01"
+                                               class="form-control vat-rate-input"
+                                               th:field="*{details[__${iterStat.index}__].vatRate}"
                                                oninput="calculateSummary()">
                                     </td>
 
@@ -307,6 +341,11 @@
                             <strong id="discountDisplay">0đ</strong>
                         </div>
 
+                        <div class="money-summary-row">
+                            <span class="text-secondary">Tiền thuế VAT</span>
+                            <strong id="totalVatDisplay">0đ</strong>
+                        </div>
+
                         <hr>
 
                         <div class="money-summary-row">
@@ -348,6 +387,7 @@
     const products = /*[[${products}]]*/ [];
     const existingLotsByProduct = /*[[${existingLotsByProduct}]]*/ {};
     const costPriceBySupplierAndProduct = /*[[${costPriceBySupplierAndProduct}]]*/ {};
+    const vatRateByProduct = /*[[${vatRateByProduct}]]*/ {};
 
     // Repopulate a row's "chọn lô có sẵn" dropdown from the row's currently selected product.
     function refreshLotPicker(row) {
@@ -428,6 +468,36 @@
         applySuggestedPrice(row);
     }
 
+    // "Thuế suất VAT" gợi ý = Product.vatRateOverride nếu có, ngược lại Type.defaultVATRate của sản phẩm.
+    function suggestedVatRate(productId) {
+        if (!productId) return null;
+
+        const rate = vatRateByProduct[productId];
+        return (rate === undefined || rate === null) ? null : rate;
+    }
+
+    // Chỉ tự điền khi ô thuế suất đang trống — không ghi đè giá trị người dùng đã tự sửa.
+    function applySuggestedVatRate(row) {
+        const productSelect = row.querySelector('.product-select');
+        const vatRateInput = row.querySelector('.vat-rate-input');
+        if (!productSelect || !vatRateInput) return;
+
+        if (vatRateInput.value !== '') return;
+
+        const rate = suggestedVatRate(productSelect.value);
+
+        if (rate !== null) {
+            vatRateInput.value = rate;
+            calculateSummary();
+        }
+    }
+
+    function wireVatRateSuggestion(row) {
+        const productSelect = row.querySelector('.product-select');
+        if (productSelect) productSelect.addEventListener('change', () => applySuggestedVatRate(row));
+        applySuggestedVatRate(row);
+    }
+
     function formatMoney(value) {
         value = Number(value || 0);
         return value.toLocaleString('vi-VN') + 'đ';
@@ -443,13 +513,17 @@
 
     function calculateSummary() {
         let subtotal = 0;
+        let totalVat = 0;
 
         document.querySelectorAll('#detailRows tr').forEach(row => {
             const quantity = numberValue(row.querySelector('.quantity-input'));
             const price = numberValue(row.querySelector('.price-input'));
+            const vatRate = numberValue(row.querySelector('.vat-rate-input'));
             const lineTotal = quantity * price;
+            const lineVat = lineTotal * vatRate / 100;
 
             subtotal += lineTotal;
+            totalVat += lineVat;
 
             const lineTotalCell = row.querySelector('.line-total');
             if (lineTotalCell) {
@@ -461,7 +535,7 @@
         const discount = numberValue(document.getElementById('discount'));
         const paid = numberValue(document.getElementById('paid'));
 
-        let totalAmount = subtotal + additionCost - discount;
+        let totalAmount = subtotal + totalVat + additionCost - discount;
         if (totalAmount < 0) {
             totalAmount = 0;
         }
@@ -472,6 +546,7 @@
         }
 
         document.getElementById('subtotalDisplay').textContent = formatMoney(subtotal);
+        document.getElementById('totalVatDisplay').textContent = formatMoney(totalVat);
         document.getElementById('additionCostDisplay').textContent = formatMoney(additionCost);
         document.getElementById('discountDisplay').textContent = formatMoney(discount);
         document.getElementById('totalAmountDisplay').textContent = formatMoney(totalAmount);
@@ -526,6 +601,12 @@
             </td>
 
             <td>
+                <input type="number" min="0" max="100" step="0.01" class="form-control vat-rate-input"
+                       data-field="vatRate" name="details[${index}].vatRate"
+                       oninput="calculateSummary()">
+            </td>
+
+            <td>
                 <select class="form-select form-select-sm mb-1 lot-picker">
                     <option value="">-- Lô mới --</option>
                 </select>
@@ -557,6 +638,7 @@
         refreshRowIndexes();
         wireLotPicker(row);
         wirePriceSuggestion(row);
+        wireVatRateSuggestion(row);
         calculateSummary();
     }
 
@@ -589,6 +671,7 @@
 
             wireLotPicker(row);
             wirePriceSuggestion(row);
+            wireVatRateSuggestion(row);
         });
 
         const supplierSelect = document.getElementById('supplierId');

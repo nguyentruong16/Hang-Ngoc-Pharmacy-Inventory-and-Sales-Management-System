@@ -21,4 +21,23 @@ public interface InvoicedetailRepository extends JpaRepository<Invoicedetail, In
        """)
     List<Invoicedetail> findRecentSalesByProduct(@Param("productId") Integer productId,
                                                  Pageable pageable);
+
+    /** All lines of one invoice, for the quick-view modal on the invoice list. */
+    @Query("""
+       select d
+       from Invoicedetail d
+       left join fetch d.productID
+       left join fetch d.batchID
+       where d.invoiceID.id = :invoiceId
+       order by d.id
+       """)
+    List<Invoicedetail> findByInvoiceIdWithRelations(@Param("invoiceId") Integer invoiceId);
+
+    /** Per invoice: {@code [invoiceId, sum(quantity), sum(returnedQty)]}, for deriving return state. */
+    @Query("""
+       select d.invoiceID.id, sum(d.quantity), sum(coalesce(d.returnedQty, 0))
+       from Invoicedetail d
+       group by d.invoiceID.id
+       """)
+    List<Object[]> sumQuantitiesGroupedByInvoice();
 }

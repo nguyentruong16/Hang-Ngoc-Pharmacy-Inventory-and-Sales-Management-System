@@ -61,6 +61,9 @@ public class Product {
     @Column(name = "status")
     private Boolean status;
 
+    @Column(name = "vatRateOverride", precision = 5, scale = 2)
+    private BigDecimal vatRateOverride;
+
     @Size(max = 255)
     @Column(name = "image")
     private String image;

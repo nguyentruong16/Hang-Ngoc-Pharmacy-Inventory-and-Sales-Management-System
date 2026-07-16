@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Entity
@@ -26,5 +28,7 @@ public class Type {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-
+    @NotNull
+    @Column(name = "defaultVATRate", nullable = false, precision = 5, scale = 2)
+    private BigDecimal defaultVATRate;
 }

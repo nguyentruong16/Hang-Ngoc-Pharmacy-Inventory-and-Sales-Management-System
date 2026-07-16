@@ -33,8 +33,9 @@ public class ReturnInvoiceLineResponse {
     private BigDecimal unitSellPrice;
 
     /**
-     * Whether this line was sold in the product's base unit (e.g. "hộp"). Only base-unit lines can be
-     * cleanly restocked, so this drives the default (and the enable state) of the restock checkbox.
+     * Whether this line's returned goods will be put back into stock — hard-coded by item type
+     * (only the manufacturer's default packaging unit, {@code productunit.isDefault}). Shown read-only
+     * on the create screen; there is no manual checkbox (BA 2026-07-12).
      */
-    private boolean soldInBaseUnit;
+    private boolean restockable;
 }

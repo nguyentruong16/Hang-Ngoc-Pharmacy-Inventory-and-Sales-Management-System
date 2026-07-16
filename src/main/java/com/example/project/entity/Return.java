@@ -94,5 +94,7 @@ public class Return {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
-
+    @NotNull
+    @Column(name = "totalVATRefund", nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalVATRefund;
 }

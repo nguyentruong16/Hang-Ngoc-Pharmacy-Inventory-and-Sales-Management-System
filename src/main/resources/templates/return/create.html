@@ -391,13 +391,18 @@
         function selectInvoice(row) {
             const id = row.getAttribute('data-id');
             invoiceIdField.value = id;
+            fillInvoiceHeader(row);
+            modal.classList.remove('open');
+            loadLines(id);
+        }
+
+        // Điền panel thông tin hóa đơn đã chọn (dùng lại cả khi chọn ở modal lẫn khi server render lại sau lỗi validate).
+        function fillInvoiceHeader(row) {
             document.getElementById('pickedInvoiceCode').textContent = row.getAttribute('data-code');
             document.getElementById('pickedCustomer').textContent = row.getAttribute('data-customer');
             document.getElementById('pickedDate').textContent = row.getAttribute('data-date');
             document.getElementById('noInvoice').classList.add('d-none');
             document.getElementById('invoiceInfo').classList.remove('d-none');
-            modal.classList.remove('open');
-            loadLines(id);
         }
 
         // ---- Load returnable lines for the chosen invoice ----
@@ -422,7 +427,8 @@
                 // Default to a FULL return (the whole returnable quantity); the user lowers it for a partial
                 // return, or removes the whole row for items the customer keeps.
                 const full = line.returnableQty;
-                const canRestock = !!line.soldInBaseUnit;
+                // Restock is hard-coded by item type (server decides via productunit.isDefault); read-only badge.
+                const canRestock = !!line.restockable;
                 const tr = document.createElement('tr');
                 tr.innerHTML =
                     '<td>' + escapeHtml(line.productName) + '</td>' +
@@ -443,10 +449,9 @@
                     '</td>' +
                     '<td>' + formatMoney(line.unitSellPrice) + '</td>' +
                     '<td>' +
-                        '<input type="hidden" class="restock-field" name="items[' + i + '].restockable" value="' + (canRestock ? 'true' : 'false') + '">' +
-                        '<input type="checkbox" class="form-check-input restock-check"' +
-                            (canRestock ? ' checked' : ' disabled') + '>' +
-                        (canRestock ? '' : '<div class="text-secondary small">bán lẻ, không nhập lại</div>') +
+                        (canRestock
+                            ? '<span class="badge bg-success-subtle text-success">Tự nhập lại kho</span>'
+                            : '<span class="badge bg-secondary-subtle text-secondary">Không nhập lại</span>') +
                     '</td>' +
                     '<td class="text-end line-refund fw-semibold">0đ</td>' +
                     '<td class="text-end">' +
@@ -459,9 +464,6 @@
             lineBody.querySelectorAll('.qty-input').forEach(inp => inp.addEventListener('input', recalc));
             lineBody.querySelectorAll('.qty-minus').forEach(btn => btn.addEventListener('click', () => stepQty(btn, -1)));
             lineBody.querySelectorAll('.qty-plus').forEach(btn => btn.addEventListener('click', () => stepQty(btn, 1)));
-            lineBody.querySelectorAll('.restock-check').forEach(chk => chk.addEventListener('change', function () {
-                this.closest('tr').querySelector('.restock-field').value = this.checked ? 'true' : 'false';
-            }));
             lineBody.querySelectorAll('.row-delete').forEach(btn => btn.addEventListener('click', function () {
                 this.closest('tr').remove();
                 if (!lineBody.querySelector('.qty-input')) {
@@ -510,10 +512,16 @@
             btn.addEventListener('click', () => { actionField.value = btn.getAttribute('data-action'); });
         });
 
-        // Re-render any lines the server kept on validation error (invoice already chosen).
+        // Re-render any lines the server kept on validation error (invoice already chosen) và điền lại
+        // panel thông tin hóa đơn từ dòng tương ứng trong modal (tránh mất thông tin HĐ khi báo lỗi).
         if (invoiceIdField.value) {
-            document.getElementById('noInvoice').classList.add('d-none');
-            document.getElementById('invoiceInfo').classList.remove('d-none');
+            const chosen = document.querySelector('#invoicePickBody .pick-row[data-id="' + invoiceIdField.value + '"]');
+            if (chosen) {
+                fillInvoiceHeader(chosen);
+            } else {
+                document.getElementById('noInvoice').classList.add('d-none');
+                document.getElementById('invoiceInfo').classList.remove('d-none');
+            }
             loadLines(invoiceIdField.value);
         }
     })();

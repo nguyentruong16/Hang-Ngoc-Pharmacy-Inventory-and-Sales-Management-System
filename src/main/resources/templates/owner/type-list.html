@@ -127,9 +127,17 @@
     }
     .btn-search.reset:hover { background: #f9fafb; color: #111827; }
 
-    .sup-table { width: 100%; border-collapse: collapse; min-width: 480px; }
+    .type-table-wrap {
+      overflow-x: auto;
+    }
+
+    .sup-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
     .sup-table th {
-      padding: 10px 14px;
+      padding: 10px 16px;
       text-align: left;
       font-size: 12px;
       font-weight: 600;
@@ -139,7 +147,7 @@
       white-space: nowrap;
     }
     .sup-table td {
-      padding: 13px 14px;
+      padding: 13px 16px;
       font-size: 13px;
       color: #374151;
       border-bottom: 1px solid #f3f4f6;
@@ -173,19 +181,75 @@
     .btn-create:hover { background: var(--sup-green-dark); color: #fff; }
 
     .type-group {
-      font-size: 13px;
-      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--sup-green-bg);
       color: var(--sup-green-dark);
       text-transform: capitalize;
+      white-space: nowrap;
     }
 
-    .update-link {
-      color: var(--sup-green);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
+    .vat-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: #eff6ff;
+      color: #1d4ed8;
     }
-    .update-link:hover { color: var(--sup-green-dark); text-decoration: underline; }
+    .vat-badge.vat-zero { background: #f3f4f6; color: #6b7280; }
+    .vat-badge.vat-low { background: var(--sup-green-bg); color: var(--sup-green-dark); }
+    .vat-badge.vat-mid { background: #fef3c7; color: #b45309; }
+
+    .col-action { width: 14%; text-align: center; }
+    .col-vat { width: 14%; text-align: center; }
+    .col-code { width: 12%; }
+    .col-group { width: 18%; }
+    .col-name {
+      width: 42%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sup-table th.col-vat,
+    .sup-table th.col-action,
+    .sup-table td.col-vat,
+    .sup-table td.col-action {
+      text-align: center;
+    }
+
+    .btn-edit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sup-green);
+      background: var(--sup-green-bg);
+      border: 1px solid transparent;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .btn-edit:hover {
+      color: #fff;
+      background: var(--sup-green);
+      border-color: var(--sup-green);
+    }
 
     .pagination .page-link { color: var(--sup-green); border-color: var(--sup-border); font-size: 13px; }
     .pagination .page-item.active .page-link { background: var(--sup-green); border-color: var(--sup-green); color: #fff; }
@@ -221,6 +285,22 @@
           <div class="kpi-label">Tổng loại hàng</div>
           <div class="kpi-number" th:text="${totalTypes}">0</div>
           <div class="kpi-sub">Tất cả loại hàng</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="kpi-card">
+          <span class="kpi-icon"><i class="ti ti-folders"></i></span>
+          <div class="kpi-label">Nhóm mặt hàng</div>
+          <div class="kpi-number" th:text="${#lists.size(typeGroups)}">0</div>
+          <div class="kpi-sub">Nhóm đang sử dụng</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="kpi-card">
+          <span class="kpi-icon"><i class="ti ti-filter"></i></span>
+          <div class="kpi-label">Kết quả lọc</div>
+          <div class="kpi-number" th:text="${totalItems}">0</div>
+          <div class="kpi-sub">Theo bộ lọc hiện tại</div>
         </div>
       </div>
     </div>
@@ -260,14 +340,22 @@
         </div>
       </form>
 
-      <div style="overflow-x:auto;">
+      <div class="type-table-wrap">
         <table class="sup-table">
+          <colgroup>
+            <col class="col-code">
+            <col class="col-group">
+            <col class="col-name">
+            <col class="col-vat">
+            <col class="col-action">
+          </colgroup>
           <thead>
             <tr>
-              <th>Mã loại</th>
-              <th>Nhóm mặt hàng</th>
-              <th>Tên loại hàng</th>
-              <th style="text-align:center;">Cập nhật</th>
+              <th class="col-code">Mã loại</th>
+              <th class="col-group">Nhóm mặt hàng</th>
+              <th class="col-name">Tên loại hàng</th>
+              <th class="col-vat">VAT mặc định</th>
+              <th class="col-action">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -276,18 +364,23 @@
               <td>
                 <span class="type-group" th:text="${#strings.capitalize(type.sortType)}">Thuốc</span>
               </td>
-              <td class="sup-name" th:text="${type.name}">Thuốc kê đơn</td>
-              <td style="text-align:center;">
-                <a th:if="${currentRole == 'OWNER'}" class="update-link"
+              <td class="sup-name col-name" th:text="${type.name}">Thuốc kê đơn</td>
+              <td class="col-vat">
+                <span class="vat-badge"
+                      th:classappend="${(type.defaultVATRate != null and type.defaultVATRate.doubleValue() == 0) ? ' vat-zero' : ((type.defaultVATRate != null and type.defaultVATRate.doubleValue() <= 5) ? ' vat-low' : ' vat-mid')}"
+                      th:text="|${#numbers.formatDecimal(type.defaultVATRate, 1, 2)}%|">5,00%</span>
+              </td>
+              <td class="col-action">
+                <a th:if="${currentRole == 'OWNER'}" class="btn-edit"
                    th:href="${basePath + '/update-type/' + type.id}">
-                  Cập nhật
+                  <i class="ti ti-edit" style="font-size:14px;"></i>Sửa
                 </a>
-                <span th:unless="${currentRole == 'OWNER'}">—</span>
+                <span th:unless="${currentRole == 'OWNER'}" class="text-secondary">—</span>
               </td>
             </tr>
 
             <tr th:if="${#lists.isEmpty(types)}" class="empty-row">
-              <td colspan="4" style="text-align:center;">
+              <td colspan="5" style="text-align:center;">
                 Không tìm thấy loại hàng nào.
               </td>
             </tr>

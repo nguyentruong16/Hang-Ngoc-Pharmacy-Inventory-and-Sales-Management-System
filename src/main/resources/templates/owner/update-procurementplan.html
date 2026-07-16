@@ -557,6 +557,44 @@
             font-size: 13px;
         }
 
+        .money-input-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        .money-input-wrap .price-input {
+            width: 100%;
+            padding-right: 16px;
+        }
+
+        .money-stepper {
+            position: absolute;
+            top: 2px;
+            right: 0;
+            bottom: 2px;
+            width: 14px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .money-step-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+            font-size: 9px;
+            line-height: 1;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .money-step-btn:hover {
+            color: #2563eb;
+        }
+
         .btn-line-more {
             display: none;
         }
@@ -852,6 +890,12 @@
                     </div>
 
                     <div class="owner-card p-4">
+                        <button type="button" id="printProcurementPlanBtn"
+                                th:data-print-url="${basePath + '/' + procurementPlan.id + '/print'}"
+                                class="btn btn-outline-secondary w-100 mb-2">
+                            <i class="ti ti-printer me-1"></i>
+                            In dự trù
+                        </button>
                         <button th:unless="${viewOnly}" type="submit" class="btn btn-owner-primary w-100 mb-2">
                             Cập nhật dự trù mua hàng
                         </button>
@@ -933,6 +977,43 @@
         return Number(value || 0).toLocaleString('vi-VN');
     }
 
+    /** Parses a dot-separated money input back to its raw numeric value. */
+    function parseMoney(input) {
+        if (!input || !input.value) return 0;
+        const num = Number(String(input.value).replace(/\./g, ''));
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    /** Formats a raw number with dot thousand separators (empty stays empty). */
+    function formatMoneyInput(value) {
+        if (value == null || value === '') return '';
+        const num = Number(String(value).replace(/\./g, ''));
+        if (!Number.isFinite(num)) return '';
+        return num.toLocaleString('vi-VN');
+    }
+
+    /** Reformats a money input in place, keeping only digits + dot separators. */
+    function reformatMoneyInput(input) {
+        if (!input) return;
+        const digits = String(input.value).replace(/[^\d]/g, '');
+        input.value = digits ? Number(digits).toLocaleString('vi-VN') : '';
+    }
+
+    function handleEstimatedInput(input) {
+        reformatMoneyInput(input);
+        calculateSummary();
+    }
+
+    /** Steps the price input inside the button's wrapper up/down by `delta` (min 0). */
+    function stepRowPrice(button, delta) {
+        const wrap = button.closest('.money-input-wrap');
+        const input = wrap ? wrap.querySelector('.price-input') : null;
+        if (!input || input.readOnly || input.disabled) return;
+        const next = Math.max(0, parseMoney(input) + delta);
+        input.value = next ? next.toLocaleString('vi-VN') : '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     function numberValue(input) {
         if (!input) return 0;
         const value = Number(input.value);
@@ -1004,21 +1085,11 @@
     }
 
     function getLineUnitPrice(row) {
-        const input = row.querySelector('.unit-price-input');
-        if (!input || input.value === '') {
-            return 0;
-        }
-        const value = Number(input.value);
-        return Number.isFinite(value) ? value : 0;
+        return parseMoney(row.querySelector('.unit-price-input'));
     }
 
     function getLineEstimatedTotal(row) {
-        const input = row.querySelector('.estimated-total-input');
-        if (!input || input.value === '') {
-            return 0;
-        }
-        const value = Number(input.value);
-        return Number.isFinite(value) ? value : 0;
+        return parseMoney(row.querySelector('.estimated-total-input'));
     }
 
     function syncEstimatedFromUnitQty(row) {
@@ -1030,7 +1101,7 @@
         }
 
         const lineTotal = quantity * unitPrice;
-        estimatedInput.value = lineTotal > 0 ? lineTotal : '';
+        estimatedInput.value = lineTotal > 0 ? formatMoneyInput(lineTotal) : '';
     }
 
     function setUnitPriceValue(row, price) {
@@ -1042,13 +1113,14 @@
         if (price == null || price === '') {
             input.value = '';
         } else {
-            input.value = price;
+            input.value = formatMoneyInput(price);
         }
         syncEstimatedFromUnitQty(row);
         calculateSummary();
     }
 
     function handleUnitPriceChange(input) {
+        reformatMoneyInput(input);
         const row = input.closest('.product-line');
         if (!row) {
             return;
@@ -1067,6 +1139,9 @@
     }
 
     function syncLineAmountsBeforeSubmit() {
+        document.querySelectorAll('#detailLines .estimated-total-input').forEach(input => {
+            input.value = input.value ? String(parseMoney(input)) : '';
+        });
         reindexDetailLines();
     }
 
@@ -1389,16 +1464,32 @@
                             onclick="openSupplierModal(this)">${escapeHtml(supplierLabel)}</button>
                 </div>
                 <div class="text-end">
-                    <input type="number" min="0" step="1000"
-                           class="field-input price-input unit-price-input"
-                           value="${unitPriceValue}" placeholder="0"
-                           oninput="handleUnitPriceChange(this)">
+                    <div class="money-input-wrap">
+                        <input type="text" inputmode="numeric"
+                               class="field-input price-input unit-price-input"
+                               value="${formatMoneyInput(unitPriceValue)}" placeholder="0"
+                               oninput="handleUnitPriceChange(this)">
+                        <div class="money-stepper">
+                            <button type="button" class="money-step-btn step-up"
+                                    onclick="stepRowPrice(this, 1000)"><i class="ti ti-chevron-up"></i></button>
+                            <button type="button" class="money-step-btn step-down"
+                                    onclick="stepRowPrice(this, -1000)"><i class="ti ti-chevron-down"></i></button>
+                        </div>
+                    </div>
                 </div>
                 <div class="text-end">
-                    <input type="number" min="0" step="1000"
-                           class="field-input price-input estimated-total-input"
-                           data-field="estimatedPrice" value="${lineTotalValue}" placeholder="0"
-                           oninput="calculateSummary()">
+                    <div class="money-input-wrap">
+                        <input type="text" inputmode="numeric"
+                               class="field-input price-input estimated-total-input"
+                               data-field="estimatedPrice" value="${formatMoneyInput(lineTotalValue)}" placeholder="0"
+                               oninput="handleEstimatedInput(this)">
+                        <div class="money-stepper">
+                            <button type="button" class="money-step-btn step-up"
+                                    onclick="stepRowPrice(this, 1000)"><i class="ti ti-chevron-up"></i></button>
+                            <button type="button" class="money-step-btn step-down"
+                                    onclick="stepRowPrice(this, -1000)"><i class="ti ti-chevron-down"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1676,6 +1767,22 @@
         });
     })();
     }
+</script>
+
+<script th:inline="none">
+    document.getElementById('printProcurementPlanBtn').addEventListener('click', function () {
+        var printUrl = this.dataset.printUrl;
+        var existing = document.getElementById('procurementPrintFrame');
+        if (existing) {
+            existing.remove();
+        }
+
+        var iframe = document.createElement('iframe');
+        iframe.id = 'procurementPrintFrame';
+        iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;left:-9999px;';
+        iframe.src = printUrl;
+        document.body.appendChild(iframe);
+    });
 </script>
 
 </body>

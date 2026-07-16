@@ -30,6 +30,9 @@ public class ReturnPurchaseLineResponse {
     /** Current on-hand stock across the line's batches — the max this line can still return. */
     private Integer returnableQty;
 
-    /** Import cost per base unit (basis for the refund amount). */
+    /** NET import cost per base unit (chưa thuế) — shown in the "Đơn giá nhập" column. */
     private BigDecimal importPricePerBase;
+
+    /** GROSS refund unit price (net + input VAT) — NCC hoàn 100%; basis for the "Tiền hoàn" column. */
+    private BigDecimal refundUnitPrice;
 }

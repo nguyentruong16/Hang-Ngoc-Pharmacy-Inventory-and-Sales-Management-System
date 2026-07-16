@@ -21,6 +21,9 @@ public class PurchasedetailResponse {
     private LocalDate productionDate;
     private LocalDate expirationDate;
     private String lotNumber;
+    private BigDecimal vatRate;
+    private BigDecimal preTaxAmount;
+    private BigDecimal vatAmount;
 
     public static PurchasedetailResponse from(Purchasedetail purchasedetail) {
         return new PurchasedetailResponse(
@@ -31,7 +34,10 @@ public class PurchasedetailResponse {
                 purchasedetail.getImportPrice(),
                 purchasedetail.getProductionDate(),
                 purchasedetail.getExpirationDate(),
-                purchasedetail.getLotNumber()
+                purchasedetail.getLotNumber(),
+                purchasedetail.getVatRate(),
+                purchasedetail.getPreTaxAmount(),
+                purchasedetail.getVatAmount()
         );
     }
 }

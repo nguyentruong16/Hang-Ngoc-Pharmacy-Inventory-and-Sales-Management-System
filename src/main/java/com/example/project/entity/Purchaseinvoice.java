@@ -5,9 +5,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -69,5 +71,20 @@ public class Purchaseinvoice {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "vatInvoiceNumber", nullable = false)
+    private String vatInvoiceNumber;
 
+    @NotNull
+    @Column(name = "vatInvoiceDate", nullable = false)
+    private LocalDate vatInvoiceDate;
+
+    @NotNull
+    @Column(name = "totalVATInput ", nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalVATInput ;
+
+    @ColumnDefault("1")
+    @Column(name = "isValidForDeduction")
+    private Boolean isValidForDeduction;
 }

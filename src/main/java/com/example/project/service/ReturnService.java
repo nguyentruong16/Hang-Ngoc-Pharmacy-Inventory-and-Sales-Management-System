@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +44,18 @@ public class ReturnService {
 
     /** Only completed sale invoices are returnable. Matched accent/case-insensitively. */
     private static final String INVOICE_STATUS_COMPLETED = "Hoàn thành";
+    // A signed invoice ("Đã ký") has been pushed to the tax authority — it must NOT be edited, so a
+    // return against it emits an adjustment invoice (TH2) instead of touching the original.
+    private static final String INVOICE_STATUS_SIGNED = "Đã ký";
+    // The sale invoice no longer has a separate returnStatus column (removed by DB) — the return
+    // state is written back into invoice.status using these values, per the DB owner (2026-07-14).
+    private static final String INVOICE_STATUS_RETURNED_FULL = "Đã trả hàng toàn bộ";
+    private static final String INVOICE_STATUS_RETURNED_PARTIAL = "Đã trả hàng 1 phần";
+
+    // Only normal sale invoices are returnable. DB invoiceType: normal/adjustment — a return must not be
+    // opened against an adjustment invoice (the negative slip emitted by TH2).
+    private static final String INVOICE_TYPE_NORMAL = "normal";
+    private static final String INVOICE_TYPE_ADJUSTMENT = "adjustment";
 
     private static final String INVOICE_RETURN_NONE = "NONE";
     private static final String INVOICE_RETURN_PARTIAL = "PARTIAL";
@@ -63,22 +76,28 @@ public class ReturnService {
     private final ReturndetailRepository returndetailRepository;
     private final AccountRepository accountRepository;
     private final BatchRepository batchRepository;
-    // Sales invoice is owned by another module — consumed read-only via findById / findAll only.
+    // Sales invoice / detail rows are read for the TH1 flow; for TH2 (signed invoice) we also *create*
+    // an adjustment invoice row here (see createAdjustmentInvoice) — mirroring how cloneReturnBatch
+    // creates a Batch — without calling into InvoiceService.
     private final InvoiceRepository invoiceRepository;
     private final InvoicedetailRepository invoicedetailRepository;
+    // Read-only: current tax revenue group (Nhóm 2/3) drives how the refund VAT is split.
+    private final FinancialsettingRepository financialsettingRepository;
 
     public ReturnService(ReturnRepository returnRepository,
                          ReturndetailRepository returndetailRepository,
                          AccountRepository accountRepository,
                          BatchRepository batchRepository,
                          InvoiceRepository invoiceRepository,
-                         InvoicedetailRepository invoicedetailRepository) {
+                         InvoicedetailRepository invoicedetailRepository,
+                         FinancialsettingRepository financialsettingRepository) {
         this.returnRepository = returnRepository;
         this.returndetailRepository = returndetailRepository;
         this.accountRepository = accountRepository;
         this.batchRepository = batchRepository;
         this.invoiceRepository = invoiceRepository;
         this.invoicedetailRepository = invoicedetailRepository;
+        this.financialsettingRepository = financialsettingRepository;
     }
 
     // ------------------------------------------------------------------ list / search
@@ -166,12 +185,12 @@ public class ReturnService {
                 .sorted(Comparator.comparing(Invoice::getDate, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(invoice -> new ReturnableInvoiceResponse(
                         invoice.getId(),
-                        invoice.getInvoiceCode(),
+                        invoice.getInvoicePattern(),
                         formatInstant(invoice.getDate()),
                         invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                         invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
                         invoice.getTotal(),
-                        returnStatusDisplay(invoice.getReturnStatus())))
+                        returnStatusDisplay(invoiceReturnCode(invoice))))
                 .toList();
     }
 
@@ -261,9 +280,12 @@ public class ReturnService {
                 throw new IllegalArgumentException("Số lượng trả của \"" + productName(line)
                         + "\" vượt quá số còn có thể trả (" + returnable + ")");
             }
-            // Only base-unit lines may be restocked; among those, respect the user's checkbox.
-            boolean restockable = isSoldInBaseUnit(line) && !Boolean.FALSE.equals(item.getRestockable());
-            prepared.put(line.getId(), new PreparedLine(line, qty, restockable));
+            // Restockable is hard-coded by item type (BA 2026-07-12): only the manufacturer's default
+            // packaging unit (productunit.isDefault) goes back to stock; loose units do not. No manual
+            // checkbox — the client value is ignored. (Combo / medical-device "máy" / prescription
+            // invoices are already blocked from return upstream.)
+            boolean restockable = isRestockableUnit(line);
+            prepared.put(line.getId(), preparedLineOf(line, qty, restockable));
         }
 
         if (prepared.isEmpty()) {
@@ -272,6 +294,9 @@ public class ReturnService {
 
         BigDecimal totalRefund = prepared.values().stream()
                 .map(PreparedLine::lineRefund)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalVATRefund = prepared.values().stream()
+                .map(PreparedLine::vatAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         String returnType = resolveReturnType(request.getReturnType());
@@ -289,6 +314,7 @@ public class ReturnService {
         ret.setRefundBanking(TYPE_BANKING.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setRefundCredit(TYPE_DEBT.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setTotalRefund(totalRefund);
+        ret.setTotalVATRefund(totalVATRefund);
         ret.setOffsetDebtAmount(BigDecimal.ZERO);
         ret.setReason(request.getReason().trim());
         ret.setNote(trimToNull(request.getNote()));
@@ -312,6 +338,9 @@ public class ReturnService {
             detail.setBaseQtyRestored(line.baseQtyRestored());
             detail.setUnitSellPrice(line.unitSellPrice());
             detail.setLineRefund(line.lineRefund());
+            detail.setVatRate(line.vatRate());
+            detail.setPreTaxAmount(line.preTaxAmount());
+            detail.setVatAmount(line.vatAmount());
             detail.setRestockable(line.restockable());
             details.add(returndetailRepository.save(detail));
         }
@@ -370,12 +399,19 @@ public class ReturnService {
     }
 
     /**
-     * Restores stock for an approved return: each restockable line goes into a fresh batch cloned from
-     * the one it was sold from, and the original invoice line's {@code returnedQty} + the invoice's
-     * {@code returnStatus} are updated. TODO(finance): create the Expense (phiếu chi) payout here once
-     * that module's contract is agreed; for now only the refund amounts on the slip are recorded.
+     * Restores stock for an approved return: each restockable line goes into a fresh batch cloned from the
+     * one it was sold from, and the original invoice line's {@code returnedQty} is bumped. Then, depending
+     * on whether the original invoice is signed:
+     * <ul>
+     *   <li><b>TH1 (chưa ký):</b> the original invoice's status is adjusted ("Đã trả hàng 1 phần/toàn bộ").</li>
+     *   <li><b>TH2 (đã ký):</b> an adjustment invoice with negative lines is emitted; the signed original is
+     *       left untouched (it was already pushed to the tax authority).</li>
+     * </ul>
+     * TODO(finance): create the Expense (phiếu chi) payout here once that module's contract is agreed; for
+     * now only the refund amounts on the slip are recorded.
      */
     private void applyReturnEffect(Return ret, List<Returndetail> details) {
+        boolean signed = isSigned(ret.getInvoiceID());
         int seq = 1;
         for (Returndetail detail : details) {
             Invoicedetail invoiceLine = detail.getInvoiceDetailID();
@@ -390,12 +426,93 @@ public class ReturnService {
                 returndetailRepository.save(detail);
             }
         }
-        recomputeInvoiceReturnStatus(ret.getInvoiceID());
+        if (signed) {
+            createAdjustmentInvoice(ret, ret.getInvoiceID(), details);
+        } else {
+            updateInvoiceReturnStatus(ret.getInvoiceID());
+        }
+    }
+
+    /**
+     * TH2 — emits the adjustment invoice (invoiceType=adjustment) for a return against a signed invoice.
+     * Lines carry NEGATIVE quantities/amounts (a reduction of the customer's original invoice); it does NOT
+     * deduct stock (the returned goods were already restocked into a fresh batch above). The signed original
+     * is left untouched. Linked both ways via {@code originalInvoiceID} + {@code returnID}.
+     */
+    private void createAdjustmentInvoice(Return ret, Invoice original, List<Returndetail> details) {
+        BigDecimal refund = nz(ret.getTotalRefund());
+        BigDecimal vatRefund = nz(ret.getTotalVATRefund());
+
+        Invoice adj = new Invoice();
+        // Cùng ký hiệu (mẫu số / serie) với hóa đơn gốc; số hóa đơn mới, duy nhất.
+        adj.setInvoicePattern(original.getInvoicePattern());
+        adj.setInvoiceNumber(generateInvoiceNumber());
+        adj.setDate(Instant.now());
+        adj.setEmployeeID(ret.getReturnedBy());
+        adj.setCustomerID(original.getCustomerID());
+        adj.setInvoiceType(INVOICE_TYPE_ADJUSTMENT);
+        adj.setOriginalInvoiceID(original);
+        adj.setReturnID(ret);
+        adj.setPrescriptionRequired(false);
+        // Phát hành ở trạng thái "Hoàn thành" (chờ ký) — Kế toán/Owner review rồi ký đẩy thuế như hóa đơn thường.
+        adj.setStatus(INVOICE_STATUS_COMPLETED);
+        adj.setDiscount(BigDecimal.ZERO);
+        adj.setSubtotal(refund.negate());
+        adj.setTotal(refund.negate());
+        adj.setTotalVATOutput(vatRefund.negate());
+        adj.setPaidByCash(BigDecimal.ZERO);
+        adj.setPaidByBanking(BigDecimal.ZERO);
+        adj.setDebtAmount(BigDecimal.ZERO);
+        adj.setNote(buildAdjustmentNote(ret, original));
+
+        Invoice savedAdj = invoiceRepository.save(adj);
+
+        for (Returndetail detail : details) {
+            Productunit unit = detail.getProductUnitID();
+            int qty = detail.getReturnQty() != null ? detail.getReturnQty() : 0;
+            int baseQty = detail.getBaseQtyRestored() != null ? detail.getBaseQtyRestored() : 0;
+
+            Invoicedetail line = new Invoicedetail();
+            line.setInvoiceID(savedAdj);
+            line.setProductID(detail.getProductID());
+            line.setProductUnitID(unit);
+            line.setBatchID(detail.getBatchID());
+            line.setQuantity(-qty);
+            line.setUnitName(unit != null && unit.getUnitName() != null ? truncate(unit.getUnitName(), 20) : "");
+            line.setBaseQtyDeducted(-baseQty);
+            line.setUnitSellPrice(nz(detail.getUnitSellPrice()));
+            line.setSubtotal(nz(detail.getLineRefund()).negate());
+            line.setReturnedQty(0);
+            line.setVatRate(detail.getVatRate());
+            line.setPreTaxAmount(nz(detail.getPreTaxAmount()).negate());
+            line.setVatAmount(nz(detail.getVatAmount()).negate());
+            invoicedetailRepository.save(line);
+        }
+    }
+
+    /**
+     * Writes the return state into the sale invoice's {@code status} — the dedicated {@code returnStatus}
+     * column was removed by the DB owner (2026-07-14), who asked to reuse {@code invoice.status}
+     * ("Đã trả hàng 1 phần" / "Đã trả hàng toàn bộ"). Left untouched when nothing has been returned.
+     */
+    private void updateInvoiceReturnStatus(Invoice invoice) {
+        if (invoice == null) {
+            return;
+        }
+        String code = invoiceReturnCode(invoice);
+        if (INVOICE_RETURN_FULL.equals(code)) {
+            invoice.setStatus(INVOICE_STATUS_RETURNED_FULL);
+            invoiceRepository.save(invoice);
+        } else if (INVOICE_RETURN_PARTIAL.equals(code)) {
+            invoice.setStatus(INVOICE_STATUS_RETURNED_PARTIAL);
+            invoiceRepository.save(invoice);
+        }
     }
 
     private Batch cloneReturnBatch(Batch original, int quantity, Return ret, int seq) {
         Batch batch = new Batch();
-        batch.setBatchCode(truncate("TR-" + ret.getId() + "-" + seq, 50));
+        // TR = batch "hàng trả"; số = id phiếu trả (khớp mã TH-xxxxxx); seq = thứ tự dòng restock trong phiếu.
+        batch.setBatchCode(truncate("TR-" + String.format("%06d", ret.getId()) + "-" + seq, 50));
         batch.setBatchName(truncate("Hàng trả " + (original != null && original.getBatchName() != null
                 ? original.getBatchName() : ""), 50));
         batch.setProductID(original != null ? original.getProductID() : null);
@@ -416,22 +533,30 @@ public class ReturnService {
         return batchRepository.save(batch);
     }
 
-    private void recomputeInvoiceReturnStatus(Invoice invoice) {
+    /**
+     * NONE / PARTIAL / FULL derived from how much of the invoice's lines have been returned. Replaces
+     * the removed {@code invoice.returnStatus} column (the sale {@code status} is left untouched).
+     */
+    private String invoiceReturnCode(Invoice invoice) {
         List<Invoicedetail> lines = invoiceLinesOf(invoice.getId());
         boolean anyReturned = false;
         boolean allReturned = !lines.isEmpty();
         for (Invoicedetail line : lines) {
             int returned = line.getReturnedQty() != null ? line.getReturnedQty() : 0;
+            int quantity = line.getQuantity() != null ? line.getQuantity() : 0;
             if (returned > 0) {
                 anyReturned = true;
             }
-            if (returned < line.getQuantity()) {
+            if (returned < quantity) {
                 allReturned = false;
             }
         }
-        invoice.setReturnStatus(allReturned ? INVOICE_RETURN_FULL
-                : (anyReturned ? INVOICE_RETURN_PARTIAL : INVOICE_RETURN_NONE));
-        invoiceRepository.save(invoice);
+        return allReturned ? INVOICE_RETURN_FULL
+                : (anyReturned ? INVOICE_RETURN_PARTIAL : INVOICE_RETURN_NONE);
+    }
+
+    private boolean isFullyReturned(Invoice invoice) {
+        return INVOICE_RETURN_FULL.equals(invoiceReturnCode(invoice));
     }
 
     // ------------------------------------------------------------------ detail
@@ -469,7 +594,7 @@ public class ReturnService {
                 ret.getReturnDate(),
                 formatInstant(ret.getReturnDate()),
                 invoice != null ? invoice.getId() : null,
-                invoice != null ? invoice.getInvoiceCode() : "—",
+                invoice != null ? invoice.getInvoicePattern() : "—",
                 customer != null ? customer.getName() : "Khách lẻ",
                 ret.getReturnedBy() != null ? ret.getReturnedBy().getName() : "Không rõ",
                 ret.getReturnType(),
@@ -508,7 +633,7 @@ public class ReturnService {
                 formatCode(ret.getId()),
                 ret.getReturnDate(),
                 formatInstant(ret.getReturnDate()),
-                invoice != null ? invoice.getInvoiceCode() : "—",
+                invoice != null ? invoice.getInvoicePattern() : "—",
                 customer != null ? customer.getName() : "Khách lẻ",
                 ret.getReturnedBy() != null ? ret.getReturnedBy().getName() : "Không rõ",
                 details.size(),
@@ -554,13 +679,60 @@ public class ReturnService {
                 already,
                 line.getQuantity() - already,
                 line.getUnitSellPrice(),
-                isSoldInBaseUnit(line));
+                isRestockableUnit(line));
     }
 
-    /** True when the line's sale unit is the product's base unit — the only case we allow restocking. */
-    private boolean isSoldInBaseUnit(Invoicedetail line) {
+    /**
+     * Restockable only when the sold unit is the manufacturer's default packaging unit
+     * ({@code productunit.isDefault}) — BA 2026-07-12. Loose units (isDefault=false) cannot go back to
+     * stock; combo / medical-device "máy" / prescription invoices are already blocked from return
+     * upstream. This is hard-coded (no manual checkbox).
+     */
+    private boolean isRestockableUnit(Invoicedetail line) {
         Productunit unit = line.getProductUnitID();
-        return unit != null && Boolean.TRUE.equals(unit.getIsBaseUnit());
+        return unit != null && Boolean.TRUE.equals(unit.getIsDefault());
+    }
+
+    /**
+     * Builds a priced return line. The refund money ({@code lineRefund}) is the gross (VAT-inclusive)
+     * value of the returned quantity, prorated from the original sale line — unchanged across tax groups.
+     * Only the VAT breakdown differs by revenue group (docx sheet 02/11):
+     * <ul>
+     *   <li><b>Nhóm 3 (khấu trừ):</b> tách net/VAT theo thuế suất dòng gốc — vatAmount giảm thuế GTGT đầu ra
+     *       trong kỳ trả hàng (gộp vào {@code Return.totalVATRefund}).</li>
+     *   <li><b>Nhóm 2 (trực tiếp):</b> hóa đơn bán hàng không tách thuế suất — toàn bộ tiền hoàn là giảm
+     *       doanh thu; vatRate/vatAmount = 0, totalVATRefund = 0.</li>
+     * </ul>
+     */
+    private PreparedLine preparedLineOf(Invoicedetail line, int qty, boolean restockable) {
+        BigDecimal saleRate = line.getVatRate() != null ? line.getVatRate() : BigDecimal.ZERO;
+        BigDecimal gross = grossRefundOf(line, qty);
+
+        BigDecimal rate;
+        BigDecimal preTax;
+        BigDecimal vat;
+        if (isDeductionGroup() && saleRate.compareTo(BigDecimal.ZERO) > 0) {
+            rate = saleRate;
+            BigDecimal divisor = BigDecimal.ONE.add(rate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
+            preTax = gross.divide(divisor, 2, RoundingMode.HALF_UP);
+            vat = gross.subtract(preTax);
+        } else {
+            rate = BigDecimal.ZERO;
+            preTax = gross;
+            vat = BigDecimal.ZERO;
+        }
+        return new PreparedLine(line, qty, restockable, rate, preTax, vat, gross);
+    }
+
+    /** Gross (VAT-inclusive) refund of {@code qty} units, prorated from the sale line's gross subtotal. */
+    private BigDecimal grossRefundOf(Invoicedetail line, int qty) {
+        Integer soldQty = line.getQuantity();
+        if (line.getSubtotal() != null && soldQty != null && soldQty > 0) {
+            BigDecimal ratio = BigDecimal.valueOf(qty).divide(BigDecimal.valueOf(soldQty), 10, RoundingMode.HALF_UP);
+            return line.getSubtotal().multiply(ratio).setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal unit = line.getUnitSellPrice() != null ? line.getUnitSellPrice() : BigDecimal.ZERO;
+        return unit.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
     }
 
     // ------------------------------------------------------------------ invoice read-only access
@@ -572,27 +744,67 @@ public class ReturnService {
                 .toList();
     }
 
+    /**
+     * Returnable when: completed (chưa ký, TH1), signed (đã ký, TH2), or already partially returned.
+     * A TH1 partial return moves the status to "Đã trả hàng 1 phần"; a TH2 (signed) partial return keeps
+     * "Đã ký" — both stay eligible for further partial returns.
+     */
+    private boolean isReturnEligibleStatus(Invoice invoice) {
+        return isStatus(invoice.getStatus(), INVOICE_STATUS_COMPLETED)
+                || isStatus(invoice.getStatus(), INVOICE_STATUS_SIGNED)
+                || isStatus(invoice.getStatus(), INVOICE_STATUS_RETURNED_PARTIAL);
+    }
+
+    /** Signed ("Đã ký") = pushed to tax → return must emit an adjustment invoice (TH2), not edit the original. */
+    private boolean isSigned(Invoice invoice) {
+        return invoice != null && isStatus(invoice.getStatus(), INVOICE_STATUS_SIGNED);
+    }
+
+    /** Only normal sale invoices can be returned — never an adjustment invoice. (invoiceType is NOT NULL.) */
+    private boolean isNormalInvoice(Invoice invoice) {
+        return invoice != null
+                && (invoice.getInvoiceType() == null || INVOICE_TYPE_NORMAL.equalsIgnoreCase(invoice.getInvoiceType()));
+    }
+
+    /** Current tax revenue group of the household (1/2/3/4), read from the financial setting singleton. */
+    private int revenueGroup() {
+        return financialsettingRepository.findFirstByOrderByIdAsc()
+                .map(Financialsetting::getRevenueGroup)
+                .orElse(2);
+    }
+
+    /** Nhóm 3/4 = deduction method (thuế GTGT khấu trừ) → the refund's output VAT is split out and tracked. */
+    private boolean isDeductionGroup() {
+        return revenueGroup() >= 3;
+    }
+
     private boolean isReturnable(Invoice invoice) {
-        if (!isStatus(invoice.getStatus(), INVOICE_STATUS_COMPLETED)) {
+        if (!isNormalInvoice(invoice)) {
+            return false;
+        }
+        if (!isReturnEligibleStatus(invoice)) {
             return false;
         }
         if (Boolean.TRUE.equals(invoice.getPrescriptionRequired())) {
             return false;
         }
-        if (INVOICE_RETURN_FULL.equalsIgnoreCase(invoice.getReturnStatus())) {
+        if (isFullyReturned(invoice)) {
             return false;
         }
         return withinReturnWindow(invoice.getDate());
     }
 
     private void assertReturnable(Invoice invoice) {
-        if (!isStatus(invoice.getStatus(), INVOICE_STATUS_COMPLETED)) {
+        if (!isNormalInvoice(invoice)) {
+            throw new IllegalArgumentException("Chỉ trả được hóa đơn bán hàng (không phải hóa đơn điều chỉnh)");
+        }
+        if (!isReturnEligibleStatus(invoice)) {
             throw new IllegalArgumentException("Chỉ trả được hóa đơn đã hoàn thành");
         }
         if (Boolean.TRUE.equals(invoice.getPrescriptionRequired())) {
             throw new IllegalArgumentException("Không thể trả hóa đơn thuốc kê đơn");
         }
-        if (INVOICE_RETURN_FULL.equalsIgnoreCase(invoice.getReturnStatus())) {
+        if (isFullyReturned(invoice)) {
             throw new IllegalArgumentException("Hóa đơn này đã được trả toàn bộ");
         }
         if (!withinReturnWindow(invoice.getDate())) {
@@ -618,7 +830,7 @@ public class ReturnService {
         Invoice invoice = ret.getInvoiceID();
         Customer customer = invoice != null ? invoice.getCustomerID() : null;
         if (containsNormalized(formatCode(ret.getId()), normalizedKeyword)
-                || containsNormalized(invoice != null ? invoice.getInvoiceCode() : null, normalizedKeyword)
+                || containsNormalized(invoice != null ? invoice.getInvoicePattern() : null, normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getName() : null, normalizedKeyword)
                 || containsNormalized(ret.getReason(), normalizedKeyword)
                 || containsNormalized(getStatusName(ret), normalizedKeyword)
@@ -639,7 +851,7 @@ public class ReturnService {
             return true;
         }
         Customer customer = invoice.getCustomerID();
-        return containsNormalized(invoice.getInvoiceCode(), normalizedKeyword)
+        return containsNormalized(invoice.getInvoicePattern(), normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getName() : null, normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getPhoneNumber() : null, normalizedKeyword);
     }
@@ -738,6 +950,51 @@ public class ReturnService {
         return id == null ? "TH-000000" : "TH-" + String.format("%06d", id);
     }
 
+    /** Unique sale-invoice number for the adjustment invoice — {@code HD} + 6-digit next id (mirrors InvoiceService). */
+    private String generateInvoiceNumber() {
+        int nextId = invoiceRepository.findAll().stream()
+                .map(Invoice::getId)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+        return "HD" + String.format("%06d", nextId);
+    }
+
+    private BigDecimal nz(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private String safeStr(String value) {
+        return value != null ? value : "";
+    }
+
+    /**
+     * Nội dung hóa đơn điều chỉnh theo NĐ 70/2025 (trường hợp 12/13 — người mua trả lại hàng). Ghi rõ mẫu
+     * số + ký hiệu + số + ngày của hóa đơn gốc, và trả toàn bộ hay một phần. VD:
+     * "Điều chỉnh giảm cho hóa đơn Mẫu số 2, ký hiệu K26MYY, số HD000001, ngày 16 tháng 07 năm 2026,
+     * do người mua trả lại hàng một phần (phiếu trả TH-000002)".
+     */
+    private String buildAdjustmentNote(Return ret, Invoice original) {
+        String pattern = safeStr(original.getInvoicePattern());
+        // invoicePattern 7 ký tự = mẫu số (1 ký tự đầu) + ký hiệu (6 ký tự còn lại).
+        String formNo = pattern.isEmpty() ? "" : pattern.substring(0, 1);
+        String serial = pattern.length() > 1 ? pattern.substring(1) : "";
+        String scope = isFullyReturned(original) ? "toàn bộ" : "một phần";
+        return "Điều chỉnh giảm cho hóa đơn Mẫu số " + formNo + ", ký hiệu " + serial
+                + ", số " + safeStr(original.getInvoiceNumber()) + ", " + formatVnDateWords(original.getDate())
+                + ", do người mua trả lại hàng " + scope + " (phiếu trả " + formatCode(ret.getId()) + ")";
+    }
+
+    /** "ngày dd tháng MM năm yyyy" theo giờ VN — dùng cho nội dung hóa đơn điều chỉnh. */
+    private String formatVnDateWords(Instant instant) {
+        if (instant == null) {
+            return "";
+        }
+        LocalDate date = toLocalDate(instant);
+        return String.format("ngày %02d tháng %02d năm %04d",
+                date.getDayOfMonth(), date.getMonthValue(), date.getYear());
+    }
+
     private Return requireReturn(Integer returnId) {
         return returnRepository.findByIdWithRelations(returnId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu trả hàng"));
@@ -792,14 +1049,12 @@ public class ReturnService {
         return normalized.toLowerCase(Locale.ROOT).trim();
     }
 
-    /** A validated, priced return line ready to be persisted. */
-    private record PreparedLine(Invoicedetail invoiceLine, int qty, boolean restockable) {
+    /** A validated, priced return line (with its VAT split) ready to be persisted. */
+    private record PreparedLine(Invoicedetail invoiceLine, int qty, boolean restockable,
+                                BigDecimal vatRate, BigDecimal preTaxAmount, BigDecimal vatAmount,
+                                BigDecimal lineRefund) {
         BigDecimal unitSellPrice() {
             return invoiceLine.getUnitSellPrice() != null ? invoiceLine.getUnitSellPrice() : BigDecimal.ZERO;
-        }
-
-        BigDecimal lineRefund() {
-            return unitSellPrice().multiply(BigDecimal.valueOf(qty));
         }
 
         int baseQtyRestored() {

@@ -20,10 +20,10 @@ public class Invoice {
     @Column(name = "invoiceID", nullable = false)
     private Integer id;
 
-    @Size(max = 6)
+    @Size(max = 7)
     @NotNull
-    @Column(name = "invoiceCode", nullable = false, length = 6)
-    private String invoiceCode;
+    @Column(name = "invoicePattern", nullable = false, length = 7)
+    private String invoicePattern;
 
     @Size(max = 50)
     @NotNull
@@ -46,17 +46,9 @@ public class Invoice {
     @Column(name = "subtotal", nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal;
 
-    @NotNull
-    @Column(name = "subimport", nullable = false, precision = 15, scale = 2)
-    private BigDecimal subimport;
-
     @ColumnDefault("0.00")
     @Column(name = "discount", precision = 15, scale = 2)
     private BigDecimal discount;
-
-    @ColumnDefault("0.00")
-    @Column(name = "taxAmount", precision = 15, scale = 2)
-    private BigDecimal taxAmount;
 
     @NotNull
     @Column(name = "total", nullable = false, precision = 15, scale = 2)
@@ -80,8 +72,16 @@ public class Invoice {
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "returnStatus", nullable = false, length = 50)
-    private String returnStatus;
+    @Column(name = "invoiceType", nullable = false, length = 50)
+    private String invoiceType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "originalInvoiceID")
+    private Invoice originalInvoiceID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "returnID")
+    private Return returnID;
 
     @Size(max = 50)
     @NotNull
@@ -98,5 +98,7 @@ public class Invoice {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "totalVATOutput", precision = 15, scale = 2)
+    private BigDecimal totalVATOutput;
 
 }

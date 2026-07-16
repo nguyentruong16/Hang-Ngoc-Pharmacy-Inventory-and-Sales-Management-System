@@ -50,4 +50,12 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(code, 3) AS UNSIGNED)), 0) "
             + "FROM product WHERE code REGEXP '^SP[0-9]+$'", nativeQuery = true)
     long findMaxProductCodeSequence();
+
+    /**
+     * Per-product VAT rate suggestion source: (productID, vatRateOverride, type.defaultVATRate).
+     * Used to pre-fill the per-line "Thuế suất VAT" field on Purchase Invoice creation —
+     * vatRateOverride wins when set, else the product's Type.defaultVATRate.
+     */
+    @Query("select p.productID, p.vatRateOverride, t.defaultVATRate from Product p left join p.typeID t")
+    List<Object[]> findVatRateSuggestions();
 }

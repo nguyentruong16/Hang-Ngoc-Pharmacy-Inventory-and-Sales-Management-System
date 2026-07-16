@@ -14,6 +14,14 @@ public class SupplierRequest {
     @Size(max = 255, message = "Tên không được vượt quá 255 ký tự")
     private String name;
 
+    // NOT NULL from 2026-07-14 (needed to validate input VAT invoices against the tax authority).
+    @NotBlank(message = "Mã số thuế không được để trống")
+    @Pattern(
+            regexp = "^[0-9]{10}(-[0-9]{3})?$",
+            message = "Mã số thuế gồm 10 chữ số, hoặc 10 chữ số kèm 3 số chi nhánh (vd 0101234567-001)"
+    )
+    private String taxCode;
+
     @NotBlank(message = "Số điện thoại không được để trống")
     @Pattern(
             regexp = "^0(2|3|5|7|8|9)[0-9]{8}$",

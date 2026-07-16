@@ -14,48 +14,50 @@ import java.time.Instant;
 @AllArgsConstructor
 public class InvoiceResponse {
     private Integer id;
-    private String invoiceCode;
+    private String invoicePattern;
     private String invoiceNumber;
     private Instant date;
     private Integer employeeId;
     private Integer customerId;
     private BigDecimal subtotal;
-    private BigDecimal subimport;
     private BigDecimal discount;
-    private BigDecimal taxAmount;
     private BigDecimal total;
     private BigDecimal paidByCash;
     private BigDecimal paidByBanking;
     private BigDecimal debtAmount;
     private Boolean prescriptionRequired;
-    private String returnStatus;
+    private String invoiceType;
+    private Integer originalInvoiceID;
+    private Integer returnID;
     private String status;
     private Integer shiftReportId;
     private String prescriptionCode;
     private String note;
+    private BigDecimal totalVATOutput;
 
     public static InvoiceResponse from(Invoice invoice) {
         return new InvoiceResponse(
                 invoice.getId(),
-                invoice.getInvoiceCode(),
+                invoice.getInvoicePattern(),
                 invoice.getInvoiceNumber(), 
                 invoice.getDate(),
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getId() : null,
                 invoice.getCustomerID() != null ? invoice.getCustomerID().getId() : null,
                 invoice.getSubtotal(),
-                invoice.getSubimport(),
                 invoice.getDiscount(),
-                invoice.getTaxAmount(),
                 invoice.getTotal(),
                 invoice.getPaidByCash(),
                 invoice.getPaidByBanking(),
                 invoice.getDebtAmount(),
                 invoice.getPrescriptionRequired(),
-                invoice.getReturnStatus(),
+                invoice.getInvoiceType(),
+                invoice.getOriginalInvoiceID() != null ? invoice.getOriginalInvoiceID().getId() : null,
+                invoice.getReturnID() != null ? invoice.getReturnID().getId() : null,
                 invoice.getStatus(),
                 invoice.getShiftReportID() != null ? invoice.getShiftReportID().getId() : null,
                 invoice.getPrescriptionCode(),
-                invoice.getNote()
+                invoice.getNote(),
+                invoice.getTotalVATOutput()
         );
     }
 }

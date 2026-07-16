@@ -23,6 +23,7 @@ public class ProductResponse {
     private String origin;
     private String registrationNumber;
     private Boolean status;
+    private BigDecimal vatRateOverride;
     private String image;
     private String note;
 
@@ -39,6 +40,7 @@ public class ProductResponse {
                 product.getOrigin(),
                 product.getRegistrationNumber(),
                 product.getStatus(),
+                product.getVatRateOverride(),
                 product.getImage(),
                 product.getNote()
         );

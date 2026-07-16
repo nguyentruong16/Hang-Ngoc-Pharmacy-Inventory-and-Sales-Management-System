@@ -22,7 +22,11 @@ public class PurchaseInvoicePrintPageResponse {
     private BigDecimal subtotal;
     private BigDecimal additionCost;
     private BigDecimal discount;
+    private BigDecimal totalVATInput;
     private BigDecimal totalAmount;
+
+    private String vatInvoiceNumber;
+    private String vatInvoiceDateDisplay;
 
     private String note;
 
