@@ -411,16 +411,17 @@ public class ReturnService {
      * one it was sold from, and the original invoice line's {@code returnedQty} is bumped. Then, depending
      * on whether the original invoice is signed:
      * <ul>
-     *   <li><b>TH1 (chưa ký):</b> the original invoice's status is adjusted ("Đã trả hàng 1 phần/toàn bộ").</li>
-     *   <li><b>TH2 (đã ký):</b> an adjustment invoice with negative lines is emitted; the signed original is
-     *       left untouched (it was already pushed to the tax authority).</li>
+     *   <li><b>TH1 (chưa ký):</b> a replacement invoice ("Thay thế") is emitted via the same negative-line
+     *       mechanism as TH2 (only the note wording differs); the original's numbers are left untouched and only
+     *       its status is updated ("Đã trả hàng 1 phần/toàn bộ").</li>
+     *   <li><b>TH2 (đã ký):</b> an adjustment invoice ("Điều chỉnh") with negative lines is emitted; the signed
+     *       original is left entirely untouched (it was already pushed to the tax authority).</li>
      * </ul>
      * TODO(finance): create the Expense (phiếu chi) payout here once that module's contract is agreed; for
      * now only the refund amounts on the slip are recorded.
      */
     private void applyReturnEffect(Return ret, List<Returndetail> details) {
         boolean signed = isSigned(ret.getInvoiceID());
-        int seq = 1;
         for (Returndetail detail : details) {
             Invoicedetail invoiceLine = detail.getInvoiceDetailID();
             int already = invoiceLine.getReturnedQty() != null ? invoiceLine.getReturnedQty() : 0;
@@ -429,73 +430,35 @@ public class ReturnService {
 
             if (Boolean.TRUE.equals(detail.getRestockable()) && detail.getBaseQtyRestored() != null
                     && detail.getBaseQtyRestored() > 0) {
-                Batch returnBatch = cloneReturnBatch(detail.getBatchID(), detail.getBaseQtyRestored(), ret, seq++);
+                Batch returnBatch = cloneReturnBatch(detail.getBatchID(), detail.getBaseQtyRestored(), ret);
                 detail.setBatchID(returnBatch);
                 returndetailRepository.save(detail);
             }
         }
-        if (signed) {
-            // TH2 — hóa đơn đã ký (đã gửi thuế): KHÔNG sửa hóa đơn gốc, phát hành hóa đơn điều chỉnh.
-            createAdjustmentInvoice(ret, ret.getInvoiceID(), details);
-        } else {
-            // TH1 — hóa đơn chưa ký (chưa gửi thuế): điều chỉnh trực tiếp hóa đơn gốc — trừ tiền + đổi trạng thái.
-            reduceUnsignedInvoiceTotals(ret.getInvoiceID(), ret.getTotalRefund(), ret.getTotalVATRefund());
+        // TH2 (HĐ đã ký) → hóa đơn ĐIỀU CHỈNH giảm; TH1 (HĐ chưa ký) → hóa đơn THAY THẾ. Dùng CHUNG một cơ chế
+        // (dòng âm, liên kết originalInvoiceID + returnID, KHÔNG sửa số trên HĐ gốc để tránh lệch header/detail),
+        // chỉ khác nội dung note ("Điều chỉnh giảm cho..." vs "Thay thế cho...").
+        createAdjustmentInvoice(ret, ret.getInvoiceID(), details, signed);
+        if (!signed) {
+            // HĐ chưa ký (chưa gửi thuế) → cập nhật trạng thái trả của chính HĐ gốc ("Đã trả hàng 1 phần/toàn bộ").
+            // HĐ đã ký giữ nguyên "Đã ký" (theo dõi phần đã trả qua returnedQty trên từng dòng).
             updateInvoiceReturnStatus(ret.getInvoiceID());
         }
     }
 
     /**
-     * TH1 — trừ thẳng phần hàng trả vào các con số của hóa đơn gốc (BA 2026-07-16: hóa đơn chưa ký thì
-     * được điều chỉnh trực tiếp vì chưa gửi thuế). Trừ theo <em>delta</em> của phiếu trả này nên cộng dồn
-     * đúng qua nhiều lần trả một phần. Giữ nguyên các dòng chi tiết (quantity gốc + returnedQty) để truy
-     * vết; chỉ đổi phần header.
+     * Emits the linked invoice for a return via NEGATIVE lines (a reduction of the customer's original invoice).
+     * It does NOT deduct stock (the returned goods were already restocked into a fresh batch above) and does NOT
+     * edit the original invoice's numbers. Linked both ways via {@code originalInvoiceID} + {@code returnID}.
+     *
+     * <p>Same mechanism for both cases — only the note wording differs (see {@link #buildAdjustmentNote}):</p>
      * <ul>
-     *   <li>{@code subtotal} (trước giảm giá) trừ đúng giá trị hàng trả (gross, trước giảm giá);</li>
-     *   <li>{@code discount} trừ theo tỉ trọng hàng trả để {@code total = subtotal − discount} vẫn khớp;</li>
-     *   <li>{@code totalVATOutput} trừ phần VAT hàng trả (Nhóm 2 = 0 nên không đổi);</li>
-     *   <li>{@code debtAmount} trừ phần giá trị (sau giảm giá) của hàng trả, sàn tại 0 — phần khách đã trả
-     *       dư sẽ hoàn bằng phiếu chi (phase Kế toán).</li>
+     *   <li><b>signed=true</b> (TH2, HĐ đã ký/đã gửi thuế): hóa đơn <em>Điều chỉnh</em> giảm.</li>
+     *   <li><b>signed=false</b> (TH1, HĐ chưa ký): hóa đơn <em>Thay thế</em> — BA chốt dùng chung cơ chế điều
+     *       chỉnh, chỉ đổi note (2026-07-17).</li>
      * </ul>
      */
-    private void reduceUnsignedInvoiceTotals(Invoice invoice, BigDecimal refundGross, BigDecimal vatRefund) {
-        if (invoice == null) {
-            return;
-        }
-        BigDecimal subtotal = nz(invoice.getSubtotal());
-        BigDecimal discount = nz(invoice.getDiscount());
-        BigDecimal refund = nz(refundGross);
-
-        // Phần giảm giá tương ứng với hàng trả (theo tỉ trọng giá trị trên subtotal hiện tại).
-        BigDecimal discountShare = subtotal.compareTo(BigDecimal.ZERO) > 0
-                ? discount.multiply(refund).divide(subtotal, 2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
-        BigDecimal returnedNet = maxZero(refund.subtract(discountShare)); // giá trị sau giảm giá của hàng trả
-
-        BigDecimal newSubtotal = maxZero(subtotal.subtract(refund));
-        BigDecimal newDiscount = maxZero(discount.subtract(discountShare));
-        BigDecimal newTotal = maxZero(newSubtotal.subtract(newDiscount));
-        BigDecimal newVat = maxZero(nz(invoice.getTotalVATOutput()).subtract(nz(vatRefund)));
-        BigDecimal newDebt = maxZero(nz(invoice.getDebtAmount()).subtract(returnedNet));
-
-        invoice.setSubtotal(newSubtotal);
-        invoice.setDiscount(newDiscount);
-        invoice.setTotal(newTotal);
-        invoice.setTotalVATOutput(newVat);
-        invoice.setDebtAmount(newDebt);
-        invoiceRepository.save(invoice);
-    }
-
-    private BigDecimal maxZero(BigDecimal value) {
-        return value == null || value.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : value;
-    }
-
-    /**
-     * TH2 — emits the adjustment invoice (invoiceType=Điều chỉnh) for a return against a signed invoice.
-     * Lines carry NEGATIVE quantities/amounts (a reduction of the customer's original invoice); it does NOT
-     * deduct stock (the returned goods were already restocked into a fresh batch above). The signed original
-     * is left untouched. Linked both ways via {@code originalInvoiceID} + {@code returnID}.
-     */
-    private void createAdjustmentInvoice(Return ret, Invoice original, List<Returndetail> details) {
+    private void createAdjustmentInvoice(Return ret, Invoice original, List<Returndetail> details, boolean signed) {
         BigDecimal refund = nz(ret.getTotalRefund());
         BigDecimal vatRefund = nz(ret.getTotalVATRefund());
 
@@ -519,7 +482,7 @@ public class ReturnService {
         adj.setPaidByCash(BigDecimal.ZERO);
         adj.setPaidByBanking(BigDecimal.ZERO);
         adj.setDebtAmount(BigDecimal.ZERO);
-        adj.setNote(buildAdjustmentNote(ret, original));
+        adj.setNote(buildAdjustmentNote(ret, original, signed));
 
         Invoice savedAdj = invoiceRepository.save(adj);
 
@@ -565,10 +528,15 @@ public class ReturnService {
         }
     }
 
-    private Batch cloneReturnBatch(Batch original, int quantity, Return ret, int seq) {
+    private Batch cloneReturnBatch(Batch original, int quantity, Return ret) {
         Batch batch = new Batch();
-        // TR = batch "hàng trả"; số = id phiếu trả (khớp mã TH-xxxxxx); seq = thứ tự dòng restock trong phiếu.
-        batch.setBatchCode(truncate("TR-" + String.format("%06d", ret.getId()) + "-" + seq, 50));
+        Integer origBatchId = original != null ? original.getId() : null;
+        // Mã lô hàng trả RT-{id phiếu}-L{id lô gốc}, vd RT-000004-L4:
+        //   • RT      = "Return" (lô hàng khách trả lại) — nhìn là biết lô đã bị trả;
+        //   • 000004  = id phiếu trả (khớp mã hiển thị TH-000004);
+        //   • L4      = lô gốc mà hàng được bán ra (batchID=4) → truy ngược nguồn gốc ngay trên mã lô.
+        batch.setBatchCode(truncate("RT-" + String.format("%06d", ret.getId())
+                + "-L" + (origBatchId != null ? origBatchId : 0), 50));
         batch.setBatchName(truncate("Hàng trả " + (original != null && original.getBatchName() != null
                 ? original.getBatchName() : ""), 50));
         batch.setProductID(original != null ? original.getProductID() : null);
@@ -751,14 +719,14 @@ public class ReturnService {
 
     /**
      * Builds a priced return line. The refund money ({@code lineRefund}) is the gross (VAT-inclusive)
-     * value of the returned quantity, prorated from the original sale line — unchanged across tax groups.
-     * Only the VAT breakdown differs by revenue group (docx sheet 02/11):
-     * <ul>
-     *   <li><b>Nhóm 3 (khấu trừ):</b> tách net/VAT theo thuế suất dòng gốc — vatAmount giảm thuế GTGT đầu ra
-     *       trong kỳ trả hàng (gộp vào {@code Return.totalVATRefund}).</li>
-     *   <li><b>Nhóm 2 (trực tiếp):</b> hóa đơn bán hàng không tách thuế suất — toàn bộ tiền hoàn là giảm
-     *       doanh thu; vatRate/vatAmount = 0, totalVATRefund = 0.</li>
-     * </ul>
+     * value of the returned quantity, prorated from the original sale line.
+     *
+     * <p><b>VAT mirrors the original invoice line</b> (BA 2026-07-17): the return/adjustment invoice is the
+     * negative counterpart of the original, so it must reverse the exact VAT that was snapshotted onto the sale
+     * line (F-12), regardless of the current revenue group. If the sale line carried {@code vatRate > 0} the
+     * refund is split into net/VAT (vatAmount feeds {@code Return.totalVATRefund}); if the line had no VAT the
+     * whole refund is a revenue reduction (vatRate/vatAmount = 0). Gating again on the household's current
+     * revenue group would desync the credit from the invoice it reverses.</p>
      */
     private PreparedLine preparedLineOf(Invoicedetail line, int qty, boolean restockable) {
         BigDecimal saleRate = line.getVatRate() != null ? line.getVatRate() : BigDecimal.ZERO;
@@ -767,7 +735,7 @@ public class ReturnService {
         BigDecimal rate;
         BigDecimal preTax;
         BigDecimal vat;
-        if (isDeductionGroup() && saleRate.compareTo(BigDecimal.ZERO) > 0) {
+        if (saleRate.compareTo(BigDecimal.ZERO) > 0) {
             rate = saleRate;
             BigDecimal divisor = BigDecimal.ONE.add(rate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
             preTax = gross.divide(divisor, 2, RoundingMode.HALF_UP);
@@ -825,18 +793,6 @@ public class ReturnService {
         return type == null
                 || INVOICE_TYPE_NORMAL.equalsIgnoreCase(type)
                 || INVOICE_TYPE_NORMAL_LEGACY.equalsIgnoreCase(type);
-    }
-
-    /** Current tax revenue group of the household (1/2/3/4), read from the financial setting singleton. */
-    private int revenueGroup() {
-        return financialsettingRepository.findFirstByOrderByIdAsc()
-                .map(Financialsetting::getRevenueGroup)
-                .orElse(2);
-    }
-
-    /** Nhóm 3/4 = deduction method (thuế GTGT khấu trừ) → the refund's output VAT is split out and tracked. */
-    private boolean isDeductionGroup() {
-        return revenueGroup() >= 3;
     }
 
     private boolean isReturnable(Invoice invoice) {
@@ -1030,18 +986,23 @@ public class ReturnService {
     }
 
     /**
-     * Nội dung hóa đơn điều chỉnh theo NĐ 70/2025 (trường hợp 12/13 — người mua trả lại hàng). Ghi rõ mẫu
-     * số + ký hiệu + số + ngày của hóa đơn gốc, và trả toàn bộ hay một phần. VD:
-     * "Điều chỉnh giảm cho hóa đơn Mẫu số 2, ký hiệu K26MYY, số HD000001, ngày 16 tháng 07 năm 2026,
+     * Nội dung hóa đơn điều chỉnh / thay thế theo NĐ 70/2025 (người mua trả lại hàng). Ghi rõ mẫu số + ký hiệu
+     * + số + ngày của hóa đơn gốc, và trả toàn bộ hay một phần. Cụm động từ đầu câu khác nhau theo tình huống:
+     * <ul>
+     *   <li>{@code signed=true} (HĐ đã ký) → "Điều chỉnh giảm cho...";</li>
+     *   <li>{@code signed=false} (HĐ chưa ký) → "Thay thế cho...".</li>
+     * </ul>
+     * VD: "Thay thế cho hóa đơn Mẫu số 2, ký hiệu K26MYY, số HD000001, ngày 16 tháng 07 năm 2026,
      * do người mua trả lại hàng một phần (phiếu trả TH-000002)".
      */
-    private String buildAdjustmentNote(Return ret, Invoice original) {
+    private String buildAdjustmentNote(Return ret, Invoice original, boolean signed) {
         String pattern = safeStr(original.getInvoicePattern());
         // invoicePattern 7 ký tự = mẫu số (1 ký tự đầu) + ký hiệu (6 ký tự còn lại).
         String formNo = pattern.isEmpty() ? "" : pattern.substring(0, 1);
         String serial = pattern.length() > 1 ? pattern.substring(1) : "";
         String scope = isFullyReturned(original) ? "toàn bộ" : "một phần";
-        return "Điều chỉnh giảm cho hóa đơn Mẫu số " + formNo + ", ký hiệu " + serial
+        String verb = signed ? "Điều chỉnh giảm cho" : "Thay thế cho";
+        return verb + " hóa đơn Mẫu số " + formNo + ", ký hiệu " + serial
                 + ", số " + safeStr(original.getInvoiceNumber()) + ", " + formatVnDateWords(original.getDate())
                 + ", do người mua trả lại hàng " + scope + " (phiếu trả " + formatCode(ret.getId()) + ")";
     }

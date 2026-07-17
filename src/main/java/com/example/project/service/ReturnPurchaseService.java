@@ -229,6 +229,16 @@ public class ReturnPurchaseService {
             }
             Batch primary = batches.get(0);
             Product product = line.getProductID();
+            // Trả NCC theo ĐƠN VỊ NHẬP (hộp/lọ/thùng… tùy sản phẩm — KHÔNG hardcode "hộp"), chỉ trả nguyên
+            // đơn vị nhập. Tồn kho lưu bằng đơn vị cơ sở (viên) nên quy về đơn vị nhập = tồn / tỉ lệ;
+            // phần lẻ (chưa đủ 1 đơn vị nhập) không trả NCC được.
+            int ratio = importRatio(primary);
+            int onHandUnit = onHand / ratio;
+            if (onHandUnit <= 0) {
+                continue;
+            }
+            int returnedUnit = returnedByDetail.getOrDefault(line.getId(), 0L).intValue() / ratio;
+            BigDecimal netPerUnit = importPricePerBase(primary).multiply(BigDecimal.valueOf(ratio));
             lines.add(new ReturnPurchaseLineResponse(
                     line.getId(),
                     product != null ? product.getProductID() : null,
@@ -236,13 +246,33 @@ public class ReturnPurchaseService {
                     primary.getLotNumber() != null ? primary.getLotNumber() : lotOf(line),
                     formatLocalDate(primary.getExpirationDate() != null ? primary.getExpirationDate() : line.getExpirationDate()),
                     unitName(primary, product),
-                    orZero(line.getQuantity()),
-                    returnedByDetail.getOrDefault(line.getId(), 0L).intValue(),
-                    onHand,
-                    importPricePerBase(primary),
-                    grossUnitPrice(importPricePerBase(primary), line.getVatRate())));
+                    orZero(line.getQuantity()),   // Đã nhập (theo đơn vị nhập)
+                    returnedUnit,                 // Đã trả (theo đơn vị nhập)
+                    onHandUnit,                   // Tồn / SL trả tối đa (theo đơn vị nhập)
+                    netPerUnit,                   // Đơn giá nhập (net / đơn vị nhập)
+                    grossUnitPrice(netPerUnit, line.getVatRate())));  // Đơn giá hoàn (gross / đơn vị nhập)
         }
         return lines;
+    }
+
+    /**
+     * Tỉ lệ quy đổi ĐƠN VỊ NHẬP → đơn vị cơ sở (base per import unit), ví dụ 1 hộp = 40 viên → 40.
+     * Ưu tiên {@code productunit.ratio} của đơn vị nhập; dự phòng suy từ importPrice/importPricePerBase.
+     */
+    private int importRatio(Batch batch) {
+        if (batch == null) {
+            return 1;
+        }
+        if (batch.getImportUnitID() != null && batch.getImportUnitID().getRatio() != null
+                && batch.getImportUnitID().getRatio().compareTo(BigDecimal.ZERO) > 0) {
+            return Math.max(1, batch.getImportUnitID().getRatio().setScale(0, RoundingMode.HALF_UP).intValue());
+        }
+        if (batch.getImportPrice() != null && batch.getImportPricePerBase() != null
+                && batch.getImportPricePerBase().compareTo(BigDecimal.ZERO) > 0) {
+            return Math.max(1, batch.getImportPrice()
+                    .divide(batch.getImportPricePerBase(), 0, RoundingMode.HALF_UP).intValue());
+        }
+        return 1;
     }
 
     /** Gross unit refund price = net × (1 + vatRate%) — NCC hoàn cả phần thuế đầu vào. */
@@ -295,12 +325,15 @@ public class ReturnPurchaseService {
             }
             List<Batch> batches = batchesByDetail.getOrDefault(line.getId(), List.of());
             int onHand = batches.stream().mapToInt(b -> orZero(b.getStorageQuantity())).sum();
-            int qty = item.getReturnQty();
-            if (qty > onHand) {
+            // Input là số lượng theo ĐƠN VỊ NHẬP; tồn kho là đơn vị cơ sở (viên) → quy đổi qua tỉ lệ.
+            int ratio = importRatio(batches.isEmpty() ? null : batches.get(0));
+            int onHandUnit = onHand / ratio;
+            int qtyUnit = item.getReturnQty();
+            if (qtyUnit > onHandUnit) {
                 throw new IllegalArgumentException("Số lượng trả của \"" + productName(line)
-                        + "\" vượt quá tồn hiện tại (" + onHand + ")");
+                        + "\" vượt quá tồn hiện tại (" + onHandUnit + ")");
             }
-            int remaining = qty;
+            int remaining = qtyUnit * ratio;   // quy về đơn vị cơ sở để trừ kho theo lô (FIFO)
             for (Batch batch : batches) {
                 if (remaining <= 0) {
                     break;
@@ -457,10 +490,10 @@ public class ReturnPurchaseService {
         List<Returndetail> details = returndetailRepository.findByReturnIdWithRelations(returnId);
         List<ReturnPurchaseDetailItemResponse> items = details.stream().map(this::toDetailItem).toList();
 
+        // Quy tổng số lượng về đơn vị nhập — returndetail lưu theo đơn vị cơ sở (viên).
         int totalQuantity = details.stream()
-                .map(Returndetail::getReturnQty)
-                .filter(Objects::nonNull)
-                .mapToInt(Integer::intValue)
+                .filter(d -> d.getReturnQty() != null)
+                .mapToInt(d -> d.getReturnQty() / importRatio(d.getBatchID()))
                 .sum();
 
         Purchaseinvoice purchase = ret.getPurchaseID();
@@ -517,14 +550,20 @@ public class ReturnPurchaseService {
         Product product = detail.getProductID();
         Productunit unit = detail.getProductUnitID();
         Batch batch = detail.getBatchID();
+        // returndetail lưu số lượng/đơn giá theo đơn vị cơ sở (viên) để trừ kho chính xác; hiển thị quy về
+        // đơn vị nhập cho khớp màn tạo: SL ÷ tỉ lệ, đơn giá × tỉ lệ (tiền hoàn giữ nguyên).
+        int ratio = importRatio(batch);
+        Integer qtyUnit = detail.getReturnQty() != null ? detail.getReturnQty() / ratio : null;
+        BigDecimal pricePerUnit = detail.getUnitSellPrice() != null
+                ? detail.getUnitSellPrice().multiply(BigDecimal.valueOf(ratio)) : null;
         return new ReturnPurchaseDetailItemResponse(
                 product != null ? product.getProductID() : null,
                 product != null ? product.getName() : "Không rõ",
                 batch != null ? batch.getLotNumber() : "",
                 batch != null ? formatLocalDate(batch.getExpirationDate()) : "",
                 unit != null ? unit.getUnitName() : "",
-                detail.getReturnQty(),
-                detail.getUnitSellPrice(),
+                qtyUnit,
+                pricePerUnit,
                 detail.getLineRefund());
     }
 
