@@ -733,8 +733,8 @@ public class InvoiceService {
                 .map(this::toDetailItem)
                 .toList();
 
-        int totalQuantity = lines.stream()
-                .map(Invoicedetail::getQuantity)
+        int totalQuantity = items.stream()
+                .map(InvoiceDetailItemResponse::getQuantity)
                 .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue)
                 .sum();
@@ -833,22 +833,95 @@ public class InvoiceService {
     private InvoiceDetailItemResponse toDetailItem(Invoicedetail line) {
         Product product = line.getProductID();
         Batch batch = line.getBatchID();
+        ImportUnitDisplay display = resolveImportUnitDisplay(line, batch);
 
         return new InvoiceDetailItemResponse(
                 product != null ? product.getProductID() : null,
                 product != null ? product.getCode() : "",
                 product != null ? product.getName() : "Không rõ",
-                batch != null ? batch.getLotNumber() : "",
+                batch != null ? batch.getBatchCode() : "",
                 batch != null ? formatLocalDate(batch.getExpirationDate()) : "",
-                line.getUnitName(),
-                line.getQuantity(),
-                line.getUnitSellPrice(),
+                display.unitName(),
+                display.quantity(),
+                display.unitSellPrice(),
                 line.getSubtotal(),
                 line.getVatRate(),
                 line.getPreTaxAmount(),
                 line.getVatAmount(),
-                line.getReturnedQty() != null ? line.getReturnedQty() : 0);
+                display.returnedQty());
     }
+
+    /**
+     * Hiển thị số lượng/đơn vị theo đơn vị nhập của lô — quy đổi từ {@code baseQtyDeducted}, không
+     * dùng trực tiếp {@code quantity}/{@code unitName} trên dòng bán (có thể là đơn vị bán hoặc đơn vị cơ bản).
+     */
+    private ImportUnitDisplay resolveImportUnitDisplay(Invoicedetail line, Batch batch) {
+        int lineQty = line.getQuantity() != null ? line.getQuantity() : 0;
+        int returnedQty = line.getReturnedQty() != null ? line.getReturnedQty() : 0;
+        BigDecimal subtotal = line.getSubtotal() != null ? line.getSubtotal() : BigDecimal.ZERO;
+
+        if (batch == null || batch.getImportUnitID() == null) {
+            return new ImportUnitDisplay(
+                    line.getUnitName(),
+                    lineQty,
+                    line.getUnitSellPrice(),
+                    returnedQty);
+        }
+
+        Productunit importUnit = batch.getImportUnitID();
+        BigDecimal importRatio = unitRatio(importUnit);
+        int baseQty = line.getBaseQtyDeducted() != null ? line.getBaseQtyDeducted() : 0;
+        int importQty = convertBaseQtyToUnit(baseQty, importRatio);
+        int importReturnedQty = convertBaseQtyToUnit(
+                convertLineQtyToBaseQty(returnedQty, baseQty, lineQty),
+                importRatio);
+        BigDecimal importUnitPrice = importQty <= 0
+                ? BigDecimal.ZERO
+                : subtotal.divide(BigDecimal.valueOf(importQty), 2, RoundingMode.HALF_UP);
+
+        return new ImportUnitDisplay(
+                importUnit.getUnitName(),
+                importQty,
+                importUnitPrice,
+                importReturnedQty);
+    }
+
+    private BigDecimal unitRatio(Productunit unit) {
+        if (unit != null
+                && unit.getRatio() != null
+                && unit.getRatio().compareTo(BigDecimal.ZERO) > 0) {
+            return unit.getRatio();
+        }
+        return BigDecimal.ONE;
+    }
+
+    private int convertBaseQtyToUnit(int baseQty, BigDecimal unitRatio) {
+        if (baseQty <= 0) {
+            return 0;
+        }
+        return BigDecimal.valueOf(baseQty)
+                .divide(unitRatio, 0, RoundingMode.HALF_UP)
+                .intValue();
+    }
+
+    private int convertLineQtyToBaseQty(int lineQty, int baseQtyDeducted, int lineQuantity) {
+        if (lineQty <= 0) {
+            return 0;
+        }
+        if (lineQuantity <= 0) {
+            return lineQty;
+        }
+        return BigDecimal.valueOf(lineQty)
+                .multiply(BigDecimal.valueOf(baseQtyDeducted))
+                .divide(BigDecimal.valueOf(lineQuantity), 0, RoundingMode.HALF_UP)
+                .intValue();
+    }
+
+    private record ImportUnitDisplay(
+            String unitName,
+            Integer quantity,
+            BigDecimal unitSellPrice,
+            Integer returnedQty) {}
 
     /** The visible invoice number (the {@code invoiceNumber} column). */
     private String invoiceCode(Invoice invoice) {
