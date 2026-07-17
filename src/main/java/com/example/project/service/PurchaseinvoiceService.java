@@ -336,7 +336,6 @@ public class PurchaseinvoiceService {
         invoice.setPaid(paid);
         invoice.setStatus(resolveInvoiceStatus(totalAmount, paid));
         invoice.setReturnStatus("NONE");
-        invoice.setReturnQty(0);
         invoice.setNote(request.getNote());
         invoice.setVatInvoiceNumber(trimToNull(request.getVatInvoiceNumber()));
         invoice.setVatInvoiceDate(request.getVatInvoiceDate());

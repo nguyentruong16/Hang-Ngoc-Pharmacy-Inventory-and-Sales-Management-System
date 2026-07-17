@@ -56,10 +56,6 @@ public class Purchaseinvoice {
     @Column(name = "returnStatus", nullable = false, length = 50)
     private String returnStatus;
 
-    @NotNull
-    @Column(name = "returnQty", nullable = false)
-    private Integer returnQty;
-
     @Column(name = "paid", precision = 15, scale = 2)
     private BigDecimal paid;
 

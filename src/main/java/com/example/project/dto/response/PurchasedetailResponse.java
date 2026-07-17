@@ -21,6 +21,7 @@ public class PurchasedetailResponse {
     private LocalDate productionDate;
     private LocalDate expirationDate;
     private String lotNumber;
+    private Integer returnQty;
     private BigDecimal vatRate;
     private BigDecimal preTaxAmount;
     private BigDecimal vatAmount;
@@ -35,6 +36,7 @@ public class PurchasedetailResponse {
                 purchasedetail.getProductionDate(),
                 purchasedetail.getExpirationDate(),
                 purchasedetail.getLotNumber(),
+                purchasedetail.getReturnQty(),
                 purchasedetail.getVatRate(),
                 purchasedetail.getPreTaxAmount(),
                 purchasedetail.getVatAmount()
