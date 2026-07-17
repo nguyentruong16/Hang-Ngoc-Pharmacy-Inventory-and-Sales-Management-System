@@ -443,9 +443,7 @@ public class InvoiceService {
         int quantity = item.getQuantity();
         int baseQty = ratio.multiply(BigDecimal.valueOf(quantity)).setScale(0, RoundingMode.HALF_UP).intValue();
 
-        BigDecimal unitSellPrice = item.getUnitSellPrice() != null && item.getUnitSellPrice().compareTo(BigDecimal.ZERO) >= 0
-                ? item.getUnitSellPrice()
-                : (unit.getSellPrice() != null ? unit.getSellPrice() : BigDecimal.ZERO);
+        BigDecimal unitSellPrice = unit.getSellPrice() != null ? unit.getSellPrice() : BigDecimal.ZERO;
         BigDecimal lineSubtotal = unitSellPrice.multiply(BigDecimal.valueOf(quantity));
         BigDecimal vatRate = resolveVatRateSnapshot(product);
         BigDecimal preTaxAmount = calculateSaleLinePreTaxAmount(lineSubtotal, vatRate);

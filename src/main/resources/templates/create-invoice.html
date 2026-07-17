@@ -329,6 +329,12 @@
             padding: 4px 8px;
         }
 
+        .unit-price-cell .form-control[readonly] {
+            background: #f9fafb;
+            color: #374151;
+            cursor: default;
+        }
+
         .unit-total-cell {
             font-size: 13px;
             font-weight: 600;
@@ -690,9 +696,7 @@
         const qty = preset.quantity != null && preset.quantity > 0
             ? preset.quantity
             : (isChecked ? 1 : '');
-        const priceText = preset.unitSellPrice != null && preset.unitSellPrice !== ''
-            ? formatPriceDisplay(preset.unitSellPrice)
-            : formatPriceDisplay(unit.sellPrice);
+        const priceText = formatPriceDisplay(unit.sellPrice);
         const lineTotal = isChecked && qty
             ? formatMoney(Number(qty) * parsePriceValue(priceText))
             : '—';
@@ -712,8 +716,8 @@
                        value="${isChecked ? qty : ''}" ${isChecked ? '' : 'disabled'}>
             </td>
             <td class="unit-price-cell">
-                <input type="text" inputmode="numeric" class="form-control unit-price-input"
-                       value="${priceText}" ${isChecked ? '' : 'disabled'}>
+                <input type="text" class="form-control unit-price-input"
+                       value="${priceText}" readonly tabindex="-1">
             </td>
             <td class="unit-total-cell">
                 <span class="unit-line-total">${lineTotal}</span>
@@ -727,6 +731,15 @@
         return Number.isFinite(num) ? num : 0;
     }
 
+    function unitSellPriceForRow(row) {
+        const product = rowProduct(row);
+        const unit = getUnitFromProduct(product, row.dataset.unitId);
+        if (!unit || unit.sellPrice == null || unit.sellPrice === '') {
+            return 0;
+        }
+        return Number(unit.sellPrice);
+    }
+
     function setUnitLineActive(row, active) {
         const checkbox = row.querySelector('.unit-check-input');
         const qtyInput = row.querySelector('.unit-qty-input');
@@ -737,14 +750,14 @@
         checkbox.checked = active;
         row.classList.toggle('active', active);
         qtyInput.disabled = !active;
-        priceInput.disabled = !active;
+
+        if (unit && priceInput) {
+            priceInput.value = formatPriceDisplay(unit.sellPrice);
+        }
 
         if (active) {
             if (!numberValue(qtyInput)) {
                 qtyInput.value = 1;
-            }
-            if (!parsePrice(priceInput) && unit) {
-                priceInput.value = formatPriceDisplay(unit.sellPrice);
             }
         } else {
             qtyInput.value = '';
@@ -868,7 +881,6 @@
     function wireUnitLineRow(row) {
         const checkbox = row.querySelector('.unit-check-input');
         const qtyInput = row.querySelector('.unit-qty-input');
-        const priceInput = row.querySelector('.unit-price-input');
         const productId = row.dataset.productId;
 
         checkbox.addEventListener('change', () => {
@@ -883,7 +895,6 @@
         });
 
         qtyInput.addEventListener('input', calculateSummary);
-        priceInput.addEventListener('input', (event) => handlePriceInput(event.target));
     }
 
     function syncFormDetails() {
@@ -902,7 +913,7 @@
                 if (qty < 1) return;
 
                 const unitId = row.dataset.unitId;
-                const price = parsePrice(row.querySelector('.unit-price-input'));
+                const price = unitSellPriceForRow(row);
 
                 [
                     ['productId', productId],
@@ -1135,7 +1146,7 @@
                     return;
                 }
                 const qty = numberValue(row.querySelector('.unit-qty-input'));
-                const price = parsePrice(row.querySelector('.unit-price-input'));
+                const price = unitSellPriceForRow(row);
                 const lineTotal = qty * price;
                 rowTotal += lineTotal;
                 if (totalCell) {
@@ -1300,8 +1311,7 @@
                 details.forEach(detail => {
                     unitPresets[detail.productUnitId] = {
                         checked: true,
-                        quantity: detail.quantity,
-                        unitSellPrice: detail.unitSellPrice
+                        quantity: detail.quantity
                     };
                 });
                 addItemRow(product, unitPresets);
