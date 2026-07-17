@@ -27,7 +27,8 @@ public interface InvoicedetailRepository extends JpaRepository<Invoicedetail, In
        select d
        from Invoicedetail d
        left join fetch d.productID
-       left join fetch d.batchID
+       left join fetch d.batchID b
+       left join fetch b.importUnitID
        where d.invoiceID.id = :invoiceId
        order by d.id
        """)
