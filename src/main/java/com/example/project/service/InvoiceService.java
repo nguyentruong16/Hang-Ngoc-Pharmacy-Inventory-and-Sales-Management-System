@@ -838,7 +838,7 @@ public class InvoiceService {
                 product != null ? product.getProductID() : null,
                 product != null ? product.getCode() : "",
                 product != null ? product.getName() : "Không rõ",
-                batch != null ? batch.getLotNumber() : "",
+                batch != null ? batch.getBatchCode() : "",
                 batch != null ? formatLocalDate(batch.getExpirationDate()) : "",
                 line.getUnitName(),
                 line.getQuantity(),
