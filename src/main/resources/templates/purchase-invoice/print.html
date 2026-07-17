@@ -212,6 +212,7 @@
             <th>Tên hàng</th>
             <th style="width: 100px;">Đơn giá</th>
             <th style="width: 70px;">Số lượng</th>
+            <th style="width: 70px;">Đơn vị</th>
             <th style="width: 90px;">Chiết khấu</th>
             <th style="width: 110px;">Thành tiền</th>
         </tr>
@@ -231,6 +232,8 @@
 
             <td class="text-right" th:text="${line.quantity}">1</td>
 
+            <td class="text-center" th:text="${line.unitName}">Hộp</td>
+
             <td class="text-center">---</td>
 
             <td class="text-right" th:text="${#numbers.formatDecimal(line.lineTotal, 0, 'POINT', 0, 'COMMA')}">
@@ -239,7 +242,7 @@
         </tr>
 
         <tr th:if="${#lists.isEmpty(printData.lines)}">
-            <td colspan="7" class="text-center">Không có dữ liệu.</td>
+            <td colspan="8" class="text-center">Không có dữ liệu.</td>
         </tr>
         </tbody>
     </table>
