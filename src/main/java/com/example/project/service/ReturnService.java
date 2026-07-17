@@ -193,7 +193,8 @@ public class ReturnService {
                 .sorted(Comparator.comparing(Invoice::getDate, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(invoice -> new ReturnableInvoiceResponse(
                         invoice.getId(),
-                        invoice.getInvoicePattern(),
+                        // Số hóa đơn (HD00000x) — duy nhất, để phân biệt; KHÔNG dùng invoicePattern (ký hiệu giống nhau).
+                        invoice.getInvoiceNumber(),
                         formatLocalDateTime(invoice.getDate()),
                         invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
                         invoice.getCustomerID() != null ? invoice.getCustomerID().getName() : "Khách lẻ",
@@ -618,7 +619,7 @@ public class ReturnService {
                 ret.getReturnDate(),
                 formatInstant(ret.getReturnDate()),
                 invoice != null ? invoice.getId() : null,
-                invoice != null ? invoice.getInvoicePattern() : "—",
+                invoice != null ? invoice.getInvoiceNumber() : "—",
                 customer != null ? customer.getName() : "Khách lẻ",
                 ret.getReturnedBy() != null ? ret.getReturnedBy().getName() : "Không rõ",
                 ret.getReturnType(),
@@ -657,7 +658,7 @@ public class ReturnService {
                 formatCode(ret.getId()),
                 ret.getReturnDate(),
                 formatInstant(ret.getReturnDate()),
-                invoice != null ? invoice.getInvoicePattern() : "—",
+                invoice != null ? invoice.getInvoiceNumber() : "—",
                 customer != null ? customer.getName() : "Khách lẻ",
                 ret.getReturnedBy() != null ? ret.getReturnedBy().getName() : "Không rõ",
                 details.size(),
@@ -868,7 +869,7 @@ public class ReturnService {
             return true;
         }
         Customer customer = invoice.getCustomerID();
-        return containsNormalized(invoice.getInvoicePattern(), normalizedKeyword)
+        return containsNormalized(invoice.getInvoiceNumber(), normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getName() : null, normalizedKeyword)
                 || containsNormalized(customer != null ? customer.getPhoneNumber() : null, normalizedKeyword);
     }
@@ -1098,6 +1099,15 @@ public class ReturnService {
         }
 
         int baseQtyRestored() {
+            // Nhập lại kho = SỐ ĐƠN VỊ BÁN trả × tỉ lệ quy đổi của đơn vị đó (đơn vị cơ sở / đơn vị bán).
+            // KHÔNG suy từ baseQtyDeducted/quantity: khi bán 1 đơn vị nhưng tồn phải gom FIFO qua nhiều lô,
+            // màn bán hàng tách chunk và sinh 1 dòng "quantity=0" ôm phần base lẻ
+            // Quy theo ratio thì trả đơn vị bán luôn nhập lại đủ, bất kể sale tách chunk thế nào.
+            Productunit unit = invoiceLine.getProductUnitID();
+            if (unit != null && unit.getRatio() != null && unit.getRatio().compareTo(BigDecimal.ZERO) > 0) {
+                return unit.getRatio().multiply(BigDecimal.valueOf(qty)).setScale(0, RoundingMode.HALF_UP).intValue();
+            }
+            // Dự phòng khi thiếu ratio: suy từ baseQtyDeducted của dòng gốc (như cũ).
             Integer baseDeducted = invoiceLine.getBaseQtyDeducted();
             int quantity = invoiceLine.getQuantity() != null ? invoiceLine.getQuantity() : 0;
             if (baseDeducted == null || quantity <= 0) {
