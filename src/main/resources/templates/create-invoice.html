@@ -222,6 +222,130 @@
         .money-step-btn.step-up {
             border-bottom: 1px solid #dee2e6;
         }
+
+        .sell-items-table {
+            margin-bottom: 0;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .sell-items-table thead th {
+            vertical-align: middle;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            padding: 10px 12px;
+        }
+
+        .sell-items-table thead th.col-line-total,
+        .sell-items-table thead th.col-total {
+            text-align: right;
+        }
+
+        .sell-items-table tbody td {
+            vertical-align: middle;
+        }
+
+        .sell-items-table .col-product {
+            width: 24%;
+        }
+
+        .sell-items-table .col-unit-select {
+            width: 18%;
+        }
+
+        .sell-items-table .col-qty {
+            width: 72px;
+        }
+
+        .sell-items-table .col-price {
+            width: auto;
+        }
+
+        .sell-items-table .col-line-total {
+            width: 88px;
+            text-align: right;
+        }
+
+        .sell-items-table .col-total {
+            width: 10%;
+            text-align: right;
+        }
+
+        .sell-items-table .col-delete {
+            width: 48px;
+        }
+
+        tr.unit-line-row.active td {
+            background: #f0fdf4;
+        }
+
+        tr.unit-line-row:last-child td {
+            border-bottom-width: 1px;
+        }
+
+        .unit-select-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .unit-select-wrap input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            flex-shrink: 0;
+            accent-color: #059669;
+            cursor: pointer;
+        }
+
+        .unit-line-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+            word-break: break-word;
+        }
+
+        tr.unit-line-row.active .unit-line-name {
+            color: #047857;
+        }
+
+        .unit-line-tag {
+            font-size: 10px;
+            font-weight: 600;
+            color: #059669;
+            background: #d1fae5;
+            padding: 1px 6px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .unit-qty-cell .form-control,
+        .unit-price-cell .form-control {
+            min-height: 34px;
+            font-size: 13px;
+            padding: 4px 8px;
+        }
+
+        .unit-total-cell {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+            white-space: nowrap;
+        }
+
+        tr.unit-line-row.active .unit-total-cell {
+            color: #047857;
+        }
+
+        .product-line-total {
+            font-size: 14px;
+            font-weight: 700;
+            color: #047857;
+            white-space: nowrap;
+        }
     </style>
 </head>
 
@@ -325,22 +449,21 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                <tr>
-                                    <th style="min-width: 240px;">Sản phẩm</th>
-                                    <th style="min-width: 140px;">Đơn vị</th>
-                                    <th style="min-width: 110px;">Số lượng</th>
-                                    <th style="min-width: 140px;">Đơn giá</th>
-                                    <th style="min-width: 130px; text-align:right;">Thành tiền</th>
-                                    <th class="text-end">Xóa</th>
-                                </tr>
-                                </thead>
+                        <table class="table table-hover align-middle sell-items-table mb-0">
+                            <thead>
+                            <tr>
+                                <th class="col-product">Sản phẩm</th>
+                                <th class="col-unit-select">Đơn vị bán</th>
+                                <th class="col-qty">SL</th>
+                                <th class="col-price">Giá bán</th>
+                                <th class="col-line-total">Thành tiền</th>
+                                <th class="col-total">Tổng</th>
+                                <th class="col-delete text-end">Xóa</th>
+                            </tr>
+                            </thead>
 
-                                <tbody id="detailRows"></tbody>
-                            </table>
-                        </div>
+                            <tbody id="detailRows"></tbody>
+                        </table>
 
                         <div id="emptyProductState" class="empty-product-state">
                             <div><i class="ti ti-package"></i></div>
@@ -471,7 +594,7 @@
                     <div class="sell-card p-4">
                         <div class="section-title mb-3">Lưu ý bán hàng</div>
                         <div class="text-secondary small">
-                            <p class="mb-2">1. Chọn sản phẩm rồi chọn đơn vị bán — đơn giá tự điền theo đơn vị.</p>
+                            <p class="mb-2">1. Tick đơn vị cần bán và nhập số lượng ngay bên cạnh — đơn giá tự điền theo đơn vị.</p>
                             <p class="mb-2">2. Tồn kho được trừ theo lô có hạn dùng gần nhất trước.</p>
                             <p class="mb-2">3. Khách lẻ phải thanh toán đủ; chọn khách hàng nếu muốn ghi nợ.</p>
                             <p class="mb-0">4. Bật "thuốc kê đơn" thì phải nhập mã đơn thuốc.</p>
@@ -479,6 +602,7 @@
                     </div>
                 </div>
             </div>
+            <div id="detailFormFields" aria-hidden="true"></div>
         </form>
 
     </div>
@@ -529,12 +653,103 @@
             .replace(/"/g, '&quot;');
     }
 
-    function unitOptionsHtml(product, selectedUnitId) {
-        return product.units.map((u, idx) => {
-            const selected = (selectedUnitId != null && String(u.id) === String(selectedUnitId))
-                || (selectedUnitId == null && (u.defaultUnit || idx === 0));
-            return `<option value="${u.id}" data-ratio="${u.ratio}" data-price="${u.sellPrice}" ${selected ? 'selected' : ''}>${escapeHtml(u.unitName)}</option>`;
-        }).join('');
+    function getDefaultUnit(product) {
+        if (!product || !product.units || !product.units.length) return null;
+        return product.units.find(u => u.defaultUnit) || product.units[0];
+    }
+
+    function getDefaultUnitId(product) {
+        const unit = getDefaultUnit(product);
+        return unit ? unit.id : null;
+    }
+
+    function getUnitFromProduct(product, unitId) {
+        if (!product || !product.units) return null;
+        return product.units.find(u => String(u.id) === String(unitId)) || null;
+    }
+
+    function findProductRows(productId) {
+        return Array.from(document.querySelectorAll(`#detailRows tr[data-product-id="${productId}"]`));
+    }
+
+    function findProductRow(productId) {
+        const rows = findProductRows(productId);
+        return rows.length ? rows[0] : null;
+    }
+
+    function getProductIdsInTable() {
+        return [...new Set(Array.from(document.querySelectorAll('#detailRows tr[data-product-id]'))
+            .map(row => row.dataset.productId))];
+    }
+
+    function unitLineCellsHtml(product, unit, preset, multiUnit) {
+        const def = getDefaultUnit(product);
+        const isChecked = preset.checked != null
+            ? preset.checked
+            : (!multiUnit || String(unit.id) === String(def?.id));
+        const qty = preset.quantity != null && preset.quantity > 0
+            ? preset.quantity
+            : (isChecked ? 1 : '');
+        const priceText = preset.unitSellPrice != null && preset.unitSellPrice !== ''
+            ? formatPriceDisplay(preset.unitSellPrice)
+            : formatPriceDisplay(unit.sellPrice);
+        const lineTotal = isChecked && qty
+            ? formatMoney(Number(qty) * parsePriceValue(priceText))
+            : '—';
+
+        return `
+            <td class="unit-select-cell">
+                <div class="unit-select-wrap">
+                    <input type="checkbox" class="unit-check-input"
+                           ${isChecked ? 'checked' : ''}
+                           ${!multiUnit ? 'disabled' : ''}>
+                    <span class="unit-line-name">${escapeHtml(unit.unitName)}</span>
+                    ${unit.defaultUnit ? '<span class="unit-line-tag">Mặc định</span>' : ''}
+                </div>
+            </td>
+            <td class="unit-qty-cell">
+                <input type="number" min="1" class="form-control unit-qty-input"
+                       value="${isChecked ? qty : ''}" ${isChecked ? '' : 'disabled'}>
+            </td>
+            <td class="unit-price-cell">
+                <input type="text" inputmode="numeric" class="form-control unit-price-input"
+                       value="${priceText}" ${isChecked ? '' : 'disabled'}>
+            </td>
+            <td class="unit-total-cell">
+                <span class="unit-line-total">${lineTotal}</span>
+            </td>
+        `;
+    }
+
+    function parsePriceValue(value) {
+        if (value == null || value === '') return 0;
+        const num = Number(String(value).replace(/\./g, ''));
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function setUnitLineActive(row, active) {
+        const checkbox = row.querySelector('.unit-check-input');
+        const qtyInput = row.querySelector('.unit-qty-input');
+        const priceInput = row.querySelector('.unit-price-input');
+        const product = rowProduct(row);
+        const unit = getUnitFromProduct(product, row.dataset.unitId);
+
+        checkbox.checked = active;
+        row.classList.toggle('active', active);
+        qtyInput.disabled = !active;
+        priceInput.disabled = !active;
+
+        if (active) {
+            if (!numberValue(qtyInput)) {
+                qtyInput.value = 1;
+            }
+            if (!parsePrice(priceInput) && unit) {
+                priceInput.value = formatPriceDisplay(unit.sellPrice);
+            }
+        } else {
+            qtyInput.value = '';
+            row.querySelector('.unit-line-total').textContent = '—';
+        }
     }
 
     /** Base unit name = the sell unit with ratio 1 (stock is stored in this unit). */
@@ -548,131 +763,162 @@
         return base && base.unitName ? base.unitName : '';
     }
 
-    /** Returns the product row (tr) that already holds the given product id, if any. */
-    function findRowByProductId(productId) {
-        return Array.from(document.querySelectorAll('#detailRows tr')).find(row => {
-            const input = row.querySelector('[data-field="productId"]');
-            return input && Number(input.value) === Number(productId);
-        });
-    }
-
-    function applyUnitPrice(row) {
-        const unitSelect = row.querySelector('.unit-select');
-        const priceInput = row.querySelector('.price-input');
-        const option = unitSelect.options[unitSelect.selectedIndex];
-        if (option && option.value) {
-            priceInput.value = formatPriceDisplay(option.dataset.price || 0);
-        }
-        calculateSummary();
-    }
-
-    /** Max quantity (in the row's chosen unit) still sellable, after accounting for other rows. */
     function rowProduct(row) {
-        const input = row.querySelector('[data-field="productId"]');
-        return input ? productById[input.value] : null;
+        if (!row) return null;
+        const productId = row.dataset.productId;
+        return productId ? productById[productId] : null;
     }
 
-    function maxSellableForRow(row) {
-        const product = rowProduct(row);
-        const unitSelect = row.querySelector('.unit-select');
-        const option = unitSelect.options[unitSelect.selectedIndex];
-        if (!product || !option || !option.value) {
-            return null;
-        }
-        const ratio = Number(option.dataset.ratio) || 1;
+    function enforceUnitLineLimitsForProduct(productId) {
+        const product = productById[productId];
+        const rows = findProductRows(productId);
+        if (!product || !rows.length) return;
 
-        let usedByOthers = 0;
-        document.querySelectorAll('#detailRows tr').forEach(other => {
-            if (other === row) return;
-            const otherProduct = rowProduct(other);
-            if (!otherProduct || otherProduct.productId !== product.productId) return;
-            const otherUnit = other.querySelector('.unit-select');
-            const otherOption = otherUnit.options[otherUnit.selectedIndex];
-            if (!otherOption || !otherOption.value) return;
-            const otherRatio = Number(otherOption.dataset.ratio) || 1;
-            usedByOthers += numberValue(other.querySelector('.quantity-input')) * otherRatio;
+        rows.forEach(row => {
+            const checkbox = row.querySelector('.unit-check-input');
+            const qtyInput = row.querySelector('.unit-qty-input');
+            if (!checkbox.checked) {
+                qtyInput.classList.remove('is-invalid');
+                return;
+            }
+
+            const ratio = Number(row.dataset.ratio) || 1;
+            let usedByOthers = 0;
+            rows.forEach(other => {
+                if (other === row) return;
+                const otherCheckbox = other.querySelector('.unit-check-input');
+                if (!otherCheckbox.checked) return;
+                usedByOthers += numberValue(other.querySelector('.unit-qty-input')) * (Number(other.dataset.ratio) || 1);
+            });
+
+            const remainingBase = product.baseStock - usedByOthers;
+            const maxUnit = Math.max(0, Math.floor(remainingBase / ratio));
+            qtyInput.max = maxUnit;
+            if (numberValue(qtyInput) > maxUnit) {
+                qtyInput.value = maxUnit > 0 ? maxUnit : 1;
+            }
         });
-
-        const remainingBase = product.baseStock - usedByOthers;
-        const maxUnit = Math.floor(remainingBase / ratio);
-        return maxUnit < 0 ? 0 : maxUnit;
-    }
-
-    /** Caps a row's quantity so it can never exceed the available stock. */
-    function enforceQuantityLimit(row) {
-        const quantityInput = row.querySelector('.quantity-input');
-        const max = maxSellableForRow(row);
-        if (max === null) {
-            quantityInput.removeAttribute('max');
-            return;
-        }
-        quantityInput.max = max;
-        if (numberValue(quantityInput) > max) {
-            quantityInput.value = max;
-        }
     }
 
     function enforceAllLimits() {
-        document.querySelectorAll('#detailRows tr').forEach(row => enforceQuantityLimit(row));
+        getProductIdsInTable().forEach(productId => enforceUnitLineLimitsForProduct(productId));
     }
 
-    /** Validates one row's quantity against stock (accounting for other rows of the same product). */
-    function validateRow(row, usedBaseByProduct) {
-        const unitSelect = row.querySelector('.unit-select');
-        const quantityInput = row.querySelector('.quantity-input');
-        const hint = row.querySelector('.stock-hint');
-        const product = rowProduct(row);
-        const option = unitSelect.options[unitSelect.selectedIndex];
+    /** Validates one product against stock for all checked units. */
+    function validateProductRow(productId) {
+        const product = productById[productId];
+        const firstRow = findProductRow(productId);
+        const hint = firstRow ? firstRow.querySelector('.stock-hint') : null;
+        const rows = findProductRows(productId);
+        if (!product || !rows.length) return true;
 
-        if (!product || !option || !option.value) {
-            quantityInput.classList.remove('is-invalid');
-            hint.classList.remove('text-danger');
-            hint.textContent = '';
-            return true;
-        }
+        let usedBase = 0;
+        let valid = true;
 
-        const ratio = Number(option.dataset.ratio) || 1;
-        const availableInUnit = Math.floor(product.baseStock / ratio);
-        const usedBase = usedBaseByProduct[product.productId] || 0;
-
-        if (usedBase > product.baseStock) {
-            quantityInput.classList.add('is-invalid');
-            hint.classList.add('text-danger');
-            hint.innerHTML = '<i class="ti ti-alert-triangle"></i> Vượt tồn kho! Chỉ còn '
-                + availableInUnit + ' ' + option.textContent;
-            return false;
-        }
-
-        quantityInput.classList.remove('is-invalid');
-        hint.classList.remove('text-danger');
-        hint.innerHTML = '<i class="ti ti-package"></i> Có thể bán: '
-            + availableInUnit + ' ' + option.textContent;
-        return true;
-    }
-
-    /** Validates every row and enables/disables the submit button accordingly. */
-    function validateStock() {
-        const rows = document.querySelectorAll('#detailRows tr');
-        const usedBaseByProduct = {};
         rows.forEach(row => {
-            const product = rowProduct(row);
-            const unitSelect = row.querySelector('.unit-select');
-            const option = unitSelect.options[unitSelect.selectedIndex];
-            if (product && option && option.value) {
-                const ratio = Number(option.dataset.ratio) || 1;
-                const qty = numberValue(row.querySelector('.quantity-input'));
-                usedBaseByProduct[product.productId] =
-                    (usedBaseByProduct[product.productId] || 0) + qty * ratio;
+            const checkbox = row.querySelector('.unit-check-input');
+            const qtyInput = row.querySelector('.unit-qty-input');
+            if (!checkbox.checked) {
+                qtyInput.classList.remove('is-invalid');
+                return;
             }
+            const ratio = Number(row.dataset.ratio) || 1;
+            usedBase += numberValue(qtyInput) * ratio;
         });
 
+        const baseName = baseUnitName(product);
+        if (usedBase > product.baseStock) {
+            valid = false;
+            rows.forEach(row => {
+                if (row.querySelector('.unit-check-input').checked) {
+                    row.querySelector('.unit-qty-input').classList.add('is-invalid');
+                }
+            });
+            if (hint) {
+                hint.classList.add('text-danger');
+                hint.innerHTML = '<i class="ti ti-alert-triangle"></i> Vượt tồn kho! Còn '
+                    + product.baseStock + (baseName ? ' ' + escapeHtml(baseName) : '');
+            }
+        } else {
+            rows.forEach(row => row.querySelector('.unit-qty-input').classList.remove('is-invalid'));
+            if (hint) {
+                hint.classList.remove('text-danger');
+                hint.innerHTML = '<i class="ti ti-package"></i> Có thể bán: '
+                    + product.baseStock + (baseName ? ' ' + escapeHtml(baseName) : '');
+            }
+        }
+        return valid;
+    }
+
+    /** Validates every product and enables/disables the submit button accordingly. */
+    function validateStock() {
         let allValid = true;
-        rows.forEach(row => {
-            if (!validateRow(row, usedBaseByProduct)) {
+        getProductIdsInTable().forEach(productId => {
+            if (!validateProductRow(productId)) {
                 allValid = false;
             }
         });
         return allValid;
+    }
+
+    function hasActiveUnits(productId) {
+        return findProductRows(productId).some(row => row.querySelector('.unit-check-input').checked);
+    }
+
+    function wireUnitLineRow(row) {
+        const checkbox = row.querySelector('.unit-check-input');
+        const qtyInput = row.querySelector('.unit-qty-input');
+        const priceInput = row.querySelector('.unit-price-input');
+        const productId = row.dataset.productId;
+
+        checkbox.addEventListener('change', () => {
+            const rows = findProductRows(productId);
+            const checkedCount = rows.filter(r => r.querySelector('.unit-check-input').checked).length;
+            if (!checkbox.checked && checkedCount === 0) {
+                setUnitLineActive(row, true);
+                return;
+            }
+            setUnitLineActive(row, checkbox.checked);
+            calculateSummary();
+        });
+
+        qtyInput.addEventListener('input', calculateSummary);
+        priceInput.addEventListener('input', (event) => handlePriceInput(event.target));
+    }
+
+    function syncFormDetails() {
+        const container = document.getElementById('detailFormFields');
+        if (!container) return;
+        container.innerHTML = '';
+
+        let index = 0;
+        getProductIdsInTable().forEach(productId => {
+            const rows = findProductRows(productId);
+            rows.forEach(row => {
+                const checkbox = row.querySelector('.unit-check-input');
+                if (!checkbox.checked) return;
+
+                const qty = numberValue(row.querySelector('.unit-qty-input'));
+                if (qty < 1) return;
+
+                const unitId = row.dataset.unitId;
+                const price = parsePrice(row.querySelector('.unit-price-input'));
+
+                [
+                    ['productId', productId],
+                    ['productUnitId', unitId],
+                    ['quantity', qty],
+                    ['unitSellPrice', price]
+                ].forEach(([field, value]) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = `details[${index}].${field}`;
+                    input.value = value;
+                    container.appendChild(input);
+                });
+                index++;
+            });
+        });
     }
 
     /** Validates the prescription code format when the invoice is marked as prescription-required. */
@@ -696,7 +942,7 @@
 
     /** Enables the submit button only when both stock and prescription checks pass. */
     function updateSubmitState() {
-        const hasRows = document.querySelectorAll('#detailRows tr').length > 0;
+        const hasRows = getProductIdsInTable().some(productId => hasActiveUnits(productId));
         const ok = hasRows && validateStock() && validatePrescription();
         const submitBtn = document.getElementById('submitInvoiceBtn');
         if (submitBtn) {
@@ -704,90 +950,78 @@
         }
     }
 
-    function wireRow(row) {
-        row.querySelector('.unit-select').addEventListener('change', () => applyUnitPrice(row));
-        row.querySelector('.quantity-input').addEventListener('input', calculateSummary);
-        row.querySelector('.price-input').addEventListener('input', (event) => handlePriceInput(event.target));
-    }
-
-    function refreshRowIndexes() {
-        document.querySelectorAll('#detailRows tr').forEach((row, index) => {
-            row.querySelectorAll('[data-field]').forEach(input => {
-                const field = input.getAttribute('data-field');
-                input.setAttribute('name', `details[${index}].${field}`);
-            });
-        });
-    }
-
-    /** Adds a product line for the given product. `preset` restores a saved detail (unit/qty/price). */
-    function addItemRow(product, preset) {
+    /** Adds one product row. `unitPresets` maps unitId -> {checked, quantity, unitSellPrice}. */
+    function addItemRow(product, unitPresets) {
         if (!product) return;
 
         const tbody = document.getElementById('detailRows');
-        const row = document.createElement('tr');
-        const selectedUnitId = preset && preset.productUnitId != null ? preset.productUnitId : null;
-        row.innerHTML = `
-            <td>
-                <input type="hidden" data-field="productId" value="${product.productId}">
-                <div class="product-title-code">${escapeHtml(product.code)}</div>
-                <div class="product-title-name">${escapeHtml(product.name)}</div>
-                <div class="stock-hint"></div>
-            </td>
-            <td>
-                <select class="form-select unit-select" data-field="productUnitId">
-                    ${unitOptionsHtml(product, selectedUnitId)}
-                </select>
-            </td>
-            <td>
-                <input type="number" min="1" value="1" class="form-control quantity-input" data-field="quantity">
-            </td>
-            <td>
-                <div class="money-input-wrap">
-                    <input type="text" inputmode="numeric" class="form-control price-input" data-field="unitSellPrice">
-                    <div class="money-stepper">
-                        <button type="button" class="money-step-btn step-up"
-                                onclick="stepRowPrice(this, 1000)"><i class="ti ti-chevron-up"></i></button>
-                        <button type="button" class="money-step-btn step-down"
-                                onclick="stepRowPrice(this, -1000)"><i class="ti ti-chevron-down"></i></button>
-                    </div>
-                </div>
-            </td>
-            <td style="text-align:right;">
-                <span class="line-total">0đ</span>
-            </td>
-            <td class="text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)">
-                    <i class="ti ti-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-        wireRow(row);
-        applyUnitPrice(row);
+        const presets = unitPresets || {};
+        const multiUnit = product.units.length > 1;
+        const unitCount = product.units.length;
 
-        if (preset) {
-            if (preset.unitSellPrice != null && preset.unitSellPrice !== '') {
-                row.querySelector('.price-input').value = formatPriceDisplay(preset.unitSellPrice);
-            }
-            if (preset.quantity != null) {
-                row.querySelector('.quantity-input').value = preset.quantity;
-            }
-        }
+        product.units.forEach((unit, index) => {
+            const preset = presets[unit.id] || presets[String(unit.id)] || {};
+            const def = getDefaultUnit(product);
+            const isChecked = preset.checked != null
+                ? preset.checked
+                : (!multiUnit || String(unit.id) === String(def?.id));
 
-        refreshRowIndexes();
+            const row = document.createElement('tr');
+            row.className = 'unit-line-row' + (isChecked ? ' active' : '');
+            row.dataset.productId = product.productId;
+            row.dataset.unitId = unit.id;
+            row.dataset.ratio = unit.ratio || 1;
+
+            let rowHtml = '';
+            if (index === 0) {
+                rowHtml += `
+                    <td rowspan="${unitCount}">
+                        <div class="product-title-code">${escapeHtml(product.code)}</div>
+                        <div class="product-title-name">${escapeHtml(product.name)}</div>
+                        <div class="stock-hint"></div>
+                    </td>
+                `;
+            }
+            rowHtml += unitLineCellsHtml(product, unit, preset, multiUnit);
+            if (index === 0) {
+                rowHtml += `
+                    <td rowspan="${unitCount}" class="col-total">
+                        <span class="product-line-total">0đ</span>
+                    </td>
+                    <td rowspan="${unitCount}" class="text-end col-delete">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                    </td>
+                `;
+            }
+
+            row.innerHTML = rowHtml;
+            tbody.appendChild(row);
+            wireUnitLineRow(row);
+        });
+
         toggleEmptyState();
         calculateSummary();
     }
 
-    /** Adds the product by id, or bumps the quantity if it is already on the invoice. */
+    /** Adds the product by id, or bumps the default unit quantity if already on the invoice. */
     function addProductById(productId) {
         const product = productById[productId];
         if (!product) return;
 
-        const existingRow = findRowByProductId(productId);
+        const existingRow = findProductRow(productId);
         if (existingRow) {
-            const quantityInput = existingRow.querySelector('.quantity-input');
-            quantityInput.value = numberValue(quantityInput) + 1;
+            const defaultUnitId = getDefaultUnitId(product);
+            const defaultLine = findProductRows(productId)
+                .find(row => String(row.dataset.unitId) === String(defaultUnitId));
+            if (defaultLine) {
+                if (!defaultLine.querySelector('.unit-check-input').checked) {
+                    setUnitLineActive(defaultLine, true);
+                }
+                const qtyInput = defaultLine.querySelector('.unit-qty-input');
+                qtyInput.value = numberValue(qtyInput) + 1;
+            }
             existingRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             calculateSummary();
             return;
@@ -797,14 +1031,15 @@
     }
 
     function removeItemRow(button) {
-        button.closest('tr').remove();
-        refreshRowIndexes();
+        const productId = button.closest('tr').dataset.productId;
+        findProductRows(productId).forEach(row => row.remove());
+        syncFormDetails();
         toggleEmptyState();
         calculateSummary();
     }
 
     function toggleEmptyState() {
-        const hasRows = document.querySelectorAll('#detailRows tr').length > 0;
+        const hasRows = getProductIdsInTable().length > 0;
         const emptyState = document.getElementById('emptyProductState');
         if (emptyState) {
             emptyState.style.display = hasRows ? 'none' : 'block';
@@ -837,16 +1072,6 @@
     /** Increases/decreases a money input by `delta` (min 0) and triggers its recalculation. */
     function stepMoney(inputId, delta) {
         const input = document.getElementById(inputId);
-        if (!input || input.readOnly || input.disabled) return;
-        const next = Math.max(0, parsePrice(input) + delta);
-        input.value = next ? next.toLocaleString('vi-VN') : '';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    /** Steps a product row's unit-price input up/down by `delta`. */
-    function stepRowPrice(button, delta) {
-        const wrap = button.closest('.money-input-wrap');
-        const input = wrap ? wrap.querySelector('.price-input') : null;
         if (!input || input.readOnly || input.disabled) return;
         const next = Math.max(0, parsePrice(input) + delta);
         input.value = next ? next.toLocaleString('vi-VN') : '';
@@ -899,17 +1124,35 @@
         enforceAllLimits();
 
         let subtotal = 0;
-        document.querySelectorAll('#detailRows tr').forEach(row => {
-            const quantity = numberValue(row.querySelector('.quantity-input'));
-            const price = parsePrice(row.querySelector('.price-input'));
-            const lineTotal = quantity * price;
-            subtotal += lineTotal;
+        getProductIdsInTable().forEach(productId => {
+            let rowTotal = 0;
+            const firstRow = findProductRow(productId);
+            findProductRows(productId).forEach(row => {
+                const checkbox = row.querySelector('.unit-check-input');
+                const totalCell = row.querySelector('.unit-line-total');
+                if (!checkbox.checked) {
+                    if (totalCell) totalCell.textContent = '—';
+                    return;
+                }
+                const qty = numberValue(row.querySelector('.unit-qty-input'));
+                const price = parsePrice(row.querySelector('.unit-price-input'));
+                const lineTotal = qty * price;
+                rowTotal += lineTotal;
+                if (totalCell) {
+                    totalCell.textContent = formatMoney(lineTotal);
+                }
+            });
 
-            const lineTotalCell = row.querySelector('.line-total');
-            if (lineTotalCell) {
-                lineTotalCell.textContent = formatMoney(lineTotal);
+            subtotal += rowTotal;
+            if (firstRow) {
+                const productTotalCell = firstRow.querySelector('.product-line-total');
+                if (productTotalCell) {
+                    productTotalCell.textContent = formatMoney(rowTotal);
+                }
             }
         });
+
+        syncFormDetails();
 
         const discount = parsePrice(document.getElementById('discount'));
         let total = subtotal - discount;
@@ -1041,11 +1284,27 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         if (Array.isArray(initialDetails) && initialDetails.length > 0) {
+            const detailsByProduct = {};
             initialDetails.forEach(detail => {
-                const product = productById[detail.productId];
-                if (product) {
-                    addItemRow(product, detail);
+                if (!detailsByProduct[detail.productId]) {
+                    detailsByProduct[detail.productId] = [];
                 }
+                detailsByProduct[detail.productId].push(detail);
+            });
+
+            Object.entries(detailsByProduct).forEach(([productId, details]) => {
+                const product = productById[productId];
+                if (!product) return;
+
+                const unitPresets = {};
+                details.forEach(detail => {
+                    unitPresets[detail.productUnitId] = {
+                        checked: true,
+                        quantity: detail.quantity,
+                        unitSellPrice: detail.unitSellPrice
+                    };
+                });
+                addItemRow(product, unitPresets);
             });
         }
         toggleEmptyState();
@@ -1101,9 +1360,7 @@
         const invoiceForm = document.getElementById('invoiceCreateForm');
         if (invoiceForm) {
             invoiceForm.addEventListener('submit', function () {
-                document.querySelectorAll('#detailRows .price-input').forEach(input => {
-                    input.value = String(parsePrice(input));
-                });
+                syncFormDetails();
                 if (discountInput) {
                     discountInput.value = String(parsePrice(discountInput));
                 }
