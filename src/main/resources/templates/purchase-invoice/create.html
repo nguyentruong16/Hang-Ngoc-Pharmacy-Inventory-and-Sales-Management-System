@@ -167,13 +167,17 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Nhà cung cấp <span class="text-danger">*</span></label>
-                                <select class="form-select" th:field="*{supplierId}">
-                                    <option value="">-- Chọn nhà cung cấp --</option>
-                                    <option th:each="supplier : ${suppliers}"
-                                            th:value="${supplier.id}"
-                                            th:text="${supplier.name}">
-                                    </option>
-                                </select>
+                                <div class="product-search-wrap">
+                                    <input type="text"
+                                           id="supplierSearchInput"
+                                           class="form-control product-search-input"
+                                           autocomplete="off"
+                                           placeholder="Tìm nhà cung cấp theo tên"
+                                           th:value="${supplierNameById.get(form.supplierId) ?: ''}">
+                                    <input type="hidden"
+                                           th:field="*{supplierId}">
+                                    <div id="supplierSearchResults" class="product-search-results"></div>
+                                </div>
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('supplierId')}"
                                      th:errors="*{supplierId}">
@@ -181,9 +185,9 @@
                             </div>
 
                             <div class="col-12 col-md-6">
-                                <label class="form-label">Dự trù mua hàng <span class="text-danger">*</span></label>
+                                <label class="form-label">Dự trù mua hàng</label>
                                 <select class="form-select" th:field="*{requisitionId}">
-                                    <option value="">-- Chọn dự trù mua hàng --</option>
+                                    <option value="">-- Không liên kết --</option>
                                     <option th:each="plan : ${procurementPlans}"
                                             th:value="${plan.id}"
                                             th:text="${plan.procurementCode + ' (' + plan.status + ')'}">
@@ -193,6 +197,7 @@
                                      th:if="${#fields.hasErrors('requisitionId')}"
                                      th:errors="*{requisitionId}">
                                 </div>
+                                <div id="procurementFetchHint" class="small text-secondary mt-1" style="display:none;"></div>
                             </div>
 
                             <div class="col-12 col-md-4">
@@ -479,7 +484,9 @@
 </main>
 
 <script th:inline="javascript">
+    const basePath = /*[[${basePath}]]*/ '/owner/purchase-invoices';
     const products = /*[[${products}]]*/ [];
+    const suppliers = /*[[${suppliers}]]*/ [];
     const costPriceBySupplierAndProduct = /*[[${costPriceBySupplierAndProduct}]]*/ {};
     const vatRateByProduct = /*[[${vatRateByProduct}]]*/ {};
     const importUnitByProduct = /*[[${importUnitByProduct}]]*/ {};
@@ -720,6 +727,191 @@
         });
     }
 
+    // -------------------------------------------------------------- supplier search field
+
+    function searchSupplierMatches(keyword) {
+        const normalized = normalizeSearchText(keyword);
+        if (!normalized) return [];
+        return suppliers
+            .filter(supplier => normalizeSearchText(supplier.name).includes(normalized))
+            .slice(0, 20);
+    }
+
+    function renderSupplierSearchResults(items) {
+        const results = document.getElementById('supplierSearchResults');
+        if (!results) return;
+
+        if (!items.length) {
+            results.innerHTML = '<div class="product-search-item text-secondary">Không tìm thấy nhà cung cấp</div>';
+            results.classList.add('show');
+            return;
+        }
+
+        results.innerHTML = items.map(supplier => `
+            <div class="product-search-item" data-supplier-id="${supplier.id}">${supplier.name}</div>
+        `).join('');
+        results.classList.add('show');
+    }
+
+    function hideSupplierSearchResults() {
+        const results = document.getElementById('supplierSearchResults');
+        if (results) {
+            results.classList.remove('show');
+        }
+    }
+
+    function selectSupplier(supplierId, supplierName) {
+        const hiddenInput = document.getElementById('supplierId');
+        const searchInput = document.getElementById('supplierSearchInput');
+        if (!hiddenInput || !searchInput) return;
+
+        hiddenInput.value = supplierId;
+        searchInput.value = supplierName;
+        hideSupplierSearchResults();
+
+        // Đổi NCC có thể lộ ra giá gợi ý khác cho các dòng chưa có giá — áp lại cho toàn bộ.
+        document.querySelectorAll('#detailTable tbody.detail-item').forEach(row => applySuggestedPrice(row));
+        maybeFetchProcurementPlanDetails();
+    }
+
+    function wireSupplierSearch() {
+        const searchInput = document.getElementById('supplierSearchInput');
+        const results = document.getElementById('supplierSearchResults');
+        if (!searchInput || !results) return;
+
+        searchInput.addEventListener('input', () => {
+            renderSupplierSearchResults(searchSupplierMatches(searchInput.value));
+        });
+
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value.trim()) {
+                renderSupplierSearchResults(searchSupplierMatches(searchInput.value));
+            }
+        });
+
+        results.addEventListener('click', event => {
+            const item = event.target.closest('.product-search-item[data-supplier-id]');
+            if (!item) return;
+            selectSupplier(item.dataset.supplierId, item.textContent.trim());
+        });
+
+        document.addEventListener('click', event => {
+            if (!event.target.closest('#supplierSearchInput') && !event.target.closest('#supplierSearchResults')) {
+                hideSupplierSearchResults();
+            }
+        });
+    }
+
+    // -------------------------------------------------------------- "lấy data" từ dự trù mua hàng
+
+    /**
+     * Dự trù mua hàng chỉ để đối chiếu/gợi ý (optional) — khi CẢ nhà cung cấp và dự trù đều đã chọn,
+     * gợi ý điền sẵn các dòng hàng theo ProcurementPlanDetail của đúng nhà cung cấp đó. Không tự
+     * validate lại số lượng thực nhập so với requestedQuantity — người dùng vẫn có thể sửa mọi giá
+     * trị trước khi lưu.
+     */
+    let procurementFetchAbortController = null;
+
+    async function maybeFetchProcurementPlanDetails() {
+        const supplierId = document.getElementById('supplierId').value;
+        const requisitionId = document.getElementById('requisitionId').value;
+        const hint = document.getElementById('procurementFetchHint');
+
+        if (!supplierId || !requisitionId) {
+            if (hint) hint.style.display = 'none';
+            return;
+        }
+
+        if (procurementFetchAbortController) {
+            procurementFetchAbortController.abort();
+        }
+        procurementFetchAbortController = new AbortController();
+
+        try {
+            const url = basePath + '/procurement-plan-details?procurementId=' + encodeURIComponent(requisitionId)
+                + '&supplierId=' + encodeURIComponent(supplierId);
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: procurementFetchAbortController.signal
+            });
+            if (!response.ok) throw new Error('fetch failed');
+            const items = await response.json();
+
+            if (!items.length) {
+                if (hint) {
+                    hint.textContent = 'Không có sản phẩm nào của nhà cung cấp này trong dự trù đã chọn.';
+                    hint.style.display = 'block';
+                }
+                resetDetailRowsToSingleEmpty();
+                return;
+            }
+
+            if (hint) hint.style.display = 'none';
+            applyProcurementPlanDetails(items);
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            // Chỉ là gợi ý điền sẵn — fetch lỗi thì người dùng vẫn nhập tay bình thường.
+        }
+    }
+
+    /**
+     * Đổi dự trù sang một dự trù không có sản phẩm nào của NCC đang chọn — dữ liệu đã gợi ý điền từ
+     * dự trù trước đó (nếu có) không còn khớp nữa, nên xóa sạch bảng "Hàng hóa nhập" về lại đúng một
+     * dòng trống, thay vì để lại dữ liệu cũ không còn liên quan.
+     */
+    function resetDetailRowsToSingleEmpty() {
+        const table = document.getElementById('detailTable');
+        table.querySelectorAll('tbody.detail-item').forEach(tbody => tbody.remove());
+        addItemRow();
+        calculateSummary();
+    }
+
+    function findEmptyDetailRow() {
+        return Array.from(document.querySelectorAll('#detailTable tbody.detail-item'))
+            .find(row => !row.querySelector('.product-select').value);
+    }
+
+    function fillDetailRowFromProcurementPlan(row, item) {
+        selectProductForRow(row, item.productId, item.productName);
+
+        const quantityInput = row.querySelector('.quantity-input');
+        if (quantityInput && item.requestedQuantity != null) {
+            quantityInput.value = item.requestedQuantity;
+        }
+
+        // unitPrice = estimatedPrice ÷ requestedQuantity, đã gồm VAT — khớp thẳng với "Giá nhập".
+        const priceInput = row.querySelector('.price-input');
+        if (priceInput && item.unitPrice != null) {
+            priceInput.value = item.unitPrice;
+        }
+    }
+
+    function applyProcurementPlanDetails(items) {
+        const existingProductIds = new Set();
+        document.querySelectorAll('#detailTable tbody.detail-item .product-select').forEach(input => {
+            if (input.value) existingProductIds.add(String(input.value));
+        });
+
+        items.forEach(item => {
+            if (existingProductIds.has(String(item.productId))) {
+                return; // đã có sẵn dòng cho sản phẩm này — không ghi đè dữ liệu người dùng đã nhập.
+            }
+
+            const emptyRow = findEmptyDetailRow();
+            if (emptyRow) {
+                fillDetailRowFromProcurementPlan(emptyRow, item);
+            } else {
+                addItemRow();
+                const rows = document.querySelectorAll('#detailTable tbody.detail-item');
+                fillDetailRowFromProcurementPlan(rows[rows.length - 1], item);
+            }
+
+            existingProductIds.add(String(item.productId));
+        });
+
+        calculateSummary();
+    }
+
     function addItemRow() {
         const table = document.getElementById('detailTable');
         const index = table.querySelectorAll('tbody.detail-item').length;
@@ -841,13 +1033,16 @@
             wireImportUnitDisplay(row);
         });
 
-        const supplierSelect = document.getElementById('supplierId');
-        if (supplierSelect) {
-            // Đổi NCC có thể lộ ra giá gợi ý khác cho các dòng chưa có giá — áp lại cho toàn bộ.
-            supplierSelect.addEventListener('change', () => {
-                document.querySelectorAll('#detailTable tbody.detail-item').forEach(row => applySuggestedPrice(row));
-            });
+        wireSupplierSearch();
+
+        const requisitionSelect = document.getElementById('requisitionId');
+        if (requisitionSelect) {
+            requisitionSelect.addEventListener('change', maybeFetchProcurementPlanDetails);
         }
+
+        // Re-render sau lỗi validate có thể đã có sẵn cả NCC lẫn dự trù — gợi ý điền lại (idempotent,
+        // applyProcurementPlanDetails tự bỏ qua sản phẩm đã có dòng).
+        maybeFetchProcurementPlanDetails();
 
         calculateSummary();
     });

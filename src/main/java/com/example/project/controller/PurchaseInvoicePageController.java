@@ -7,6 +7,8 @@ import com.example.project.dto.response.PurchaseInvoiceDetailPageResponse;
 import com.example.project.dto.response.PurchaseInvoiceListItemResponse;
 import com.example.project.dto.response.PurchaseInvoicePrintPageResponse;
 import com.example.project.dto.response.ProductOptionResponse;
+import com.example.project.dto.response.SupplierOptionResponse;
+import com.example.project.dto.response.ProcurementPlanDetailOptionResponse;
 import com.example.project.service.PurchaseinvoiceService;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
@@ -166,8 +168,22 @@ public class PurchaseInvoicePageController {
         return "purchase-invoice/print";
     }
 
+    @GetMapping({
+            "/owner/purchase-invoices/procurement-plan-details",
+            "/pharmacist/purchase-invoices/procurement-plan-details"
+    })
+    @ResponseBody
+    public List<ProcurementPlanDetailOptionResponse> getProcurementPlanDetails(
+            @RequestParam(name = "procurementId") Integer procurementId,
+            @RequestParam(name = "supplierId") Integer supplierId) {
+        return purchaseinvoiceService.getProcurementPlanDetailsForSupplier(procurementId, supplierId);
+    }
+
     private void addCreatePageData(HttpServletRequest request, Model model) {
-        model.addAttribute("suppliers", purchaseinvoiceService.listSuppliers());
+        List<SupplierOptionResponse> suppliers = purchaseinvoiceService.listSupplierOptions();
+        model.addAttribute("suppliers", suppliers);
+        model.addAttribute("supplierNameById", toSupplierNameById(suppliers));
+
         model.addAttribute("procurementPlans", purchaseinvoiceService.listProcurementPlans());
 
         List<ProductOptionResponse> products = purchaseinvoiceService.listProducts();
@@ -190,6 +206,12 @@ public class PurchaseInvoicePageController {
     private Map<Integer, String> toProductNameById(List<ProductOptionResponse> products) {
         return products.stream()
                 .collect(Collectors.toMap(ProductOptionResponse::getProductID, ProductOptionResponse::getName));
+    }
+
+    /** Same re-hydration need as {@link #toProductNameById}, but for the supplier search field. */
+    private Map<Integer, String> toSupplierNameById(List<SupplierOptionResponse> suppliers) {
+        return suppliers.stream()
+                .collect(Collectors.toMap(SupplierOptionResponse::getId, SupplierOptionResponse::getName));
     }
 
     private String resolveBasePath(HttpServletRequest request) {
