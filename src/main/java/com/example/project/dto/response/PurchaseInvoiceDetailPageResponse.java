@@ -23,6 +23,8 @@ public class PurchaseInvoiceDetailPageResponse {
 
     private String employeeName;
 
+    private String procurementCode;
+
     private BigDecimal subtotal;
     private BigDecimal additionCost;
     private BigDecimal discount;

@@ -6,6 +6,7 @@ import com.example.project.dto.request.PurchaseInvoiceDetailCreateRequest;
 import com.example.project.dto.response.PurchaseInvoiceDetailPageResponse;
 import com.example.project.dto.response.PurchaseInvoiceListItemResponse;
 import com.example.project.dto.response.PurchaseInvoicePrintPageResponse;
+import com.example.project.dto.response.ProductOptionResponse;
 import com.example.project.service.PurchaseinvoiceService;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,10 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 public class PurchaseInvoicePageController {
@@ -163,11 +168,28 @@ public class PurchaseInvoicePageController {
 
     private void addCreatePageData(HttpServletRequest request, Model model) {
         model.addAttribute("suppliers", purchaseinvoiceService.listSuppliers());
-        model.addAttribute("products", purchaseinvoiceService.listProducts());
+        model.addAttribute("procurementPlans", purchaseinvoiceService.listProcurementPlans());
+
+        List<ProductOptionResponse> products = purchaseinvoiceService.listProducts();
+        model.addAttribute("products", products);
+        model.addAttribute("productNameById", toProductNameById(products));
+
         model.addAttribute("costPriceBySupplierAndProduct", purchaseinvoiceService.buildCostPriceBySupplierAndProduct());
         model.addAttribute("vatRateByProduct", purchaseinvoiceService.getVatRateByProduct());
         model.addAttribute("importUnitByProduct", purchaseinvoiceService.getImportUnitNameByProduct());
         model.addAttribute("basePath", resolveBasePath(request));
+    }
+
+    /**
+     * Plain (id -> name) lookup for re-hydrating the create form's product-search field on a
+     * validation-error re-render — the search input isn't itself a bound field, so its display text
+     * has to be looked up from the bound productId. A Thymeleaf selection expression
+     * (`products.?[productID == detail.productId]`) crashes here because its predicate can't see
+     * the outer `th:each` variable, so a plain map lookup is used instead.
+     */
+    private Map<Integer, String> toProductNameById(List<ProductOptionResponse> products) {
+        return products.stream()
+                .collect(Collectors.toMap(ProductOptionResponse::getProductID, ProductOptionResponse::getName));
     }
 
     private String resolveBasePath(HttpServletRequest request) {
