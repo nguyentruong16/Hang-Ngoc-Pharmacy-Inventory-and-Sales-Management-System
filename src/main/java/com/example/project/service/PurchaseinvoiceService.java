@@ -39,6 +39,7 @@ public class PurchaseinvoiceService {
     private final ProductunitRepository productunitRepository;
     private final SupplierproductRepository supplierproductRepository;
     private final ProcurementplanRepository procurementplanRepository;
+    private final ProcurementplandetailRepository procurementplandetailRepository;
 
     public PurchaseinvoiceService(PurchaseinvoiceRepository purchaseinvoiceRepository,
                                   PurchasedetailRepository purchasedetailRepository,
@@ -48,7 +49,8 @@ public class PurchaseinvoiceService {
                                   BatchRepository batchRepository,
                                   ProductunitRepository productunitRepository,
                                   SupplierproductRepository supplierproductRepository,
-                                  ProcurementplanRepository procurementplanRepository) {
+                                  ProcurementplanRepository procurementplanRepository,
+                                  ProcurementplandetailRepository procurementplandetailRepository) {
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.purchasedetailRepository = purchasedetailRepository;
         this.supplierRepository = supplierRepository;
@@ -57,6 +59,7 @@ public class PurchaseinvoiceService {
         this.batchRepository = batchRepository;
         this.productunitRepository = productunitRepository;
         this.supplierproductRepository = supplierproductRepository;
+        this.procurementplandetailRepository = procurementplandetailRepository;
         this.procurementplanRepository = procurementplanRepository;
     }
 
@@ -302,8 +305,11 @@ public class PurchaseinvoiceService {
         Account employee = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
-        Procurementplan procurementPlan = procurementplanRepository.findById(request.getRequisitionId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
+        // Optional cross-reference only — null means "not linked to any procurement plan", not an error.
+        Procurementplan procurementPlan = request.getRequisitionId() == null
+                ? null
+                : procurementplanRepository.findById(request.getRequisitionId())
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
 
         // Resolve every line's product + VAT rate up front (from Type, never the client) so totals can
         // be computed before the invoice's first save — see prepareLine().
@@ -635,10 +641,60 @@ public class PurchaseinvoiceService {
                 .toList();
     }
 
-    /** Options for the create form's required "Dự trù mua hàng" selector — every plan, newest first. */
+    /** (id, name) projection of {@link #listSuppliers()} for the create form's supplier search field. */
+    @Transactional(readOnly = true)
+    public List<SupplierOptionResponse> listSupplierOptions() {
+        return listSuppliers().stream()
+                .map(supplier -> new SupplierOptionResponse(supplier.getId(), supplier.getName()))
+                .toList();
+    }
+
+    /** Options for the create form's optional "Dự trù mua hàng" selector — every plan, newest first. */
     @Transactional(readOnly = true)
     public List<Procurementplan> listProcurementPlans() {
         return procurementplanRepository.findAll(Sort.by(Sort.Direction.DESC, "date"));
+    }
+
+    /**
+     * "Lấy data" từ dự trù mua hàng cho phiếu nhập — chỉ trả về những dòng dự trù đã gán đúng nhà
+     * cung cấp đang chọn (BA: liên kết dự trù là optional, chỉ để đối chiếu/gợi ý số lượng-giá, không
+     * bắt buộc và không validate lại số lượng thực nhập so với requestedQuantity).
+     */
+    @Transactional(readOnly = true)
+    public List<ProcurementPlanDetailOptionResponse> getProcurementPlanDetailsForSupplier(Integer procurementId,
+                                                                                          Integer supplierId) {
+        if (procurementId == null || supplierId == null) {
+            return List.of();
+        }
+
+        return procurementplandetailRepository.findByProcurementID_IdWithRelations(procurementId).stream()
+                .filter(detail -> detail.getSupplierID() != null && supplierId.equals(detail.getSupplierID().getId()))
+                .map(this::toProcurementPlanDetailOption)
+                .toList();
+    }
+
+    /**
+     * "estimatedPrice" trên dự trù là TỔNG giá dự kiến cho requestedQuantity, đã bao gồm VAT (theo
+     * xác nhận của BA) — chia đều cho requestedQuantity ra "unitPrice" để gợi ý thẳng vào "Giá nhập"
+     * của phiếu nhập, vốn cũng là giá đã gồm VAT (xem {@link #calculateLineGrossAmount}).
+     */
+    private ProcurementPlanDetailOptionResponse toProcurementPlanDetailOption(Procurementplandetail detail) {
+        Product product = detail.getProductID();
+        Integer quantity = detail.getRequestedQuantity();
+        BigDecimal estimatedPrice = detail.getEstimatedPrice();
+
+        BigDecimal unitPrice = (estimatedPrice != null && quantity != null && quantity > 0)
+                ? estimatedPrice.divide(BigDecimal.valueOf(quantity), 2, RoundingMode.HALF_UP)
+                : null;
+
+        return new ProcurementPlanDetailOptionResponse(
+                product != null ? product.getProductID() : null,
+                product != null ? product.getName() : "",
+                quantity,
+                detail.getUnit(),
+                estimatedPrice,
+                unitPrice
+        );
     }
 
     /** The fixed set of statuses a PurchaseInvoice can be in, for the filter dropdown. */
@@ -661,10 +717,6 @@ public class PurchaseinvoiceService {
     }
 
     private void validateCreateRequest(PurchaseInvoiceCreateRequest request) {
-        if (request.getRequisitionId() == null) {
-            throw new IllegalArgumentException("Vui lòng chọn dự trù mua hàng");
-        }
-
         if (request.getVatInvoiceNumber() == null || request.getVatInvoiceNumber().isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập số hóa đơn GTGT");
         }
