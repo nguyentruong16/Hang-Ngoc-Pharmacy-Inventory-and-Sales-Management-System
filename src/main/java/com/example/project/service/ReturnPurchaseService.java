@@ -464,22 +464,42 @@ public class ReturnPurchaseService {
         if (purchase == null) {
             return;
         }
-        Map<Integer, Long> returnedByDetail = returnedQtyByPurchaseDetail();
-        Map<Integer, Integer> onHandByDetail = onHandByPurchaseDetail();
+        Map<Integer, Long> returnedByDetail = returnedQtyByPurchaseDetail();   // base units (viên)
+        Map<Integer, Integer> onHandByDetail = onHandByPurchaseDetail();       // base units (viên)
+        Map<Integer, Integer> ratioByDetail = importRatioByPurchaseDetail();   // base / đơn vị nhập
 
         List<Purchasedetail> lines = purchasedetailRepository.findByPurchaseIdWithProduct(purchase.getId());
-        int totalReturned = 0;
+        int totalReturnedBase = 0;
         int totalOnHand = 0;
         for (Purchasedetail line : lines) {
-            totalReturned += returnedByDetail.getOrDefault(line.getId(), 0L).intValue();
+            int returnedBase = returnedByDetail.getOrDefault(line.getId(), 0L).intValue();
+            totalReturnedBase += returnedBase;
             totalOnHand += onHandByDetail.getOrDefault(line.getId(), 0);
+
+            // returnQty nằm trên TỪNG Purchasedetail
+            // Lưu theo ĐƠN VỊ NHẬP cho khớp purchasedetail.quantity (returndetail lưu base → chia tỉ lệ lô).
+            int ratio = ratioByDetail.getOrDefault(line.getId(), 1);
+            line.setReturnQty(ratio > 0 ? returnedBase / ratio : returnedBase);
+            purchasedetailRepository.save(line);
         }
 
-        String status = totalReturned == 0 ? PURCHASE_RETURN_NONE
+        String status = totalReturnedBase == 0 ? PURCHASE_RETURN_NONE
                 : (totalOnHand == 0 ? PURCHASE_RETURN_FULL : PURCHASE_RETURN_PARTIAL);
         purchase.setReturnStatus(status);
-        purchase.setReturnQty(totalReturned);
         purchaseinvoiceRepository.save(purchase);
+    }
+
+    /** Tỉ lệ quy đổi (base / đơn vị nhập) cho mỗi dòng nhập — lấy từ BẤT KỲ lô nào của dòng (kể cả đã hết
+     *  tồn), vì {@link #batchesByPurchaseDetail} chỉ giữ lô còn tồn nên dòng đã trả hết sẽ không có lô. */
+    private Map<Integer, Integer> importRatioByPurchaseDetail() {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (Batch batch : batchRepository.findAll()) {
+            if (batch.getPurchaseDetailID() == null) {
+                continue;
+            }
+            map.putIfAbsent(batch.getPurchaseDetailID().getId(), importRatio(batch));
+        }
+        return map;
     }
 
     // ------------------------------------------------------------------ detail

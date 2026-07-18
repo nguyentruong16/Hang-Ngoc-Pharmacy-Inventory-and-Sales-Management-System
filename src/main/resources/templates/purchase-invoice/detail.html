@@ -167,6 +167,13 @@
                         </div>
 
                         <div class="info-row">
+                            <div class="info-label">Dự trù mua hàng</div>
+                            <div th:text="${detail.procurementCode == null || detail.procurementCode.isBlank() ? 'Không có' : detail.procurementCode}">
+                                DT-000001
+                            </div>
+                        </div>
+
+                        <div class="info-row">
                             <div class="info-label">Số hóa đơn GTGT</div>
                             <div th:text="${detail.vatInvoiceNumber}">0000123</div>
                         </div>
@@ -215,6 +222,8 @@
                                 <th>Đơn vị</th>
                                 <th>Giá nhập</th>
                                 <th>Thuế suất (%)</th>
+                                <th>Giá trước thuế</th>
+                                <th>Tiền thuế</th>
                                 <th>Thành tiền</th>
                             </tr>
                             </thead>
@@ -237,6 +246,12 @@
                                     0đ
                                 </td>
                                 <td th:text="${item.vatRate}">5</td>
+                                <td th:text="${#numbers.formatDecimal(item.preTaxAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    0đ
+                                </td>
+                                <td th:text="${#numbers.formatDecimal(item.vatAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    0đ
+                                </td>
                                 <td class="fw-semibold"
                                     th:text="${#numbers.formatDecimal(item.lineTotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     0đ
@@ -246,6 +261,7 @@
                             <tr class="fw-semibold">
                                 <td colspan="5">Tổng cộng</td>
                                 <td th:text="${detail.totalQuantity}">0</td>
+                                <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>

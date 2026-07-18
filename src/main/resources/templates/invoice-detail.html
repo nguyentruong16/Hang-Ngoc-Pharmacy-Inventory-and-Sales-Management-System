@@ -96,6 +96,137 @@
             vertical-align: middle;
         }
 
+        .sell-items-table {
+            margin-bottom: 0;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .sell-items-table thead th {
+            vertical-align: middle;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            padding: 10px 12px;
+            color: #6b7280;
+            background: #f9fafb;
+        }
+
+        .sell-items-table thead th.col-line-total,
+        .sell-items-table thead th.col-total {
+            text-align: right;
+        }
+
+        .sell-items-table .col-product {
+            width: 24%;
+        }
+
+        .sell-items-table .col-unit-select {
+            width: 18%;
+        }
+
+        .sell-items-table .col-qty {
+            width: 72px;
+        }
+
+        .sell-items-table .col-price {
+            width: auto;
+        }
+
+        .sell-items-table .col-line-total {
+            width: 88px;
+            text-align: right;
+        }
+
+        .sell-items-table .col-total {
+            width: 10%;
+            text-align: right;
+        }
+
+        tr.unit-line-row td {
+            border-bottom-color: #f1f5f9;
+        }
+
+        tr.unit-line-row:last-child td {
+            border-bottom-width: 1px;
+        }
+
+        .product-title-code {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .product-title-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.35;
+        }
+
+        .unit-select-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .unit-line-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+            word-break: break-word;
+        }
+
+        .unit-line-tag {
+            font-size: 10px;
+            font-weight: 600;
+            color: #059669;
+            background: #d1fae5;
+            padding: 1px 6px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .unit-line-meta {
+            margin-top: 4px;
+            line-height: 1.35;
+        }
+
+        .unit-qty-cell,
+        .unit-price-cell {
+            font-size: 13px;
+            color: #111827;
+        }
+
+        .unit-total-cell {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+            white-space: nowrap;
+        }
+
+        .product-line-total {
+            font-size: 14px;
+            font-weight: 700;
+            color: #047857;
+            white-space: nowrap;
+        }
+
+        .return-qty-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 4px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: #fef3c7;
+            color: #d97706;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
         @media (max-width: 991.98px) {
             .invoice-page-content {
                 padding-top: 84px !important;
@@ -238,67 +369,58 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle sell-items-table mb-0">
                             <thead>
                             <tr>
-                                <th>Mã hàng</th>
-                                <th>Tên hàng hóa</th>
-                                <th>Số lô</th>
-                                <th>HSD</th>
-                                <th>Đơn vị</th>
-                                <th>SL</th>
-                                <th>Đơn giá</th>
-                                <th>Thuế suất (%)</th>
-                                <th>Tiền trước thuế</th>
-                                <th>Tiền thuế GTGT</th>
-                                <th>Thành tiền</th>
-                                <th>Số lượng trả</th>
+                                <th class="col-product">Sản phẩm</th>
+                                <th class="col-unit-select">Đơn vị bán</th>
+                                <th class="col-qty">SL</th>
+                                <th class="col-price">Giá bán</th>
+                                <th class="col-line-total">Thành tiền</th>
+                                <th class="col-total">Tổng</th>
                             </tr>
                             </thead>
 
                             <tbody>
-                            <tr th:each="item : ${detail.items}">
-                                <td class="fw-semibold text-success" th:text="${item.productCode}">SP001</td>
-                                <td th:text="${item.productName}">Paracetamol 500mg</td>
-                                <td>
-                                    <span class="badge bg-secondary-subtle text-secondary"
-                                          th:text="${item.lotNumber == null || item.lotNumber.isBlank() ? '—' : item.lotNumber}">
-                                        LOT-001
-                                    </span>
-                                </td>
-                                <td th:text="${item.expirationDateDisplay}">01/06/2028</td>
-                                <td th:text="${item.unitName}">Hộp</td>
-                                <td th:text="${item.quantity}">2</td>
-                                <td th:text="${#numbers.formatDecimal(item.unitSellPrice, 0, 'POINT', 0, 'COMMA') + 'đ'}">
-                                    0đ
-                                </td>
-                                <td th:text="${item.vatRate != null ? #numbers.formatDecimal(item.vatRate, 1, 2) : '0'}">5</td>
-                                <td th:text="${item.preTaxAmount != null ? #numbers.formatDecimal(item.preTaxAmount, 0, 'POINT', 0, 'COMMA') + 'đ' : '—'}">
-                                    0đ
-                                </td>
-                                <td th:text="${item.vatAmount != null ? #numbers.formatDecimal(item.vatAmount, 0, 'POINT', 0, 'COMMA') + 'đ' : '—'}">
-                                    0đ
-                                </td>
-                                <td class="fw-semibold"
-                                    th:text="${#numbers.formatDecimal(item.subtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
-                                    0đ
-                                </td>
-                                <td th:text="${item.returnedQty}">0</td>
-                            </tr>
-
-                            <tr class="fw-semibold">
-                                <td colspan="5">Tổng cộng</td>
-                                <td th:text="${detail.totalQuantity}">0</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td class="text-success"
-                                    th:text="${#numbers.formatDecimal(detail.subtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
-                                    0đ
-                                </td>
-                                <td></td>
-                            </tr>
+                            <th:block th:each="group : ${detail.productGroups}">
+                                <tr th:each="line, stat : ${group.lines}" class="unit-line-row">
+                                    <td th:if="${stat.first}" th:rowspan="${#lists.size(group.lines)}">
+                                        <div class="product-title-code" th:text="${group.productCode}">SP001</div>
+                                        <div class="product-title-name" th:text="${group.productName}">Paracetamol 500mg</div>
+                                    </td>
+                                    <td class="unit-select-cell">
+                                        <div class="unit-select-wrap">
+                                            <span class="unit-line-name" th:text="${line.unitName}">Hộp</span>
+                                            <span class="unit-line-tag" th:if="${line.defaultUnit}">Mặc định</span>
+                                        </div>
+                                        <div class="unit-line-meta small text-secondary"
+                                             th:if="${line.batchSummary != null && !line.batchSummary.isBlank()}"
+                                             th:text="${line.batchSummary}">
+                                            Lô: LOT-001 · HSD: 01/06/2028
+                                        </div>
+                                        <span class="return-qty-badge"
+                                              th:if="${line.returnedQty != null && line.returnedQty > 0}"
+                                              th:text="'Đã trả: ' + ${line.returnedQty}">
+                                            Đã trả: 1
+                                        </span>
+                                    </td>
+                                    <td class="unit-qty-cell" th:text="${line.quantity}">2</td>
+                                    <td class="unit-price-cell"
+                                        th:text="${#numbers.formatDecimal(line.unitSellPrice, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                        0đ
+                                    </td>
+                                    <td class="unit-total-cell"
+                                        th:text="${#numbers.formatDecimal(line.lineSubtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                        0đ
+                                    </td>
+                                    <td th:if="${stat.first}" th:rowspan="${#lists.size(group.lines)}" class="col-total">
+                                        <span class="product-line-total"
+                                              th:text="${#numbers.formatDecimal(group.productSubtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                            0đ
+                                        </span>
+                                    </td>
+                                </tr>
+                            </th:block>
                             </tbody>
                         </table>
                     </div>
@@ -320,11 +442,6 @@
                         <div class="d-flex justify-content-between mb-3">
                             <span class="text-secondary">Tổng mặt hàng</span>
                             <strong th:text="${detail.totalItems}">0</strong>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="text-secondary">Tổng số lượng</span>
-                            <strong th:text="${detail.totalQuantity}">0</strong>
                         </div>
 
                         <div class="d-flex justify-content-between mb-3">

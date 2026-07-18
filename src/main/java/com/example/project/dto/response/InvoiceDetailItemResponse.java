@@ -13,7 +13,7 @@ public class InvoiceDetailItemResponse {
     private Integer productId;
     private String productCode;
     private String productName;
-    private String lotNumber;
+    private String batchCode;
     private String expirationDateDisplay;
     private String unitName;
     private Integer quantity;

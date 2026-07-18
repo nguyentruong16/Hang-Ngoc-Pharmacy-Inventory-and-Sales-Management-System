@@ -46,6 +46,10 @@ public class Purchasedetail {
     private String lotNumber;
 
     @NotNull
+    @Column(name = "returnQty", nullable = false)
+    private Integer returnQty;
+
+    @NotNull
     @Column(name = "vatRate", nullable = false, precision = 5, scale = 2)
     private BigDecimal vatRate;
 

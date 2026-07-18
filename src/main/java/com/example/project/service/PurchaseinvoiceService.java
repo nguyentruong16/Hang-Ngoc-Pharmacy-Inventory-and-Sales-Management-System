@@ -9,6 +9,7 @@ import com.example.project.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ public class PurchaseinvoiceService {
     private final BatchRepository batchRepository;
     private final ProductunitRepository productunitRepository;
     private final SupplierproductRepository supplierproductRepository;
+    private final ProcurementplanRepository procurementplanRepository;
 
     public PurchaseinvoiceService(PurchaseinvoiceRepository purchaseinvoiceRepository,
                                   PurchasedetailRepository purchasedetailRepository,
@@ -45,7 +47,8 @@ public class PurchaseinvoiceService {
                                   ProductRepository productRepository,
                                   BatchRepository batchRepository,
                                   ProductunitRepository productunitRepository,
-                                  SupplierproductRepository supplierproductRepository) {
+                                  SupplierproductRepository supplierproductRepository,
+                                  ProcurementplanRepository procurementplanRepository) {
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.purchasedetailRepository = purchasedetailRepository;
         this.supplierRepository = supplierRepository;
@@ -54,6 +57,7 @@ public class PurchaseinvoiceService {
         this.batchRepository = batchRepository;
         this.productunitRepository = productunitRepository;
         this.supplierproductRepository = supplierproductRepository;
+        this.procurementplanRepository = procurementplanRepository;
     }
 
     /**
@@ -169,6 +173,7 @@ public class PurchaseinvoiceService {
         String paymentStatus = resolvePaymentStatus(totalAmount, paid);
 
         Supplier supplier = invoice.getSupplierID();
+        Procurementplan procurementPlan = invoice.getProcurementID();
 
         return new PurchaseInvoiceDetailPageResponse(
                 invoice.getId(),
@@ -179,6 +184,7 @@ public class PurchaseinvoiceService {
                 supplier != null ? supplier.getPhone() : "",
                 supplier != null ? supplier.getEmail() : "",
                 invoice.getEmployeeID() != null ? invoice.getEmployeeID().getName() : "Không rõ",
+                procurementPlan != null ? procurementPlan.getProcurementCode() : "Không có",
                 subtotal,
                 additionCost,
                 discount,
@@ -296,6 +302,9 @@ public class PurchaseinvoiceService {
         Account employee = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
+        Procurementplan procurementPlan = procurementplanRepository.findById(request.getRequisitionId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
+
         // Resolve every line's product + VAT rate up front (from Type, never the client) so totals can
         // be computed before the invoice's first save — see prepareLine().
         List<PreparedPurchaseLine> lines = request.getDetails().stream()
@@ -330,13 +339,13 @@ public class PurchaseinvoiceService {
         invoice.setDate(Instant.now());
         invoice.setSupplierID(supplier);
         invoice.setEmployeeID(employee);
+        invoice.setProcurementID(procurementPlan);
         invoice.setAdditionCost(additionCost);
         invoice.setDiscount(discount);
         invoice.setTotalAmount(totalAmount);
         invoice.setPaid(paid);
         invoice.setStatus(resolveInvoiceStatus(totalAmount, paid));
         invoice.setReturnStatus("NONE");
-        invoice.setReturnQty(0);
         invoice.setNote(request.getNote());
         invoice.setVatInvoiceNumber(trimToNull(request.getVatInvoiceNumber()));
         invoice.setVatInvoiceDate(request.getVatInvoiceDate());
@@ -359,6 +368,7 @@ public class PurchaseinvoiceService {
             detail.setVatRate(line.vatRate());
             detail.setPreTaxAmount(line.preTaxAmount());
             detail.setVatAmount(line.vatAmount());
+            detail.setReturnQty(0);
 
             Purchasedetail savedDetail = purchasedetailRepository.save(detail);
 
@@ -625,6 +635,12 @@ public class PurchaseinvoiceService {
                 .toList();
     }
 
+    /** Options for the create form's required "Dự trù mua hàng" selector — every plan, newest first. */
+    @Transactional(readOnly = true)
+    public List<Procurementplan> listProcurementPlans() {
+        return procurementplanRepository.findAll(Sort.by(Sort.Direction.DESC, "date"));
+    }
+
     /** The fixed set of statuses a PurchaseInvoice can be in, for the filter dropdown. */
     public List<String> listPaymentStatuses() {
         return PurchaseInvoiceStatus.ALL;
@@ -645,6 +661,10 @@ public class PurchaseinvoiceService {
     }
 
     private void validateCreateRequest(PurchaseInvoiceCreateRequest request) {
+        if (request.getRequisitionId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn dự trù mua hàng");
+        }
+
         if (request.getVatInvoiceNumber() == null || request.getVatInvoiceNumber().isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập số hóa đơn GTGT");
         }

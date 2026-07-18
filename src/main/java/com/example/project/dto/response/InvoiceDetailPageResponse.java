@@ -58,4 +58,7 @@ public class InvoiceDetailPageResponse {
     private int totalQuantity;
 
     private List<InvoiceDetailItemResponse> items;
+
+    /** Products grouped with their sale units, matching the POS layout. */
+    private List<InvoiceDetailProductGroupResponse> productGroups;
 }
