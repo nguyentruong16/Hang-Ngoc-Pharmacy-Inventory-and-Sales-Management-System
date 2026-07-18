@@ -20,7 +20,7 @@ public class PurchaseInvoiceCreateRequest {
     @NotNull(message = "Vui lòng chọn nhà cung cấp")
     private Integer supplierId;
 
-    @NotNull(message = "Vui lòng chọn dự trù mua hàng")
+    /** Optional — purely a cross-reference link to a procurement plan, not a required field. */
     private Integer requisitionId;
 
     @DecimalMin(value = "0.0", message = "Chi phí phát sinh không được âm")
