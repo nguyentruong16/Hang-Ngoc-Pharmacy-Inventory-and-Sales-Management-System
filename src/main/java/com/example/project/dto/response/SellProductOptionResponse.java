@@ -23,4 +23,7 @@ public class SellProductOptionResponse {
     private long baseStock;
 
     private List<SellUnitOptionResponse> units;
+
+    /** In-stock batches (soonest-expiry first) for lot selection. */
+    private List<SellBatchOptionResponse> batches;
 }

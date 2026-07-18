@@ -61,18 +61,11 @@
         }
 
         .stock-hint {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 6px;
-            padding: 2px 10px;
-            font-size: 11px;
+            display: block;
+            font-size: 10px;
             font-weight: 500;
-            line-height: 1.6;
-            border-radius: 999px;
-            color: #047857;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
+            line-height: 1.35;
+            color: #9ca3af;
         }
 
         .stock-hint:empty {
@@ -80,9 +73,7 @@
         }
 
         .stock-hint.text-danger {
-            color: #b91c1c !important;
-            background: #fef2f2;
-            border-color: #fecaca;
+            color: #dc2626 !important;
         }
 
         @media (max-width: 991.98px) {
@@ -152,17 +143,54 @@
         .product-search-stock { font-size: 12px; color: #059669; white-space: nowrap; }
 
         .product-title-code {
-            font-size: 12px;
-            color: #6b7280;
+            font-size: 11px;
+            color: #9ca3af;
             font-weight: 600;
             line-height: 1.3;
+            letter-spacing: 0.02em;
         }
 
         .product-title-name {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #111827;
             line-height: 1.35;
+            margin-top: 2px;
+        }
+
+        .product-cell {
+            vertical-align: middle !important;
+            padding-right: 12px !important;
+        }
+
+        .product-cell-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 0;
+            max-width: 220px;
+        }
+
+        .product-batch-line {
+            line-height: 1.35;
+        }
+
+        .product-batch-line:empty {
+            display: none;
+        }
+
+        .product-lot-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px 6px;
+        }
+
+        .lot-text {
+            font-size: 11px;
+            font-weight: 500;
+            color: #059669;
+            word-break: break-word;
         }
 
         .empty-product-state {
@@ -225,7 +253,6 @@
 
         .sell-items-table {
             margin-bottom: 0;
-            table-layout: fixed;
             width: 100%;
         }
 
@@ -234,46 +261,54 @@
             font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
-            padding: 10px 12px;
+            padding: 11px 14px;
+            color: #6b7280;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
         }
 
+        .sell-items-table thead th.col-qty,
+        .sell-items-table thead th.col-price,
         .sell-items-table thead th.col-line-total,
         .sell-items-table thead th.col-total {
             text-align: right;
         }
 
         .sell-items-table tbody td {
+            padding: 11px 14px;
             vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
         }
 
         .sell-items-table .col-product {
-            width: 24%;
+            width: 22%;
+            min-width: 148px;
+            max-width: 240px;
         }
 
         .sell-items-table .col-unit-select {
-            width: 18%;
+            width: 16%;
+            min-width: 108px;
         }
 
         .sell-items-table .col-qty {
             width: 72px;
+            text-align: right;
         }
 
         .sell-items-table .col-price {
-            width: auto;
+            width: 108px;
+            text-align: right;
         }
 
         .sell-items-table .col-line-total {
-            width: 88px;
+            width: 100px;
             text-align: right;
         }
 
         .sell-items-table .col-total {
-            width: 10%;
+            width: 100px;
             text-align: right;
-        }
-
-        .sell-items-table .col-delete {
-            width: 48px;
         }
 
         tr.unit-line-row.active td {
@@ -302,24 +337,14 @@
 
         .unit-line-name {
             font-size: 13px;
-            font-weight: 600;
-            color: #111827;
+            font-weight: 500;
+            color: #374151;
             word-break: break-word;
         }
 
         tr.unit-line-row.active .unit-line-name {
             color: #047857;
-        }
-
-        .unit-line-tag {
-            font-size: 10px;
             font-weight: 600;
-            color: #059669;
-            background: #d1fae5;
-            padding: 1px 6px;
-            border-radius: 999px;
-            white-space: nowrap;
-            flex-shrink: 0;
         }
 
         .unit-qty-cell .form-control,
@@ -340,6 +365,8 @@
             font-weight: 600;
             color: #111827;
             white-space: nowrap;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
         }
 
         tr.unit-line-row.active .unit-total-cell {
@@ -350,6 +377,177 @@
             font-size: 14px;
             font-weight: 700;
             color: #047857;
+            white-space: nowrap;
+        }
+
+        .sell-items-table .col-delete {
+            width: 84px;
+        }
+
+        .entry-actions {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .btn-add-batch-line,
+        .btn-remove-entry {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #6b7280;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: border-color .15s, color .15s, background .15s;
+        }
+
+        .btn-add-batch-line:hover:not(:disabled) {
+            border-color: #d1d5db;
+            color: #059669;
+            background: #f9fafb;
+        }
+
+        .btn-remove-entry {
+            color: #ef4444;
+        }
+
+        .btn-remove-entry:hover {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .btn-add-batch-line:disabled {
+            opacity: .35;
+            cursor: not-allowed;
+        }
+
+        .lot-reset-btn {
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .lot-reset-btn:hover {
+            color: #dc2626;
+        }
+
+        .batch-pick-link {
+            border: none;
+            background: none;
+            padding: 0;
+            font-size: 10px;
+            font-weight: 500;
+            color: #059669;
+            cursor: pointer;
+            line-height: 1.35;
+        }
+
+        .batch-pick-link:hover {
+            text-decoration: underline;
+        }
+
+        .pm-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .45);
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            z-index: 1080;
+            padding: 60px 16px;
+            overflow-y: auto;
+        }
+
+        .pm-modal-backdrop.open { display: flex; }
+
+        .pm-modal {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, .25);
+        }
+
+        .pm-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            border-bottom: 1px solid #eef0f3;
+        }
+
+        .pm-modal-body {
+            padding: 12px 18px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .pm-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 12px 18px;
+            border-top: 1px solid #eef0f3;
+        }
+
+        .pm-modal-close {
+            border: none;
+            background: transparent;
+            font-size: 20px;
+            line-height: 1;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .batch-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .batch-option:hover {
+            background: #f9fafb;
+        }
+
+        .batch-option.selected {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .batch-option-lot {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .batch-option-meta {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .batch-option-stock {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
             white-space: nowrap;
         }
     </style>
@@ -455,7 +653,7 @@
                             </div>
                         </div>
 
-                        <table class="table table-hover align-middle sell-items-table mb-0">
+                        <table class="table align-middle sell-items-table mb-0">
                             <thead>
                             <tr>
                                 <th class="col-product">Sản phẩm</th>
@@ -464,7 +662,7 @@
                                 <th class="col-price">Giá bán</th>
                                 <th class="col-line-total">Thành tiền</th>
                                 <th class="col-total">Tổng</th>
-                                <th class="col-delete text-end">Xóa</th>
+                                <th class="col-delete text-end">Thao tác</th>
                             </tr>
                             </thead>
 
@@ -601,7 +799,7 @@
                         <div class="section-title mb-3">Lưu ý bán hàng</div>
                         <div class="text-secondary small">
                             <p class="mb-2">1. Tick đơn vị cần bán và nhập số lượng ngay bên cạnh — đơn giá tự điền theo đơn vị.</p>
-                            <p class="mb-2">2. Tồn kho được trừ theo lô có hạn dùng gần nhất trước.</p>
+                            <p class="mb-2">2. Bấm <strong>+</strong> ở cuối dòng để thêm cùng sản phẩm ở lô khác; mặc định lô HSD gần nhất.</p>
                             <p class="mb-2">3. Khách lẻ phải thanh toán đủ; chọn khách hàng nếu muốn ghi nợ.</p>
                             <p class="mb-0">4. Bật "thuốc kê đơn" thì phải nhập mã đơn thuốc.</p>
                         </div>
@@ -614,11 +812,238 @@
     </div>
 </main>
 
+<div class="pm-modal-backdrop" id="batchPickerModal">
+    <div class="pm-modal">
+        <div class="pm-modal-header">
+            <div class="fw-semibold fs-6" id="batchPickerTitle">Chọn lô hàng</div>
+            <button type="button" class="pm-modal-close" id="batchPickerCloseBtn">&times;</button>
+        </div>
+        <div class="pm-modal-body" id="batchPickerBody"></div>
+        <div class="pm-modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="batchPickerDefaultBtn">
+                Lô HSD gần nhất
+            </button>
+            <button type="button" class="btn btn-sell-primary btn-sm" id="batchPickerConfirmBtn">OK</button>
+        </div>
+    </div>
+</div>
+
 <script th:inline="javascript">
     const products = /*[[${products}]]*/ [];
     const initialDetails = /*[[${form.details}]]*/ [];
     const productById = {};
     products.forEach(p => productById[p.productId] = p);
+
+    let nextEntryId = 1;
+    /** entryId -> batchId */
+    const selectedBatchByEntry = {};
+    const batchManualByEntry = {};
+    let batchPickerEntryId = null;
+    let batchPickerSelectedId = null;
+
+    function newEntryId() {
+        return String(nextEntryId++);
+    }
+
+    function getDefaultBatch(product) {
+        return product?.batches?.length ? product.batches[0] : null;
+    }
+
+    function getDefaultBatchId(product) {
+        const b = getDefaultBatch(product);
+        return b ? b.batchId : null;
+    }
+
+    function getSelectedBatchId(entryId) {
+        return selectedBatchByEntry[entryId] ?? null;
+    }
+
+    function getBatchById(product, batchId) {
+        if (!product?.batches || batchId == null) return null;
+        return product.batches.find(b => String(b.batchId) === String(batchId)) || null;
+    }
+
+    function getSelectedBatch(product, entryId) {
+        return getBatchById(product, getSelectedBatchId(entryId));
+    }
+
+    function getEntryProductId(entryId) {
+        const rows = findEntryRows(entryId);
+        return rows.length ? rows[0].dataset.productId : null;
+    }
+
+    function getUsedBatchIdsForProduct(productId) {
+        const used = [];
+        getEntryIdsInTable().forEach(entryId => {
+            if (String(getEntryProductId(entryId)) !== String(productId)) return;
+            const batchId = getSelectedBatchId(entryId);
+            if (batchId != null) used.push(String(batchId));
+        });
+        return used;
+    }
+
+    function nextAvailableBatchForProduct(productId) {
+        const product = productById[productId];
+        const used = getUsedBatchIdsForProduct(productId);
+        return (product?.batches || []).find(b => !used.includes(String(b.batchId))) || null;
+    }
+
+    function canAddBatchEntry(productId) {
+        return nextAvailableBatchForProduct(productId) != null;
+    }
+
+    function ensureDefaultBatch(entryId, product) {
+        if (selectedBatchByEntry[entryId] != null) return;
+        const id = getDefaultBatchId(product);
+        if (id != null) selectedBatchByEntry[entryId] = id;
+    }
+
+    function effectiveBaseStockForEntry(product, entryId) {
+        const batch = getSelectedBatch(product, entryId);
+        return batch?.storageQuantity != null ? batch.storageQuantity : (product?.baseStock ?? 0);
+    }
+
+    function batchLineHtml(batch, entryId, manual) {
+        if (!batch) {
+            return `<div class="product-lot-row">
+                <button type="button" class="batch-pick-link" onclick="openBatchPicker('${entryId}')">Chọn lô</button>
+            </div>`;
+        }
+        const code = batch.batchCode || String(batch.batchId);
+        const hsd = batch.expirationDateDisplay || '';
+        const lotText = hsd ? `${code} · HSD ${hsd}` : code;
+        return `
+            <div class="product-lot-row">
+                <span class="lot-text">${escapeHtml(lotText)}</span>
+                ${manual ? `<button type="button" class="lot-reset-btn" title="Về lô HSD gần nhất"
+                    onclick="resetBatchToDefault('${entryId}')"><i class="ti ti-x"></i></button>` : ''}
+                <button type="button" class="batch-pick-link" onclick="openBatchPicker('${entryId}')">Chọn lô</button>
+            </div>`;
+    }
+
+    function renderBatchLine(entryId) {
+        const row = findEntryRows(entryId)[0];
+        if (!row) return;
+        const line = row.querySelector('.product-batch-line');
+        if (!line) return;
+
+        const productId = row.dataset.productId;
+        const product = productById[productId];
+        const batches = product?.batches || [];
+        if (!batches.length) {
+            line.innerHTML = '';
+            return;
+        }
+
+        ensureDefaultBatch(entryId, product);
+        const batch = getSelectedBatch(product, entryId);
+        const defaultId = getDefaultBatchId(product);
+        const manual = batchManualByEntry[entryId]
+            && batch && String(batch.batchId) !== String(defaultId);
+
+        line.innerHTML = batchLineHtml(batch, entryId, manual);
+
+        const addBtn = row.querySelector('.btn-add-batch-line');
+        if (addBtn) {
+            addBtn.disabled = !canAddBatchEntry(productId);
+        }
+    }
+
+    function resetBatchToDefault(entryId) {
+        const productId = getEntryProductId(entryId);
+        const id = getDefaultBatchId(productById[productId]);
+        if (id != null) selectedBatchByEntry[entryId] = id;
+        else delete selectedBatchByEntry[entryId];
+        delete batchManualByEntry[entryId];
+        renderBatchLine(entryId);
+        calculateSummary();
+    }
+
+    function openBatchPicker(entryId) {
+        const productId = getEntryProductId(entryId);
+        const product = productById[productId];
+        if (!product) return;
+
+        batchPickerEntryId = entryId;
+        batchPickerSelectedId = getSelectedBatchId(entryId);
+
+        const body = document.getElementById('batchPickerBody');
+        const baseName = baseUnitName(product);
+        const usedElsewhere = getUsedBatchIdsForProduct(productId)
+            .filter(id => id !== String(batchPickerSelectedId));
+
+        body.innerHTML = (product.batches || [])
+            .filter(b => !usedElsewhere.includes(String(b.batchId)))
+            .map(b => {
+                const selected = String(b.batchId) === String(batchPickerSelectedId);
+                const lot = b.batchCode || String(b.batchId);
+                const hsd = b.expirationDateDisplay ? 'HSD ' + b.expirationDateDisplay : '';
+                return `
+                    <div class="batch-option ${selected ? 'selected' : ''}" data-batch-id="${b.batchId}"
+                         onclick="pickBatchInModal(${b.batchId})">
+                        <div>
+                            <div class="batch-option-lot">${escapeHtml(lot)}</div>
+                            <div class="batch-option-meta">${escapeHtml(hsd)}</div>
+                        </div>
+                        <div class="batch-option-stock">Tồn: ${b.storageQuantity ?? 0}${baseName ? ' ' + escapeHtml(baseName) : ''}</div>
+                    </div>`;
+            }).join('') || '<div class="text-secondary small">Không còn lô khả dụng.</div>';
+
+        document.getElementById('batchPickerTitle').textContent = product.name || 'Chọn lô hàng';
+        document.getElementById('batchPickerModal').classList.add('open');
+    }
+
+    function closeBatchPicker() {
+        document.getElementById('batchPickerModal').classList.remove('open');
+        batchPickerEntryId = null;
+        batchPickerSelectedId = null;
+    }
+
+    function pickBatchInModal(batchId) {
+        batchPickerSelectedId = batchId;
+        document.querySelectorAll('#batchPickerBody .batch-option').forEach(el => {
+            el.classList.toggle('selected', String(el.dataset.batchId) === String(batchId));
+        });
+    }
+
+    function confirmBatchPicker() {
+        if (batchPickerEntryId == null) { closeBatchPicker(); return; }
+        const entryId = batchPickerEntryId;
+        const productId = getEntryProductId(entryId);
+        if (batchPickerSelectedId != null) {
+            selectedBatchByEntry[entryId] = batchPickerSelectedId;
+            const defaultId = getDefaultBatchId(productById[productId]);
+            if (String(batchPickerSelectedId) === String(defaultId)) {
+                delete batchManualByEntry[entryId];
+            } else {
+                batchManualByEntry[entryId] = true;
+            }
+        }
+        renderBatchLine(entryId);
+        getEntryIdsInTable().forEach(eid => renderBatchLine(eid));
+        calculateSummary();
+        closeBatchPicker();
+    }
+
+    function resetBatchPickerToDefault() {
+        if (batchPickerEntryId == null) return;
+        const productId = getEntryProductId(batchPickerEntryId);
+        batchPickerSelectedId = getDefaultBatchId(productById[productId]);
+        pickBatchInModal(batchPickerSelectedId);
+    }
+
+    function addProductEntryBatch(productId) {
+        const product = productById[productId];
+        const nextBatch = nextAvailableBatchForProduct(productId);
+        if (!product || !nextBatch) return;
+
+        const entryId = newEntryId();
+        addItemRow(product, {}, { entryId, batchId: nextBatch.batchId });
+        const firstRow = findEntryRows(entryId)[0];
+        if (firstRow) {
+            firstRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }
 
     function formatMoney(value) {
         return Number(value || 0).toLocaleString('vi-VN') + 'đ';
@@ -674,6 +1099,15 @@
         return product.units.find(u => String(u.id) === String(unitId)) || null;
     }
 
+    function findEntryRows(entryId) {
+        return Array.from(document.querySelectorAll(`#detailRows tr[data-entry-id="${entryId}"]`));
+    }
+
+    function findEntryRow(entryId) {
+        const rows = findEntryRows(entryId);
+        return rows.length ? rows[0] : null;
+    }
+
     function findProductRows(productId) {
         return Array.from(document.querySelectorAll(`#detailRows tr[data-product-id="${productId}"]`));
     }
@@ -681,6 +1115,11 @@
     function findProductRow(productId) {
         const rows = findProductRows(productId);
         return rows.length ? rows[0] : null;
+    }
+
+    function getEntryIdsInTable() {
+        return [...new Set(Array.from(document.querySelectorAll('#detailRows tr[data-entry-id]'))
+            .map(row => row.dataset.entryId))];
     }
 
     function getProductIdsInTable() {
@@ -708,7 +1147,6 @@
                            ${isChecked ? 'checked' : ''}
                            ${!multiUnit ? 'disabled' : ''}>
                     <span class="unit-line-name">${escapeHtml(unit.unitName)}</span>
-                    ${unit.defaultUnit ? '<span class="unit-line-tag">Mặc định</span>' : ''}
                 </div>
             </td>
             <td class="unit-qty-cell">
@@ -782,9 +1220,10 @@
         return productId ? productById[productId] : null;
     }
 
-    function enforceUnitLineLimitsForProduct(productId) {
+    function enforceUnitLineLimitsForEntry(entryId) {
+        const productId = getEntryProductId(entryId);
         const product = productById[productId];
-        const rows = findProductRows(productId);
+        const rows = findEntryRows(entryId);
         if (!product || !rows.length) return;
 
         rows.forEach(row => {
@@ -804,7 +1243,7 @@
                 usedByOthers += numberValue(other.querySelector('.unit-qty-input')) * (Number(other.dataset.ratio) || 1);
             });
 
-            const remainingBase = product.baseStock - usedByOthers;
+            const remainingBase = effectiveBaseStockForEntry(product, entryId) - usedByOthers;
             const maxUnit = Math.max(0, Math.floor(remainingBase / ratio));
             qtyInput.max = maxUnit;
             if (numberValue(qtyInput) > maxUnit) {
@@ -814,15 +1253,16 @@
     }
 
     function enforceAllLimits() {
-        getProductIdsInTable().forEach(productId => enforceUnitLineLimitsForProduct(productId));
+        getEntryIdsInTable().forEach(entryId => enforceUnitLineLimitsForEntry(entryId));
     }
 
-    /** Validates one product against stock for all checked units. */
-    function validateProductRow(productId) {
+    /** Validates one entry (one batch line) against stock. */
+    function validateEntryRow(entryId) {
+        const productId = getEntryProductId(entryId);
         const product = productById[productId];
-        const firstRow = findProductRow(productId);
+        const firstRow = findEntryRow(entryId);
         const hint = firstRow ? firstRow.querySelector('.stock-hint') : null;
-        const rows = findProductRows(productId);
+        const rows = findEntryRows(entryId);
         if (!product || !rows.length) return true;
 
         let usedBase = 0;
@@ -840,7 +1280,10 @@
         });
 
         const baseName = baseUnitName(product);
-        if (usedBase > product.baseStock) {
+        const stockLimit = effectiveBaseStockForEntry(product, entryId);
+        const hasBatch = product.batches && product.batches.length > 0;
+
+        if (usedBase > stockLimit) {
             valid = false;
             rows.forEach(row => {
                 if (row.querySelector('.unit-check-input').checked) {
@@ -849,42 +1292,66 @@
             });
             if (hint) {
                 hint.classList.add('text-danger');
-                hint.innerHTML = '<i class="ti ti-alert-triangle"></i> Vượt tồn kho! Còn '
-                    + product.baseStock + (baseName ? ' ' + escapeHtml(baseName) : '');
+                hint.style.display = 'inline-flex';
+                hint.innerHTML = '<i class="ti ti-alert-triangle"></i> Vượt tồn lô! Còn '
+                    + stockLimit + (baseName ? ' ' + escapeHtml(baseName) : '');
             }
         } else {
             rows.forEach(row => row.querySelector('.unit-qty-input').classList.remove('is-invalid'));
             if (hint) {
                 hint.classList.remove('text-danger');
-                hint.innerHTML = '<i class="ti ti-package"></i> Có thể bán: '
-                    + product.baseStock + (baseName ? ' ' + escapeHtml(baseName) : '');
+                if (hasBatch) {
+                    hint.style.display = 'none';
+                    hint.innerHTML = '';
+                } else {
+                    hint.style.display = 'inline-flex';
+                    hint.innerHTML = '<i class="ti ti-package"></i> Có thể bán: '
+                        + stockLimit + (baseName ? ' ' + escapeHtml(baseName) : '');
+                }
             }
         }
         return valid;
     }
 
-    /** Validates every product and enables/disables the submit button accordingly. */
+    /** Validates total stock across all entries of one product. */
+    function validateProductAggregate(productId) {
+        const product = productById[productId];
+        if (!product) return true;
+
+        let totalBase = 0;
+        findProductRows(productId).forEach(row => {
+            const checkbox = row.querySelector('.unit-check-input');
+            if (!checkbox.checked) return;
+            const ratio = Number(row.dataset.ratio) || 1;
+            totalBase += numberValue(row.querySelector('.unit-qty-input')) * ratio;
+        });
+
+        return totalBase <= product.baseStock;
+    }
+
+    /** Validates every entry and enables/disables the submit button accordingly. */
     function validateStock() {
         let allValid = true;
+        getEntryIdsInTable().forEach(entryId => {
+            if (!validateEntryRow(entryId)) allValid = false;
+        });
         getProductIdsInTable().forEach(productId => {
-            if (!validateProductRow(productId)) {
-                allValid = false;
-            }
+            if (!validateProductAggregate(productId)) allValid = false;
         });
         return allValid;
     }
 
-    function hasActiveUnits(productId) {
-        return findProductRows(productId).some(row => row.querySelector('.unit-check-input').checked);
+    function hasActiveUnits(entryId) {
+        return findEntryRows(entryId).some(row => row.querySelector('.unit-check-input').checked);
     }
 
     function wireUnitLineRow(row) {
         const checkbox = row.querySelector('.unit-check-input');
         const qtyInput = row.querySelector('.unit-qty-input');
-        const productId = row.dataset.productId;
+        const entryId = row.dataset.entryId;
 
         checkbox.addEventListener('change', () => {
-            const rows = findProductRows(productId);
+            const rows = findEntryRows(entryId);
             const checkedCount = rows.filter(r => r.querySelector('.unit-check-input').checked).length;
             if (!checkbox.checked && checkedCount === 0) {
                 setUnitLineActive(row, true);
@@ -903,24 +1370,27 @@
         container.innerHTML = '';
 
         let index = 0;
-        getProductIdsInTable().forEach(productId => {
-            const rows = findProductRows(productId);
-            rows.forEach(row => {
+        getEntryIdsInTable().forEach(entryId => {
+            const batchId = getSelectedBatchId(entryId);
+            findEntryRows(entryId).forEach(row => {
                 const checkbox = row.querySelector('.unit-check-input');
                 if (!checkbox.checked) return;
 
                 const qty = numberValue(row.querySelector('.unit-qty-input'));
                 if (qty < 1) return;
 
+                const productId = row.dataset.productId;
                 const unitId = row.dataset.unitId;
                 const price = unitSellPriceForRow(row);
-
-                [
+                const fields = [
                     ['productId', productId],
                     ['productUnitId', unitId],
                     ['quantity', qty],
                     ['unitSellPrice', price]
-                ].forEach(([field, value]) => {
+                ];
+                if (batchId) fields.push(['batchId', batchId]);
+
+                fields.forEach(([field, value]) => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
                     input.name = `details[${index}].${field}`;
@@ -953,7 +1423,7 @@
 
     /** Enables the submit button only when both stock and prescription checks pass. */
     function updateSubmitState() {
-        const hasRows = getProductIdsInTable().some(productId => hasActiveUnits(productId));
+        const hasRows = getEntryIdsInTable().some(entryId => hasActiveUnits(entryId));
         const ok = hasRows && validateStock() && validatePrescription();
         const submitBtn = document.getElementById('submitInvoiceBtn');
         if (submitBtn) {
@@ -961,14 +1431,21 @@
         }
     }
 
-    /** Adds one product row. `unitPresets` maps unitId -> {checked, quantity, unitSellPrice}. */
-    function addItemRow(product, unitPresets) {
+    /** Adds one product entry. `unitPresets` maps unitId -> {checked, quantity}. */
+    function addItemRow(product, unitPresets, entryOptions) {
         if (!product) return;
+
+        entryOptions = entryOptions || {};
+        const entryId = entryOptions.entryId || newEntryId();
+        if (entryOptions.batchId != null) {
+            selectedBatchByEntry[entryId] = entryOptions.batchId;
+        }
 
         const tbody = document.getElementById('detailRows');
         const presets = unitPresets || {};
         const multiUnit = product.units.length > 1;
         const unitCount = product.units.length;
+        const productId = product.productId;
 
         product.units.forEach((unit, index) => {
             const preset = presets[unit.id] || presets[String(unit.id)] || {};
@@ -979,17 +1456,23 @@
 
             const row = document.createElement('tr');
             row.className = 'unit-line-row' + (isChecked ? ' active' : '');
-            row.dataset.productId = product.productId;
+            row.dataset.entryId = entryId;
+            row.dataset.productId = productId;
             row.dataset.unitId = unit.id;
             row.dataset.ratio = unit.ratio || 1;
 
             let rowHtml = '';
             if (index === 0) {
                 rowHtml += `
-                    <td rowspan="${unitCount}">
-                        <div class="product-title-code">${escapeHtml(product.code)}</div>
-                        <div class="product-title-name">${escapeHtml(product.name)}</div>
-                        <div class="stock-hint"></div>
+                    <td rowspan="${unitCount}" class="product-cell">
+                        <div class="product-cell-inner">
+                            <div>
+                                <div class="product-title-code">${escapeHtml(product.code)}</div>
+                                <div class="product-title-name">${escapeHtml(product.name)}</div>
+                            </div>
+                            <div class="product-batch-line"></div>
+                            <div class="stock-hint"></div>
+                        </div>
                     </td>
                 `;
             }
@@ -1000,9 +1483,16 @@
                         <span class="product-line-total">0đ</span>
                     </td>
                     <td rowspan="${unitCount}" class="text-end col-delete">
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)">
-                            <i class="ti ti-trash"></i>
-                        </button>
+                        <div class="entry-actions">
+                            <button type="button" class="btn-add-batch-line" title="Thêm lô khác"
+                                    onclick="addProductEntryBatch(${productId})">
+                                <i class="ti ti-plus"></i>
+                            </button>
+                            <button type="button" class="btn-remove-entry" title="Xóa dòng"
+                                    onclick="removeItemRow(this)">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 `;
             }
@@ -1012,19 +1502,26 @@
             wireUnitLineRow(row);
         });
 
+        renderBatchLine(entryId);
+        getEntryIdsInTable().forEach(eid => renderBatchLine(eid));
         toggleEmptyState();
         calculateSummary();
     }
 
-    /** Adds the product by id, or bumps the default unit quantity if already on the invoice. */
+    /** Adds the product by id, or bumps qty if same product+batch already on invoice. */
     function addProductById(productId) {
         const product = productById[productId];
         if (!product) return;
 
-        const existingRow = findProductRow(productId);
-        if (existingRow) {
+        const defaultBatchId = getDefaultBatchId(product);
+        const existingEntry = getEntryIdsInTable().find(entryId => {
+            return String(getEntryProductId(entryId)) === String(productId)
+                && String(getSelectedBatchId(entryId)) === String(defaultBatchId);
+        });
+
+        if (existingEntry) {
             const defaultUnitId = getDefaultUnitId(product);
-            const defaultLine = findProductRows(productId)
+            const defaultLine = findEntryRows(existingEntry)
                 .find(row => String(row.dataset.unitId) === String(defaultUnitId));
             if (defaultLine) {
                 if (!defaultLine.querySelector('.unit-check-input').checked) {
@@ -1033,7 +1530,7 @@
                 const qtyInput = defaultLine.querySelector('.unit-qty-input');
                 qtyInput.value = numberValue(qtyInput) + 1;
             }
-            existingRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            findEntryRow(existingEntry)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             calculateSummary();
             return;
         }
@@ -1042,15 +1539,18 @@
     }
 
     function removeItemRow(button) {
-        const productId = button.closest('tr').dataset.productId;
-        findProductRows(productId).forEach(row => row.remove());
+        const entryId = button.closest('tr').dataset.entryId;
+        findEntryRows(entryId).forEach(row => row.remove());
+        delete selectedBatchByEntry[entryId];
+        delete batchManualByEntry[entryId];
+        getEntryIdsInTable().forEach(eid => renderBatchLine(eid));
         syncFormDetails();
         toggleEmptyState();
         calculateSummary();
     }
 
     function toggleEmptyState() {
-        const hasRows = getProductIdsInTable().length > 0;
+        const hasRows = getEntryIdsInTable().length > 0;
         const emptyState = document.getElementById('emptyProductState');
         if (emptyState) {
             emptyState.style.display = hasRows ? 'none' : 'block';
@@ -1135,10 +1635,10 @@
         enforceAllLimits();
 
         let subtotal = 0;
-        getProductIdsInTable().forEach(productId => {
+        getEntryIdsInTable().forEach(entryId => {
             let rowTotal = 0;
-            const firstRow = findProductRow(productId);
-            findProductRows(productId).forEach(row => {
+            const firstRow = findEntryRow(entryId);
+            findEntryRows(entryId).forEach(row => {
                 const checkbox = row.querySelector('.unit-check-input');
                 const totalCell = row.querySelector('.unit-line-total');
                 if (!checkbox.checked) {
@@ -1295,30 +1795,43 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         if (Array.isArray(initialDetails) && initialDetails.length > 0) {
-            const detailsByProduct = {};
+            const entriesByKey = {};
             initialDetails.forEach(detail => {
-                if (!detailsByProduct[detail.productId]) {
-                    detailsByProduct[detail.productId] = [];
+                const key = detail.productId + '-' + (detail.batchId || 'none');
+                if (!entriesByKey[key]) {
+                    entriesByKey[key] = { productId: detail.productId, batchId: detail.batchId, lines: [] };
                 }
-                detailsByProduct[detail.productId].push(detail);
+                entriesByKey[key].lines.push(detail);
             });
 
-            Object.entries(detailsByProduct).forEach(([productId, details]) => {
-                const product = productById[productId];
+            Object.values(entriesByKey).forEach(group => {
+                const product = productById[group.productId];
                 if (!product) return;
 
+                const entryId = newEntryId();
+                if (group.batchId) {
+                    selectedBatchByEntry[entryId] = group.batchId;
+                }
+
                 const unitPresets = {};
-                details.forEach(detail => {
+                group.lines.forEach(detail => {
                     unitPresets[detail.productUnitId] = {
                         checked: true,
                         quantity: detail.quantity
                     };
                 });
-                addItemRow(product, unitPresets);
+                addItemRow(product, unitPresets, { entryId, batchId: group.batchId });
             });
         }
         toggleEmptyState();
         calculateSummary();
+
+        document.getElementById('batchPickerCloseBtn').addEventListener('click', closeBatchPicker);
+        document.getElementById('batchPickerConfirmBtn').addEventListener('click', confirmBatchPicker);
+        document.getElementById('batchPickerDefaultBtn').addEventListener('click', resetBatchPickerToDefault);
+        document.getElementById('batchPickerModal').addEventListener('click', e => {
+            if (e.target.id === 'batchPickerModal') closeBatchPicker();
+        });
 
         const searchInput = document.getElementById('productSearchInput');
         searchInput.addEventListener('input', function (event) {
