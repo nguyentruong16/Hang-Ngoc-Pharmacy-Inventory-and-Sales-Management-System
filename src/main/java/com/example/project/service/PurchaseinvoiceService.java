@@ -358,6 +358,7 @@ public class PurchaseinvoiceService {
             detail.setVatRate(line.vatRate());
             detail.setPreTaxAmount(line.preTaxAmount());
             detail.setVatAmount(line.vatAmount());
+            detail.setReturnQty(0);
 
             Purchasedetail savedDetail = purchasedetailRepository.save(detail);
 
