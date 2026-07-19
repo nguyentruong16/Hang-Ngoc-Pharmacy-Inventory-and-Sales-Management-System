@@ -11,6 +11,7 @@ import java.util.List;
 
 public interface PositionRepository extends JpaRepository<Position, Integer> {
 
+    //của hoàng ko liên quan
     /** Storage-location rows of a single product, for the Product Detail/Edit screens. */
     @Query("""
             SELECT p FROM Position p
@@ -19,6 +20,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
             """)
     List<Position> findByProductId(@Param("productId") Integer productId);
 
+    //tìm kiếm vị trí theo tên vị trí hoặc tên sản phẩm hoặc mã sản phẩm và hỗ trợ phân trang
     @Query("""
             SELECT p FROM Position p
             JOIN p.productID prod
@@ -26,5 +28,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
                    OR LOWER(prod.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(prod.code) LIKE LOWER(CONCAT('%', :keyword, '%')))
             """)
+
+    //page là interface dùng để phân trang: pageable là cách phân trang, keywword là từ khóa tìm kiếm
     Page<Position> findFiltered(@Param("keyword") String keyword, Pageable pageable);
 }

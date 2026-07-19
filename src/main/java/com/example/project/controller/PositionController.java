@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Controller
 public class PositionController {
@@ -30,19 +27,15 @@ public class PositionController {
         this.positionService = positionService;
     }
 
-    @GetMapping("/positions")
-    @ResponseBody
-    public List<PositionResponse> getAll() {
-        return positionService.getAll();
-    }
-
+    // hiện danh sách vị trí
     @GetMapping({
             "/owner/positions",
             "/pharmacist/positions"
     })
+    //required = false nghĩa là ko bắt buộc phải có
     public String positionList(@RequestParam(name = "search", required = false) String search,
-                               @RequestParam(name = "page", defaultValue = "0") int page,
-                               @RequestParam(name = "size", defaultValue = "5") int size,
+                               @RequestParam(name = "page", defaultValue = "0") int page, //trang số mấy, nếu ko có page=0
+                               @RequestParam(name = "size", defaultValue = "5") int size, //số lượng bản ghi mỗi trang
                                HttpServletRequest request,
                                Model model) {
         if (page < 0) {
@@ -53,22 +46,26 @@ public class PositionController {
             size = 5;
         }
 
+        //Pageable là interface mô tả cách phân trang: trang số mấy, số lượng bản ghi mỗi trang, sắp xếp tăng dần theo id
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        //lấy danh sách vị trí
         Page<PositionResponse> positionPage = positionService.list(search, pageable);
+        //lấy thông tin trên url
         String basePath = resolveBasePath(request);
 
-        model.addAttribute("positions", positionPage.getContent());
-        model.addAttribute("totalPositions", positionService.countAll());
+        model.addAttribute("positions", positionPage.getContent()); //gửi đi danh sách vị trí
+        model.addAttribute("totalPositions", positionService.countAll()); // đếm tổng vị trí
         model.addAttribute("search", search);
-        model.addAttribute("currentPage", positionPage.getNumber());
-        model.addAttribute("totalPages", positionPage.getTotalPages());
-        model.addAttribute("pageSize", size);
-        model.addAttribute("totalItems", positionPage.getTotalElements());
+        model.addAttribute("currentPage", positionPage.getNumber()); //trang hiện tại (1,2,3,...)
+        model.addAttribute("totalPages", positionPage.getTotalPages());  //tổng số trang
+        model.addAttribute("pageSize", size); //số lượng bản ghi mỗi trang
+        model.addAttribute("totalItems", positionPage.getTotalElements()); //tổng số vị trí
         model.addAttribute("pageTitle", "Danh sách vị trí");
         model.addAttribute("basePath", basePath);
         return "owner/position-list";
     }
 
+    // hiển thị trang tạo Position: chỉ hiển thị form
     @GetMapping("/owner/positions/create-position")
     public String createPositionForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("positionForm")) {
@@ -78,6 +75,7 @@ public class PositionController {
         return "owner/create-position";
     }
 
+    // tạo vị trí
     @PostMapping("/owner/positions/create-position")
     public String createPosition(@Valid @ModelAttribute("positionForm") PositionCreateRequest form,
                                  BindingResult bindingResult,
@@ -95,6 +93,7 @@ public class PositionController {
         return "redirect:" + basePath;
     }
 
+    // hiển thị trang update Position: chỉ hiển thị form
     @GetMapping("/owner/positions/update-position/{id}")
     public String updatePositionForm(@PathVariable Integer id,
                                      HttpServletRequest request,
@@ -113,6 +112,7 @@ public class PositionController {
         return "owner/update-position";
     }
 
+    // chỉnh sửa vị trí
     @PostMapping("/owner/positions/update-position/{id}")
     public String updatePosition(@PathVariable Integer id,
                                  @Valid @ModelAttribute("positionForm") PositionCreateRequest form,
@@ -132,16 +132,19 @@ public class PositionController {
         return "redirect:" + basePath;
     }
 
+    //form tạo
     private void populateCreateForm(Model model, HttpServletRequest request) {
         populateForm(model, request, "Tạo vị trí");
     }
 
+    // thêm dữ liệu vào form
     private void populateForm(Model model, HttpServletRequest request, String pageTitle) {
         model.addAttribute("products", positionService.listProducts());
         model.addAttribute("pageTitle", pageTitle);
         model.addAttribute("basePath", resolveBasePath(request));
     }
 
+    //lấy path
     private String resolveBasePath(HttpServletRequest request) {
         String uri = request.getRequestURI();
         if (uri.startsWith("/pharmacist/positions")) {
