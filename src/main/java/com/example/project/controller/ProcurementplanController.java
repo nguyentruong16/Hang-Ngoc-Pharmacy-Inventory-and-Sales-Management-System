@@ -48,12 +48,8 @@ public class ProcurementplanController {
         binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
     }
 
-    @GetMapping("/procurement-plans")
-    @ResponseBody
-    public List<ProcurementplanResponse> getAll() {
-        return procurementplanService.getAll();
-    }
-
+    // như position
+    // hiện danh sách dự trù
     @GetMapping("/owner/procurements")
     public String procurementPlanList(@RequestParam(name = "search", required = false) String search,
                                       @RequestParam(name = "fromDate", required = false) String fromDate,
@@ -71,30 +67,34 @@ public class ProcurementplanController {
             size = 5;
         }
 
+        // lấy bản ghi theo từng trang, số lượng bản ghi, sắp xếp ngày giảm dần, id giảm dần
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date")
                 .and(Sort.by(Sort.Direction.DESC, "id")));
+        // lấy danh sách dự trù (tên, ngày, trạng thái, cách phân trang)
         Page<ProcurementplanResponse> procurementPage = procurementplanService.list(
                 search, fromDate, toDate, status, pageable);
+        // lấy url
         String basePath = resolveBasePath(request);
 
-        model.addAttribute("procurementPlans", procurementPage.getContent());
-        model.addAttribute("totalProcurementPlans", procurementplanService.countAll());
-        model.addAttribute("completedProcurementPlans", procurementplanService.countCompleted());
-        model.addAttribute("inProgressProcurementPlans", procurementplanService.countInProgress());
-        model.addAttribute("statuses", procurementplanService.listStatuses());
+        model.addAttribute("procurementPlans", procurementPage.getContent()); //hiện danh sách dự trù
+        model.addAttribute("totalProcurementPlans", procurementplanService.countAll());  // đếm tất cả số phiếu dự trù
+        model.addAttribute("completedProcurementPlans", procurementplanService.countCompleted()); // đếm tất cả số phiếu dự trù đã hoàn thành
+        model.addAttribute("inProgressProcurementPlans", procurementplanService.countInProgress()); // đếm tất cả số phiếu dự trù chưa hoàn thành
+        model.addAttribute("statuses", procurementplanService.listStatuses()); // lấy các trạng thái của phiếu dự trù
         model.addAttribute("search", search);
         model.addAttribute("fromDate", fromDate);
         model.addAttribute("toDate", toDate);
         model.addAttribute("filterStatus", status);
-        model.addAttribute("currentPage", procurementPage.getNumber());
-        model.addAttribute("totalPages", procurementPage.getTotalPages());
-        model.addAttribute("pageSize", size);
-        model.addAttribute("totalItems", procurementPage.getTotalElements());
+        model.addAttribute("currentPage", procurementPage.getNumber()); //trang hiện tại (1,2,3,...)
+        model.addAttribute("totalPages", procurementPage.getTotalPages()); //tổng số trang
+        model.addAttribute("pageSize", size); //số lượng bản ghi mỗi trang
+        model.addAttribute("totalItems", procurementPage.getTotalElements()); //tổng số phiếu dự trù
         model.addAttribute("pageTitle", "Danh sách dự trù mua hàng");
         model.addAttribute("basePath", basePath);
         return "owner/procurement-plan-list";
     }
 
+    // api tìm kiếm sản phẩm và trả về dạng json
     @GetMapping("/owner/procurements/products/search")
     @ResponseBody
     public List<ProcurementProductSearchResponse> searchProducts(@RequestParam(name = "keyword") String keyword,
@@ -102,6 +102,7 @@ public class ProcurementplanController {
         return procurementplanService.searchProducts(keyword, limit);
     }
 
+    // api lấy giá nhập của 1 nhà cung cấp
     @GetMapping("/owner/procurements/supplier-cost-price")
     @ResponseBody
     public SupplierCostPriceResponse getSupplierCostPrice(@RequestParam(name = "supplierId") Integer supplierId,
@@ -110,6 +111,7 @@ public class ProcurementplanController {
         return new SupplierCostPriceResponse(costPrice);
     }
 
+    // api tìm nhà cung cấp kèm giá nhập
     @GetMapping("/owner/procurements/suppliers/search")
     @ResponseBody
     public List<ProcurementSupplierSearchResponse> searchSuppliers(
@@ -118,6 +120,7 @@ public class ProcurementplanController {
         return procurementplanService.searchSuppliersForProduct(productId, keyword);
     }
 
+    // tạo form create
     @GetMapping("/owner/procurements/create-procurementplan")
     public String createProcurementPlanForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("procurementPlanForm")) {
@@ -129,6 +132,7 @@ public class ProcurementplanController {
         return "owner/create-procurementplan";
     }
 
+    // tạo phiếu dự trù
     @PostMapping("/owner/procurements/create-procurementplan")
     public String createProcurementPlan(@Valid @ModelAttribute("procurementPlanForm") ProcurementPlanCreateRequest form,
                                         BindingResult bindingResult,
@@ -155,6 +159,7 @@ public class ProcurementplanController {
         }
     }
 
+    // tạo form update
     @GetMapping("/owner/procurements/update-procurementplan/{id}")
     public String updateProcurementPlanForm(@PathVariable Integer id,
                                             HttpServletRequest request,
@@ -180,6 +185,7 @@ public class ProcurementplanController {
         }
     }
 
+    //sửa phiếu dự trù
     @PostMapping("/owner/procurements/update-procurementplan/{id}")
     public String updateProcurementPlan(@PathVariable Integer id,
                                         @Valid @ModelAttribute("procurementPlanForm") ProcurementPlanCreateRequest form,
@@ -224,6 +230,7 @@ public class ProcurementplanController {
         }
     }
 
+    // in phiếu dự trù
     @GetMapping("/owner/procurements/{id}/print")
     public String printPage(@PathVariable Integer id,
                             HttpServletRequest request,
@@ -234,6 +241,7 @@ public class ProcurementplanController {
         return "owner/procurement-plan-print";
     }
 
+    // xóa phiếu dự trù
     @PostMapping("/owner/procurements/delete/{id}")
     public String deleteProcurementPlan(@PathVariable Integer id,
                                         RedirectAttributes redirectAttributes) {
@@ -246,6 +254,7 @@ public class ProcurementplanController {
         return "redirect:/owner/procurements";
     }
 
+    // Chuẩn bị tất cả dữ liệu cần thiết để hiển thị trang Create hoặc Update Procurement Plan
     private void addFormPageData(HttpServletRequest request, Model model) {
         ProcurementPlanCreateRequest form = (ProcurementPlanCreateRequest) model.getAttribute("procurementPlanForm");
         model.addAttribute("initialProducts", procurementplanService.listProductsForDetails(form));
@@ -254,6 +263,8 @@ public class ProcurementplanController {
         model.addAttribute("basePath", resolveBasePath(request));
     }
 
+    /*Chuyển dữ liệu từ ProcurementPlanCreateRequest sang ProcurementPlanDetailRowView
+       để hiển thị lại các dòng chi tiết trên form Create/Update. */
     private List<ProcurementPlanDetailRowView> buildInitialDetailRows(ProcurementPlanCreateRequest form) {
         if (form == null || form.getDetails() == null) {
             return List.of();
@@ -271,6 +282,7 @@ public class ProcurementplanController {
                 .toList();
     }
 
+    // hiện các nhà cung cấp để lựa chọn
     private List<Map<String, Object>> toSupplierOptions(List<Supplier> suppliers) {
         return suppliers.stream()
                 .map(supplier -> {
@@ -282,6 +294,7 @@ public class ProcurementplanController {
                 .toList();
     }
 
+    //lấy url
     private String resolveBasePath(HttpServletRequest request) {
         return "/owner/procurements";
     }
