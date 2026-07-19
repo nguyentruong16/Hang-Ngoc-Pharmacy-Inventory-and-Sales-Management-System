@@ -19,14 +19,8 @@ public class ProducerService {
         this.producerRepository = producerRepository;
     }
 
-    @Transactional(readOnly = true)
-    public List<ProducerResponse> getAll() {
-        return producerRepository.findAll()
-                .stream()
-                .map(ProducerResponse::from)
-                .toList();
-    }
-
+    //như position
+    // hiện danh sách nhà sản xuất
     @Transactional(readOnly = true)
     public Page<ProducerResponse> list(String search, Pageable pageable) {
         String keyword = search == null ? "" : search.trim();
@@ -35,6 +29,7 @@ public class ProducerService {
                 : producerRepository.findByNameContainingIgnoreCase(keyword, pageable);
         return page.map(ProducerResponse::from);
     }
+
 
     @Transactional(readOnly = true)
     public long countAll() {
@@ -48,6 +43,7 @@ public class ProducerService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà sản xuất"));
     }
 
+    // tạo nhà sản xuất
     @Transactional
     public ProducerResponse create(ProducerCreateRequest request) {
         Producer producer = new Producer();
@@ -55,6 +51,7 @@ public class ProducerService {
         return ProducerResponse.from(producerRepository.save(producer));
     }
 
+    // update nhà sản xuất
     @Transactional
     public ProducerResponse update(Integer id, ProducerCreateRequest request) {
         Producer producer = producerRepository.findById(id)
