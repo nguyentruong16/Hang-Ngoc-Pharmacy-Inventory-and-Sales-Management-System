@@ -42,6 +42,7 @@ public class ProcurementplanController {
         this.procurementplanService = procurementplanService;
     }
 
+    //chuyển dữ liệu từ form (String) sang kiểu dữ liệu Java.
     @InitBinder
     public void initBinder(WebDataBinder binder) {
         binder.registerCustomEditor(BigDecimal.class, new CustomNumberEditor(BigDecimal.class, true));

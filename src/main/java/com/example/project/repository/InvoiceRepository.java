@@ -10,7 +10,6 @@ import java.util.Optional;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
 
-    /** All invoices with the relations the list screen renders, avoiding N+1 lazy loads. */
     @Query("""
        select i
        from Invoice i
@@ -19,7 +18,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
        """)
     List<Invoice> findAllWithRelations();
 
-    /** One invoice with the relations the detail page renders. */
     @Query("""
        select i
        from Invoice i

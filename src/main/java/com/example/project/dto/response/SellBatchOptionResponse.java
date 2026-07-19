@@ -19,6 +19,5 @@ public class SellBatchOptionResponse {
     private LocalDate expirationDate;
     private String expirationDateDisplay;
 
-    /** On-hand stock in the product's base unit. */
     private Integer storageQuantity;
 }

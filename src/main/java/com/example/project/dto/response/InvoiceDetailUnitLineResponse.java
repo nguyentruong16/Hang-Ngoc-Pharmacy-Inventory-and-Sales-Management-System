@@ -17,6 +17,5 @@ public class InvoiceDetailUnitLineResponse {
     private BigDecimal unitSellPrice;
     private BigDecimal lineSubtotal;
     private Integer returnedQty;
-    /** Batch tag like POS: "lot-001 - 30/07/2026". */
     private String batchLabel;
 }

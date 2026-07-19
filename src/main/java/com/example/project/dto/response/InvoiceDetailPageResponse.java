@@ -36,7 +36,6 @@ public class InvoiceDetailPageResponse {
     private String returnStatusDisplay;
     private String returnStatusCssClass;
 
-    /** Return slip id → code (e.g. TH-000001), insertion order preserved. */
     private Map<Integer, String> returnSlips;
 
     private Integer originalInvoiceId;
@@ -59,6 +58,5 @@ public class InvoiceDetailPageResponse {
 
     private List<InvoiceDetailItemResponse> items;
 
-    /** Products grouped with their sale units, matching the POS layout. */
     private List<InvoiceDetailProductGroupResponse> productGroups;
 }

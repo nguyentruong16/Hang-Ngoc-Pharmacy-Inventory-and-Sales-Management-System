@@ -16,7 +16,6 @@ public class InvoiceDetailItemResponse {
     private String batchCode;
     private String lotNumber;
     private String expirationDateDisplay;
-    /** Display tag like POS: "01 - 01/01/2030". */
     private String batchLabel;
     private String unitName;
     private boolean defaultUnit;
