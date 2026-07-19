@@ -20,14 +20,7 @@ public class TypeService {
         this.typeRepository = typeRepository;
     }
 
-    @Transactional(readOnly = true)
-    public List<TypeResponse> getAll() {
-        return typeRepository.findAll()
-                .stream()
-                .map(TypeResponse::from)
-                .toList();
-    }
-
+    //lấy danh sách loại
     @Transactional(readOnly = true)
     public Page<TypeResponse> list(String search, String sortType, Pageable pageable) {
         String keyword = search == null ? "" : search.trim();
@@ -41,6 +34,7 @@ public class TypeService {
         return typeRepository.count();
     }
 
+    //hiện danh sách sortType
     @Transactional(readOnly = true)
     public List<String> listSortTypes() {
         return typeRepository.findDistinctSortTypes()
@@ -50,6 +44,7 @@ public class TypeService {
                 .toList();
     }
 
+    //tìm loại theo id
     @Transactional(readOnly = true)
     public TypeResponse getById(Integer id) {
         return typeRepository.findById(id)
@@ -57,6 +52,7 @@ public class TypeService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy loại hàng"));
     }
 
+    //tạo loại
     @Transactional
     public TypeResponse create(TypeCreateRequest request) {
         Type type = new Type();
@@ -66,6 +62,7 @@ public class TypeService {
         return TypeResponse.from(typeRepository.save(type));
     }
 
+    //sửa loại
     @Transactional
     public TypeResponse update(Integer id, TypeCreateRequest request) {
         Type type = typeRepository.findById(id)
