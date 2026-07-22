@@ -375,6 +375,8 @@ public class ReturnPurchaseService {
         ret.setRefundCredit(TYPE_DEBT.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setTotalRefund(totalRefund);
         ret.setTotalVATRefund(totalVATRefund);
+        // NCC hoàn 100% giá trị nhập gốc.
+        ret.setAppliedRefundRate(new BigDecimal("100.00"));
         ret.setOffsetDebtAmount(BigDecimal.ZERO);
         ret.setReason(request.getReason().trim());
         ret.setNote(trimToNull(request.getNote()));
@@ -397,6 +399,8 @@ public class ReturnPurchaseService {
             detail.setBaseQtyRestored(chunk.qty());
             detail.setUnitSellPrice(chunk.grossUnitPrice());
             detail.setLineRefund(chunk.grossRefund());
+            // NCC hoàn 100% (gross) nên originalLineValue = lineRefund (không áp tỷ lệ như trả khách).
+            detail.setOriginalLineValue(chunk.grossRefund());
             // Tách net/VAT theo hóa đơn nhập gốc: preTax = net, vatAmount = thuế GTGT đầu vào của dòng.
             detail.setVatRate(chunk.vatRate() != null ? chunk.vatRate() : BigDecimal.ZERO);
             detail.setPreTaxAmount(chunk.netAmount());
