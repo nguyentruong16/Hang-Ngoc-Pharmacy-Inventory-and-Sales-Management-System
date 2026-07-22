@@ -15,8 +15,14 @@ public final class PurchaseInvoiceStatus {
     public static final String PARTIAL_DEBT = "Nợ một phần";
     public static final String COMPLETED = "Hoàn thành";
 
+    /**
+     * Chứng từ nội bộ, không phải hóa đơn đã xuất — không chịu ràng buộc luật cấm hủy hóa đơn.
+     * Hủy chỉ dùng để sửa lỗi lập sai; lý do hủy được ghi vào {@code Purchaseinvoice.note}.
+     */
+    public static final String CANCELLED = "Đã hủy";
+
     /** All valid statuses, in workflow order. */
-    public static final List<String> ALL = List.of(DRAFT, DEBT, PARTIAL_DEBT, COMPLETED);
+    public static final List<String> ALL = List.of(DRAFT, DEBT, PARTIAL_DEBT, COMPLETED, CANCELLED);
 
     private PurchaseInvoiceStatus() {
     }

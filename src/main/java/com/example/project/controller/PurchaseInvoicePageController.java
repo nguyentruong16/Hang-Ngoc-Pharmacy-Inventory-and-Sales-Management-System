@@ -152,6 +152,24 @@ public class PurchaseInvoicePageController {
         return "purchase-invoice/detail";
     }
 
+    @PostMapping({
+            "/owner/purchase-invoices/{purchaseId}/cancel",
+            "/pharmacist/purchase-invoices/{purchaseId}/cancel"
+    })
+    public String cancelPurchaseInvoice(@PathVariable Integer purchaseId,
+                                        @RequestParam(name = "reason", required = false) String reason,
+                                        HttpServletRequest request,
+                                        RedirectAttributes redirectAttributes) {
+        try {
+            purchaseinvoiceService.cancelPurchaseInvoice(purchaseId, reason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy phiếu nhập");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+
+        return "redirect:" + resolveBasePath(request) + "/" + purchaseId;
+    }
+
     @GetMapping({
             "/owner/purchase-invoices/{purchaseId}/print",
             "/accountant/purchase-invoices/{purchaseId}/print",
