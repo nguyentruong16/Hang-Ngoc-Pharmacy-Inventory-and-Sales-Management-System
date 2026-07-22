@@ -376,7 +376,7 @@ public class PurchaseinvoiceService {
             detail.setQuantity(item.getQuantity());
             detail.setImportPrice(item.getImportPrice());
             detail.setProductionDate(item.getProductionDate());
-            detail.setExpirationDate(item.getExpirationDate());
+            detail.setExpirationDate(Boolean.TRUE.equals(item.getNoExpirationDate()) ? null : item.getExpirationDate());
             detail.setLotNumber(trimToNull(item.getLotNumber()));
             detail.setVatRate(line.vatRate());
             detail.setPreTaxAmount(line.preTaxAmount());
@@ -813,17 +813,22 @@ public class PurchaseinvoiceService {
                 throw new IllegalArgumentException("Vui lòng nhập số lô cho tất cả sản phẩm");
             }
 
-            if (detail.getExpirationDate() == null) {
-                throw new IllegalArgumentException("Vui lòng nhập hạn sử dụng cho tất cả sản phẩm");
-            }
+            // "Không có hạn sử dụng" phải được xác nhận rõ ràng — bỏ trống expirationDate mà không
+            // tick xác nhận vẫn bị coi là quên điền, không được hiểu ngầm là "không có hạn".
+            if (!Boolean.TRUE.equals(detail.getNoExpirationDate())) {
+                if (detail.getExpirationDate() == null) {
+                    throw new IllegalArgumentException(
+                            "Vui lòng nhập hạn sử dụng cho tất cả sản phẩm, hoặc xác nhận sản phẩm không có hạn sử dụng");
+                }
 
-            if (!detail.getExpirationDate().isAfter(LocalDate.now())) {
-                throw new IllegalArgumentException("Hạn sử dụng phải lớn hơn ngày hiện tại");
-            }
+                if (!detail.getExpirationDate().isAfter(LocalDate.now())) {
+                    throw new IllegalArgumentException("Hạn sử dụng phải lớn hơn ngày hiện tại");
+                }
 
-            if (detail.getProductionDate() != null
-                    && detail.getExpirationDate().isBefore(detail.getProductionDate())) {
-                throw new IllegalArgumentException("Hạn sử dụng không được trước ngày sản xuất");
+                if (detail.getProductionDate() != null
+                        && detail.getExpirationDate().isBefore(detail.getProductionDate())) {
+                    throw new IllegalArgumentException("Hạn sử dụng không được trước ngày sản xuất");
+                }
             }
         }
     }
@@ -868,7 +873,7 @@ public class PurchaseinvoiceService {
                 detail.getProductionDate(),
                 formatLocalDate(detail.getProductionDate()),
                 detail.getExpirationDate(),
-                formatLocalDate(detail.getExpirationDate()),
+                formatExpirationDate(detail.getExpirationDate()),
                 detail.getQuantity(),
                 unitName != null ? unitName : "—",
                 detail.getImportPrice(),
@@ -1032,6 +1037,11 @@ public class PurchaseinvoiceService {
         }
 
         return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    /** Same as {@link #formatLocalDate}, but a null expiration date means "xác nhận không có hạn", not "chưa nhập". */
+    private String formatExpirationDate(LocalDate date) {
+        return date == null ? "Không có hạn dùng" : formatLocalDate(date);
     }
 
     private LocalDate parseDate(String value) {
