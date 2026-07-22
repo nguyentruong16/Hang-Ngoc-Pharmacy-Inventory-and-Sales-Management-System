@@ -72,6 +72,11 @@
             color: #dc2626;
         }
 
+        .status-cancelled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
         .status-column,
         .status-cell {
             width: 110px;
@@ -360,6 +365,9 @@
                                   th:text="${item.paymentStatus}">
                                 Hoàn thành
                             </span>
+                            <i th:if="${!item.validForDeduction && item.paymentStatus != 'Đã hủy'}"
+                               class="ti ti-alert-triangle text-warning ms-1"
+                               title="Quá hạn thanh toán — không còn hợp lệ để tạm khấu trừ GTGT"></i>
                         </td>
                         <td class="text-center action-cell">
                             <a class="btn btn-sm btn-outline-secondary action-btn"

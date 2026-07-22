@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Controller
 public class TypeController {
@@ -30,12 +27,8 @@ public class TypeController {
         this.typeService = typeService;
     }
 
-    @GetMapping("/types")
-    @ResponseBody
-    public List<TypeResponse> getAll() {
-        return typeService.getAll();
-    }
-
+    //như position
+    //hiện danh sách loại
     @GetMapping({
             "/owner/types",
             "/pharmacist/types",
@@ -73,6 +66,7 @@ public class TypeController {
         return "owner/type-list";
     }
 
+    //tạo form create
     @GetMapping("/owner/types/create-type")
     public String createTypeForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("typeForm")) {
@@ -84,6 +78,7 @@ public class TypeController {
         return "owner/create-type";
     }
 
+    //tạo loại
     @PostMapping("/owner/types/create-type")
     public String createType(@Valid @ModelAttribute("typeForm") TypeCreateRequest form,
                              BindingResult bindingResult,
@@ -103,6 +98,7 @@ public class TypeController {
         return "redirect:" + basePath;
     }
 
+    //tạo form update
     @GetMapping("/owner/types/update-type/{id}")
     public String updateTypeForm(@PathVariable Integer id,
                                  HttpServletRequest request,
@@ -124,6 +120,7 @@ public class TypeController {
         return "owner/update-type";
     }
 
+    //sửa loại
     @PostMapping("/owner/types/update-type/{id}")
     public String updateType(@PathVariable Integer id,
                              @Valid @ModelAttribute("typeForm") TypeCreateRequest form,
@@ -145,6 +142,7 @@ public class TypeController {
         return "redirect:" + basePath;
     }
 
+    //lấy url
     private String resolveBasePath(HttpServletRequest request) {
         String uri = request.getRequestURI();
         if (uri.startsWith("/pharmacist/types")) {

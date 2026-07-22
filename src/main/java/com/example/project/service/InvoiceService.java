@@ -10,6 +10,7 @@ import com.example.project.dto.response.InvoiceDetailUnitLineResponse;
 import com.example.project.dto.response.InvoiceLineResponse;
 import com.example.project.dto.response.InvoiceListItemResponse;
 import com.example.project.dto.response.InvoiceResponse;
+import com.example.project.dto.response.SellBatchOptionResponse;
 import com.example.project.dto.response.SellProductOptionResponse;
 import com.example.project.dto.response.SellUnitOptionResponse;
 import com.example.project.entity.Account;
@@ -58,10 +59,8 @@ public class InvoiceService {
     private static final String RETURN_FULL = "FULL";
 
     private static final String INVOICE_TYPE_NORMAL = "Bán hàng";
-    /** Legacy DB value before invoiceType was stored in Vietnamese. */
     private static final String INVOICE_TYPE_NORMAL_LEGACY = "normal";
     private static final String INVOICE_TYPE_ADJUSTMENT = "Điều chỉnh";
-    /** Legacy DB value before invoiceType was stored in Vietnamese. */
     private static final String INVOICE_TYPE_ADJUSTMENT_LEGACY = "adjustment";
     private static final String INVOICE_TYPE_RETURN = "return";
 
@@ -106,14 +105,6 @@ public class InvoiceService {
         this.accountRepository = accountRepository;
         this.financialsettingRepository = financialsettingRepository;
         this.returnRepository = returnRepository;
-    }
-
-    @Transactional(readOnly = true)
-    public List<InvoiceResponse> getAll() {
-        return invoiceRepository.findAll()
-                .stream()
-                .map(InvoiceResponse::from)
-                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -162,7 +153,6 @@ public class InvoiceService {
                 .toList();
     }
 
-    /** Distinct sellers (accounts) that have created at least one invoice, for the list filter. */
     @Transactional(readOnly = true)
     public List<CustomerOptionResponse> listSellers() {
         Map<Integer, String> byId = new LinkedHashMap<>();
@@ -179,7 +169,6 @@ public class InvoiceService {
                 .toList();
     }
 
-    /** Payment-method code → Vietnamese label, in dropdown order. */
     public Map<String, String> paymentTypeLabels() {
         Map<String, String> labels = new LinkedHashMap<>();
         labels.put(PAYMENT_CASH, "Tiền mặt");
@@ -235,11 +224,6 @@ public class InvoiceService {
                 .count();
     }
 
-    /**
-     * Return state per invoice, derived from how much of its lines have been returned:
-     * {@code NONE} (nothing), {@code PARTIAL} (some), {@code FULL} (everything). Replaces the removed
-     * {@code returnStatus} column.
-     */
     private Map<Integer, String> returnStateByInvoice() {
         Map<Integer, String> map = new LinkedHashMap<>();
         for (Object[] row : invoicedetailRepository.sumQuantitiesGroupedByInvoice()) {
@@ -259,9 +243,6 @@ public class InvoiceService {
         return map;
     }
 
-    // ------------------------------------------------------------------ sell (create invoice)
-
-    /** Active products with stock &gt; 0 and at least one active sell unit, for the POS picker. */
     @Transactional(readOnly = true)
     public List<SellProductOptionResponse> listSellableProducts() {
         Map<Integer, Long> stockByProduct = new LinkedHashMap<>();
@@ -299,13 +280,26 @@ public class InvoiceService {
                             Boolean.TRUE.equals(unit.getIsDefault())))
                     .toList();
 
+            List<SellBatchOptionResponse> batchOptions = batchRepository
+                    .findInStockBatchesByProduct(product.getProductID())
+                    .stream()
+                    .map(batch -> new SellBatchOptionResponse(
+                            batch.getId(),
+                            batch.getBatchCode(),
+                            batch.getLotNumber(),
+                            batch.getExpirationDate(),
+                            formatLocalDate(batch.getExpirationDate()),
+                            batch.getStorageQuantity()))
+                    .toList();
+
             options.add(new SellProductOptionResponse(
                     product.getProductID(),
                     product.getCode(),
                     product.getName(),
                     product.getBarcode(),
                     baseStock,
-                    unitOptions));
+                    unitOptions,
+                    batchOptions));
         }
 
         options.sort(Comparator.comparing(SellProductOptionResponse::getName,
@@ -322,16 +316,6 @@ public class InvoiceService {
                 .toList();
     }
 
-    /**
-     * Creates one sale invoice + its lines, deducting stock from the product's batches soonest-expiry
-     * first (FEFO). Each line's stored quantity is in the chosen sell unit; {@code baseQtyDeducted}
-     * is that quantity times the unit ratio. When a line's deduction spans several batches, it is
-     * persisted as one {@code Invoicedetail} row per batch actually touched (each expressed in the
-     * product's base unit, money split proportionally by base quantity) so stock-history reporting can
-     * show every lot involved — see {@link #saveLineAndDeductStock}.
-     *
-     * @return the new invoice id, for the redirect.
-     */
     @Transactional
     public Integer createSaleInvoice(InvoiceCreateRequest request, Integer currentAccountId) {
         if (request.getDetails() == null || request.getDetails().isEmpty()) {
@@ -421,7 +405,6 @@ public class InvoiceService {
         return savedInvoice.getId();
     }
 
-    /** Persists one line, deducts its base quantity across batches (FEFO), returns its priced totals. */
     private SavedLineTotals saveLineAndDeductStock(Invoice invoice, InvoiceDetailCreateRequest item) {
         if (item.getProductId() == null || item.getProductUnitId() == null) {
             throw new IllegalArgumentException("Dòng hàng chưa chọn sản phẩm hoặc đơn vị bán");
@@ -449,7 +432,8 @@ public class InvoiceService {
         BigDecimal preTaxAmount = calculateSaleLinePreTaxAmount(lineSubtotal, vatRate);
         BigDecimal vatAmount = calculateSaleLineVatAmount(preTaxAmount, vatRate);
 
-        List<BatchAllocation> allocations = deductStock(product, baseQty, quantity, ratio, unit.getUnitName());
+        List<BatchAllocation> allocations = deductStock(
+                product, baseQty, quantity, ratio, unit.getUnitName(), item.getBatchId());
 
         if (allocations.size() <= 1) {
             Batch batch = allocations.isEmpty() ? null : allocations.get(0).batch();
@@ -584,8 +568,36 @@ public class InvoiceService {
     /** One batch's contribution to a single line's FEFO deduction. */
     private record BatchAllocation(Batch batch, int baseQtyTaken) {}
 
-    /** Deducts {@code baseQty} from a product's in-stock batches (FEFO); returns every batch touched. */
-    private List<BatchAllocation> deductStock(Product product, int baseQty, int sellQuantity, BigDecimal ratio, String unitName) {
+    /** Deducts {@code baseQty} from a chosen batch or FEFO across batches. */
+    private List<BatchAllocation> deductStock(Product product, int baseQty, int sellQuantity,
+                                                BigDecimal ratio, String unitName, Integer batchId) {
+        if (batchId != null) {
+            Batch batch = batchRepository.findById(batchId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lô hàng"));
+            if (batch.getProductID() == null
+                    || !product.getProductID().equals(batch.getProductID().getProductID())) {
+                throw new IllegalArgumentException("Lô hàng không thuộc sản phẩm đã chọn");
+            }
+            if (!Boolean.TRUE.equals(batch.getStatus())) {
+                throw new IllegalArgumentException("Lô hàng không còn hoạt động");
+            }
+            int inBatch = batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity();
+            if (inBatch < baseQty) {
+                BigDecimal safeRatio = ratio != null && ratio.compareTo(BigDecimal.ZERO) > 0
+                        ? ratio : BigDecimal.ONE;
+                long availableInUnit = BigDecimal.valueOf(inBatch)
+                        .divide(safeRatio, 0, RoundingMode.DOWN).longValue();
+                String unit = unitName != null ? unitName : "";
+                String code = batch.getBatchCode() != null ? batch.getBatchCode() : String.valueOf(batch.getId());
+                throw new IllegalArgumentException("Lô \"" + code + "\" của \"" + product.getName()
+                        + "\" không đủ tồn (còn " + availableInUnit + " " + unit
+                        + ", cần " + sellQuantity + " " + unit + ")");
+            }
+            batch.setStorageQuantity(inBatch - baseQty);
+            batchRepository.save(batch);
+            return List.of(new BatchAllocation(batch, baseQty));
+        }
+
         List<Batch> batches = batchRepository.findInStockBatchesByProduct(product.getProductID());
         long available = batches.stream()
                 .mapToLong(batch -> batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity())
@@ -739,9 +751,8 @@ public class InvoiceService {
 
         List<InvoiceDetailProductGroupResponse> productGroups = buildProductGroups(lines);
 
-        int totalQuantity = productGroups.stream()
-                .flatMap(group -> group.getLines().stream())
-                .map(InvoiceDetailUnitLineResponse::getQuantity)
+        int totalQuantity = items.stream()
+                .map(InvoiceDetailItemResponse::getQuantity)
                 .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue)
                 .sum();
@@ -805,35 +816,23 @@ public class InvoiceService {
             return List.of();
         }
 
-        Map<Integer, LinkedHashMap<SaleUnitKey, AggregatedSaleUnit>> grouped = new LinkedHashMap<>();
+        Map<Integer, List<Invoicedetail>> grouped = new LinkedHashMap<>();
         for (Invoicedetail line : lines) {
             Product product = line.getProductID();
-            Productunit unit = line.getProductUnitID();
-            if (product == null || unit == null) {
+            if (product == null) {
                 continue;
             }
-
-            Integer productId = product.getProductID();
-            SaleUnitKey key = new SaleUnitKey(unit.getId(), line.getUnitSellPrice());
-            LinkedHashMap<SaleUnitKey, AggregatedSaleUnit> units = grouped.computeIfAbsent(
-                    productId, ignored -> new LinkedHashMap<>());
-            AggregatedSaleUnit aggregated = units.computeIfAbsent(key, ignored -> new AggregatedSaleUnit(
-                    this,
-                    product,
-                    unit,
-                    line.getUnitSellPrice() != null ? line.getUnitSellPrice() : BigDecimal.ZERO));
-            aggregated.add(line);
+            grouped.computeIfAbsent(product.getProductID(), ignored -> new ArrayList<>()).add(line);
         }
 
         return grouped.values().stream()
-                .map(units -> {
-                    AggregatedSaleUnit first = units.values().iterator().next();
-                    Product product = first.product();
-                    List<InvoiceDetailUnitLineResponse> unitLines = units.values().stream()
-                            .map(AggregatedSaleUnit::toResponse)
+                .map(productLines -> {
+                    Product product = productLines.get(0).getProductID();
+                    List<InvoiceDetailUnitLineResponse> unitLines = productLines.stream()
+                            .map(this::toUnitLine)
                             .toList();
-                    BigDecimal productSubtotal = unitLines.stream()
-                            .map(InvoiceDetailUnitLineResponse::getLineSubtotal)
+                    BigDecimal productSubtotal = productLines.stream()
+                            .map(Invoicedetail::getSubtotal)
                             .filter(Objects::nonNull)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                     return new InvoiceDetailProductGroupResponse(
@@ -846,17 +845,34 @@ public class InvoiceService {
                 .toList();
     }
 
+    private InvoiceDetailUnitLineResponse toUnitLine(Invoicedetail line) {
+        Productunit unit = line.getProductUnitID();
+        return new InvoiceDetailUnitLineResponse(
+                unit != null ? unit.getId() : null,
+                line.getUnitName(),
+                false,
+                line.getQuantity(),
+                line.getUnitSellPrice(),
+                line.getSubtotal(),
+                line.getReturnedQty() != null ? line.getReturnedQty() : 0,
+                formatBatchLabel(line.getBatchID()));
+    }
+
     private InvoiceDetailItemResponse toDetailItem(Invoicedetail line) {
         Product product = line.getProductID();
         Batch batch = line.getBatchID();
+        Productunit unit = line.getProductUnitID();
 
         return new InvoiceDetailItemResponse(
                 product != null ? product.getProductID() : null,
                 product != null ? product.getCode() : "",
                 product != null ? product.getName() : "Không rõ",
                 batch != null ? batch.getBatchCode() : "",
+                batch != null ? batchLotNumber(batch) : "",
                 batch != null ? formatLocalDate(batch.getExpirationDate()) : "",
+                formatBatchLabel(batch),
                 line.getUnitName(),
+                unit != null && Boolean.TRUE.equals(unit.getIsDefault()),
                 line.getQuantity(),
                 line.getUnitSellPrice(),
                 line.getSubtotal(),
@@ -866,93 +882,27 @@ public class InvoiceService {
                 line.getReturnedQty() != null ? line.getReturnedQty() : 0);
     }
 
-    private String formatBatchSummary(List<BatchSummaryPart> parts) {
-        if (parts == null || parts.isEmpty()) {
-            return null;
+    private String batchLotNumber(Batch batch) {
+        if (batch == null) {
+            return "";
         }
-
-        List<String> codes = parts.stream()
-                .map(BatchSummaryPart::batchCode)
-                .filter(code -> code != null && !code.isBlank())
-                .distinct()
-                .toList();
-        if (codes.isEmpty()) {
-            return null;
+        String lot = batch.getLotNumber();
+        if (lot != null && !lot.isBlank()) {
+            return lot;
         }
-
-        StringBuilder summary = new StringBuilder("Lô: ").append(String.join(", ", codes));
-        if (parts.size() == 1) {
-            String expiration = parts.get(0).expirationDateDisplay();
-            if (expiration != null && !expiration.isBlank()) {
-                summary.append(" · HSD: ").append(expiration);
-            }
-        }
-        return summary.toString();
+        return batch.getBatchCode() != null ? batch.getBatchCode() : "";
     }
 
-    private record SaleUnitKey(Integer productUnitId, BigDecimal unitSellPrice) {
-        private SaleUnitKey {
-            unitSellPrice = unitSellPrice == null
-                    ? BigDecimal.ZERO
-                    : unitSellPrice.stripTrailingZeros();
+    private String formatBatchLabel(Batch batch) {
+        if (batch == null) {
+            return "";
         }
-    }
-
-    private record BatchSummaryPart(String batchCode, String expirationDateDisplay) {}
-
-    private static final class AggregatedSaleUnit {
-        private final Product product;
-        private final Productunit unit;
-        private final BigDecimal unitSellPrice;
-        private String unitName;
-        private int quantity;
-        private BigDecimal lineSubtotal = BigDecimal.ZERO;
-        private int returnedQty;
-        private final List<BatchSummaryPart> batchParts = new ArrayList<>();
-        private final InvoiceService invoiceService;
-
-        private AggregatedSaleUnit(InvoiceService invoiceService, Product product, Productunit unit,
-                                   BigDecimal unitSellPrice) {
-            this.invoiceService = invoiceService;
-            this.product = product;
-            this.unit = unit;
-            this.unitSellPrice = unitSellPrice;
+        String code = batch.getBatchCode() != null ? batch.getBatchCode() : "";
+        String hsd = formatLocalDate(batch.getExpirationDate());
+        if (hsd != null && !hsd.isBlank()) {
+            return code + " - " + hsd;
         }
-
-        private void add(Invoicedetail line) {
-            if (unitName == null || unitName.isBlank()) {
-                unitName = line.getUnitName();
-            }
-            quantity += line.getQuantity() != null ? line.getQuantity() : 0;
-            returnedQty += line.getReturnedQty() != null ? line.getReturnedQty() : 0;
-            lineSubtotal = lineSubtotal.add(line.getSubtotal() != null ? line.getSubtotal() : BigDecimal.ZERO);
-
-            Batch batch = line.getBatchID();
-            if (batch != null) {
-                batchParts.add(new BatchSummaryPart(
-                        batch.getBatchCode(),
-                        invoiceService.formatLocalDate(batch.getExpirationDate())));
-            }
-        }
-
-        private Product product() {
-            return product;
-        }
-
-        private InvoiceDetailUnitLineResponse toResponse() {
-            String displayUnitName = unitName != null && !unitName.isBlank()
-                    ? unitName
-                    : unit.getUnitName();
-            return new InvoiceDetailUnitLineResponse(
-                    unit.getId(),
-                    displayUnitName,
-                    Boolean.TRUE.equals(unit.getIsDefault()),
-                    quantity,
-                    unitSellPrice,
-                    lineSubtotal,
-                    returnedQty,
-                    invoiceService.formatBatchSummary(batchParts));
-        }
+        return code;
     }
 
     private InvoiceListItemResponse toListItem(Invoice invoice, Map<Integer, String> returnStates) {

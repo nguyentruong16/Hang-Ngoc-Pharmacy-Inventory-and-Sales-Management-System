@@ -113,7 +113,10 @@ public class PurchaseinvoiceService {
 
     @Transactional(readOnly = true)
     public PurchaseInvoiceStatsResponse getStats() {
-        List<Purchaseinvoice> invoices = purchaseinvoiceRepository.findAllWithRelations();
+        // Phiếu đã hủy coi như chưa từng tồn tại đối với thống kê tiền/công nợ — xem cancelPurchaseInvoice().
+        List<Purchaseinvoice> invoices = purchaseinvoiceRepository.findAllWithRelations().stream()
+                .filter(invoice -> !PurchaseInvoiceStatus.CANCELLED.equals(invoice.getStatus()))
+                .toList();
 
         LocalDate today = LocalDate.now();
 
@@ -173,7 +176,7 @@ public class PurchaseinvoiceService {
                 .mapToInt(Integer::intValue)
                 .sum();
 
-        String paymentStatus = resolvePaymentStatus(totalAmount, paid);
+        String paymentStatus = resolveDisplayStatus(invoice, totalAmount, paid);
 
         Supplier supplier = invoice.getSupplierID();
         Procurementplan procurementPlan = invoice.getProcurementID();
@@ -199,6 +202,8 @@ public class PurchaseinvoiceService {
                 statusCssClass(paymentStatus),
                 invoice.getVatInvoiceNumber(),
                 formatLocalDate(invoice.getVatInvoiceDate()),
+                formatLocalDate(invoice.getDueDate()),
+                isValidForDeduction(totalAmount, paid, invoice.getDueDate()),
                 invoice.getNote(),
                 details.size(),
                 totalQuantity,
@@ -356,6 +361,8 @@ public class PurchaseinvoiceService {
         invoice.setVatInvoiceNumber(trimToNull(request.getVatInvoiceNumber()));
         invoice.setVatInvoiceDate(request.getVatInvoiceDate());
         invoice.setTotalVATInput(totalVATInput);
+        invoice.setDueDate(request.getDueDate());
+        invoice.setIsValidForDeduction(isValidForDeduction(totalAmount, paid, request.getDueDate()));
 
         Purchaseinvoice savedInvoice = purchaseinvoiceRepository.save(invoice);
 
@@ -369,7 +376,7 @@ public class PurchaseinvoiceService {
             detail.setQuantity(item.getQuantity());
             detail.setImportPrice(item.getImportPrice());
             detail.setProductionDate(item.getProductionDate());
-            detail.setExpirationDate(item.getExpirationDate());
+            detail.setExpirationDate(Boolean.TRUE.equals(item.getNoExpirationDate()) ? null : item.getExpirationDate());
             detail.setLotNumber(trimToNull(item.getLotNumber()));
             detail.setVatRate(line.vatRate());
             detail.setPreTaxAmount(line.preTaxAmount());
@@ -383,6 +390,66 @@ public class PurchaseinvoiceService {
         }
 
         return savedInvoice.getId();
+    }
+
+    /**
+     * Hủy một phiếu nhập đã lập sai — chỉ là sửa dữ liệu nội bộ (KHÔNG phải hóa đơn đã xuất, không
+     * chịu ràng buộc luật cấm hủy hóa đơn), nên được phép đảo ngược hoàn toàn tồn kho đã cộng vào
+     * khi tạo phiếu. Chỉ cho phép hủy nếu CHƯA có bất kỳ lô hàng nào của phiếu bị đụng tới (bán ra,
+     * điều chỉnh kho, trả hàng...) kể từ lúc tạo — nếu không, số liệu tồn kho/công nợ đã lan ra
+     * những giao dịch khác và việc đảo ngược không còn an toàn.
+     */
+    @Transactional
+    public void cancelPurchaseInvoice(Integer purchaseId, String reason) {
+        Purchaseinvoice invoice = purchaseinvoiceRepository.findById(purchaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập"));
+
+        if (PurchaseInvoiceStatus.CANCELLED.equals(invoice.getStatus())) {
+            throw new IllegalArgumentException("Phiếu nhập đã bị hủy trước đó");
+        }
+
+        List<Purchasedetail> details = purchasedetailRepository.findByPurchaseIdWithProduct(purchaseId);
+        List<Integer> detailIds = details.stream()
+                .map(Purchasedetail::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        List<Batch> batches = detailIds.isEmpty() ? List.of() : batchRepository.findByPurchaseDetailIds(detailIds);
+
+        List<String> touchedProductNames = batches.stream()
+                .filter(this::batchWasTouchedSinceImport)
+                .map(batch -> batch.getProductID() != null ? batch.getProductID().getName() : batch.getBatchCode())
+                .toList();
+
+        if (!touchedProductNames.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Không thể hủy phiếu nhập vì lô hàng của các sản phẩm sau đã phát sinh giao dịch "
+                            + "(bán ra, điều chỉnh kho, trả hàng...): " + String.join(", ", touchedProductNames));
+        }
+
+        for (Batch batch : batches) {
+            batch.setStorageQuantity(0);
+            batch.setStatus(false);
+            batch.setNote(appendNote(batch.getNote(), "Đã hủy do phiếu nhập " + formatPurchaseCode(invoice.getId()) + " bị hủy"));
+            batchRepository.save(batch);
+        }
+
+        invoice.setStatus(PurchaseInvoiceStatus.CANCELLED);
+        invoice.setNote(appendNote(invoice.getNote(), "Đã hủy" + (trimToNull(reason) != null ? ": " + reason.trim() : "")));
+
+        purchaseinvoiceRepository.save(invoice);
+    }
+
+    /** True if a batch's current stock no longer matches what was originally imported for it. */
+    private boolean batchWasTouchedSinceImport(Batch batch) {
+        int originalBaseQuantity = calculateBaseQuantity(batch.getImportQtyInUnit(), batch.getImportUnitID());
+        int currentQuantity = batch.getStorageQuantity() == null ? 0 : batch.getStorageQuantity();
+        return currentQuantity != originalBaseQuantity;
+    }
+
+    private String appendNote(String existingNote, String addition) {
+        String base = existingNote == null ? "" : existingNote.trim();
+        return base.isEmpty() ? addition : base + " | " + addition;
     }
 
     /** One purchase line with its product and VAT breakdown resolved, ready to price and persist. */
@@ -746,17 +813,22 @@ public class PurchaseinvoiceService {
                 throw new IllegalArgumentException("Vui lòng nhập số lô cho tất cả sản phẩm");
             }
 
-            if (detail.getExpirationDate() == null) {
-                throw new IllegalArgumentException("Vui lòng nhập hạn sử dụng cho tất cả sản phẩm");
-            }
+            // "Không có hạn sử dụng" phải được xác nhận rõ ràng — bỏ trống expirationDate mà không
+            // tick xác nhận vẫn bị coi là quên điền, không được hiểu ngầm là "không có hạn".
+            if (!Boolean.TRUE.equals(detail.getNoExpirationDate())) {
+                if (detail.getExpirationDate() == null) {
+                    throw new IllegalArgumentException(
+                            "Vui lòng nhập hạn sử dụng cho tất cả sản phẩm, hoặc xác nhận sản phẩm không có hạn sử dụng");
+                }
 
-            if (!detail.getExpirationDate().isAfter(LocalDate.now())) {
-                throw new IllegalArgumentException("Hạn sử dụng phải lớn hơn ngày hiện tại");
-            }
+                if (!detail.getExpirationDate().isAfter(LocalDate.now())) {
+                    throw new IllegalArgumentException("Hạn sử dụng phải lớn hơn ngày hiện tại");
+                }
 
-            if (detail.getProductionDate() != null
-                    && detail.getExpirationDate().isBefore(detail.getProductionDate())) {
-                throw new IllegalArgumentException("Hạn sử dụng không được trước ngày sản xuất");
+                if (detail.getProductionDate() != null
+                        && detail.getExpirationDate().isBefore(detail.getProductionDate())) {
+                    throw new IllegalArgumentException("Hạn sử dụng không được trước ngày sản xuất");
+                }
             }
         }
     }
@@ -770,7 +842,7 @@ public class PurchaseinvoiceService {
             debtAmount = BigDecimal.ZERO;
         }
 
-        String paymentStatus = resolvePaymentStatus(totalAmount, paid);
+        String paymentStatus = resolveDisplayStatus(invoice, totalAmount, paid);
 
         return new PurchaseInvoiceListItemResponse(
                 invoice.getId(),
@@ -784,7 +856,8 @@ public class PurchaseinvoiceService {
                 paid,
                 debtAmount,
                 paymentStatus,
-                statusCssClass(paymentStatus)
+                statusCssClass(paymentStatus),
+                isValidForDeduction(totalAmount, paid, invoice.getDueDate())
         );
     }
 
@@ -800,7 +873,7 @@ public class PurchaseinvoiceService {
                 detail.getProductionDate(),
                 formatLocalDate(detail.getProductionDate()),
                 detail.getExpirationDate(),
-                formatLocalDate(detail.getExpirationDate()),
+                formatExpirationDate(detail.getExpirationDate()),
                 detail.getQuantity(),
                 unitName != null ? unitName : "—",
                 detail.getImportPrice(),
@@ -881,6 +954,40 @@ public class PurchaseinvoiceService {
     }
 
     /**
+     * Trạng thái hiển thị cho danh sách/chi tiết: phiếu đã hủy luôn hiển thị "Đã hủy" — không
+     * suy lại từ paid/totalAmount như các trạng thái thanh toán khác (giá trị đó vẫn còn nguyên
+     * trên phiếu để lưu vết, nhưng không còn ý nghĩa công nợ thật một khi đã hủy).
+     */
+    private String resolveDisplayStatus(Purchaseinvoice invoice, BigDecimal totalAmount, BigDecimal paid) {
+        if (PurchaseInvoiceStatus.CANCELLED.equals(invoice.getStatus())) {
+            return PurchaseInvoiceStatus.CANCELLED;
+        }
+        return resolveInvoiceStatus(totalAmount, paid);
+    }
+
+    private static final BigDecimal VAT_DEDUCTION_THRESHOLD = BigDecimal.valueOf(5_000_000);
+
+    /**
+     * Điều 26 Nghị định 181/2025/NĐ-CP: hóa đơn nhập ≥5 triệu đồng chưa thanh toán vẫn được TẠM
+     * khấu trừ GTGT đầu vào cho tới hạn thanh toán ghi trên thỏa thuận với NCC ({@code dueDate}).
+     * Quá hạn đó mà vẫn chưa thanh toán đủ (không có chứng từ thanh toán không dùng tiền mặt) thì
+     * không còn hợp lệ để khấu trừ nữa — phải kê khai điều chỉnh giảm. Tính lại mỗi lần đọc (không
+     * ghi ngược vào DB) để luôn phản ánh đúng thời điểm hiện tại, kể cả khi không có thao tác ghi
+     * nào xảy ra giữa lúc tạo phiếu và lúc hạn thanh toán trôi qua.
+     */
+    private boolean isValidForDeduction(BigDecimal totalAmount, BigDecimal paid, LocalDate dueDate) {
+        if (safe(totalAmount).compareTo(VAT_DEDUCTION_THRESHOLD) < 0) {
+            return true;
+        }
+
+        if (safe(paid).compareTo(safe(totalAmount)) >= 0) {
+            return true;
+        }
+
+        return dueDate == null || !dueDate.isBefore(LocalDate.now());
+    }
+
+    /**
      * Computes the {@code Purchaseinvoice.status} value from the paid-vs-total thresholds — used
      * both to persist the status on creation and to render it (as {@code paymentStatus}) on the
      * list/detail screens, so the two never drift apart.
@@ -901,6 +1008,7 @@ public class PurchaseinvoiceService {
         return switch (paymentStatus) {
             case PurchaseInvoiceStatus.COMPLETED -> "status-completed";
             case PurchaseInvoiceStatus.PARTIAL_DEBT -> "status-partial";
+            case PurchaseInvoiceStatus.CANCELLED -> "status-cancelled";
             default -> "status-pending";
         };
     }
@@ -929,6 +1037,11 @@ public class PurchaseinvoiceService {
         }
 
         return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    /** Same as {@link #formatLocalDate}, but a null expiration date means "xác nhận không có hạn", not "chưa nhập". */
+    private String formatExpirationDate(LocalDate date) {
+        return date == null ? "Không có hạn dùng" : formatLocalDate(date);
     }
 
     private LocalDate parseDate(String value) {

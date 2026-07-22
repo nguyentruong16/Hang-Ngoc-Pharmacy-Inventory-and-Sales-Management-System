@@ -324,6 +324,9 @@ public class ReturnService {
         ret.setRefundCredit(TYPE_DEBT.equals(returnType) ? totalRefund : BigDecimal.ZERO);
         ret.setTotalRefund(totalRefund);
         ret.setTotalVATRefund(totalVATRefund);
+        // V1: luôn hoàn 100% (chưa áp returnProductOnInvoiceValueRate). Lưu tỷ lệ thực đã áp
+        // để báo cáo/kế toán biết chính xác % của từng phiếu — khi bật chính sách <100% chỉ đổi giá trị này.
+        ret.setAppliedRefundRate(new BigDecimal("100.00"));
         ret.setOffsetDebtAmount(BigDecimal.ZERO);
         ret.setReason(request.getReason().trim());
         ret.setNote(trimToNull(request.getNote()));
@@ -347,6 +350,10 @@ public class ReturnService {
             detail.setBaseQtyRestored(line.baseQtyRestored());
             detail.setUnitSellPrice(line.unitSellPrice());
             detail.setLineRefund(line.lineRefund());
+            // originalLineValue = giá trị GỐC 100% của dòng trả (trước khi áp tỷ lệ hoàn).
+            // V1 hoàn 100% nên = lineRefund; khi bật returnProductOnInvoiceValueRate (<100%)
+            // thì lineRefund = originalLineValue × rate còn field này giữ mốc gốc để đối chiếu.
+            detail.setOriginalLineValue(line.lineRefund());
             detail.setVatRate(line.vatRate());
             detail.setPreTaxAmount(line.preTaxAmount());
             detail.setVatAmount(line.vatAmount());

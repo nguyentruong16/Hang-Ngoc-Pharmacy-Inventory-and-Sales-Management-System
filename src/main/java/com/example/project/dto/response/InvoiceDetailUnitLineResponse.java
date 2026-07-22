@@ -17,6 +17,5 @@ public class InvoiceDetailUnitLineResponse {
     private BigDecimal unitSellPrice;
     private BigDecimal lineSubtotal;
     private Integer returnedQty;
-    /** Optional batch / expiry summary when stock was taken from one or more lots. */
-    private String batchSummary;
+    private String batchLabel;
 }

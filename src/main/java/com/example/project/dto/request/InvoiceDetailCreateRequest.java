@@ -24,4 +24,7 @@ public class InvoiceDetailCreateRequest {
 
     /** Optional override of the unit's sell price; falls back to the unit's configured price. */
     private BigDecimal unitSellPrice;
+
+    /** Optional batch to deduct from; null means FEFO across all batches. */
+    private Integer batchId;
 }

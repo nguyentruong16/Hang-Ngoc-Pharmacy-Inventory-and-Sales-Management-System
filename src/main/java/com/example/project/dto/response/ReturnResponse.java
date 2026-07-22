@@ -33,6 +33,7 @@ public class ReturnResponse {
     private Instant approvedAt;
     private String note;
     private BigDecimal totalVATRefund;
+    private BigDecimal appliedRefundRate;
 
     public static ReturnResponse from(Return returnEntity) {
         return new ReturnResponse(
@@ -55,7 +56,8 @@ public class ReturnResponse {
                 returnEntity.getStatus(),
                 returnEntity.getApprovedAt(),
                 returnEntity.getNote(),
-                returnEntity.getTotalVATRefund()
+                returnEntity.getTotalVATRefund(),
+                returnEntity.getAppliedRefundRate()
         );
     }
 }

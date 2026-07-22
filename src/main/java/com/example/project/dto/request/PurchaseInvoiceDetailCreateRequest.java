@@ -28,6 +28,13 @@ public class PurchaseInvoiceDetailCreateRequest {
 
     private LocalDate expirationDate;
 
+    /**
+     * Xác nhận rõ ràng "sản phẩm này không có hạn sử dụng" — không phải cứ để trống
+     * {@code expirationDate} là được coi là không có hạn; phải tick xác nhận thì server mới bỏ qua
+     * yêu cầu bắt buộc, tránh trường hợp quên điền bị hiểu nhầm thành "không có hạn".
+     */
+    private Boolean noExpirationDate;
+
     private String lotNumber;
 
     /**

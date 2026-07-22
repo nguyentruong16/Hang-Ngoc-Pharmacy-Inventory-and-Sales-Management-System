@@ -101,4 +101,7 @@ public class Invoice {
     @Column(name = "totalVATOutput", precision = 15, scale = 2)
     private BigDecimal totalVATOutput;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rootInvoiceID")
+    private Invoice rootInvoiceID;
 }

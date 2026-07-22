@@ -75,14 +75,8 @@ public class ProcurementplanService {
         this.batchRepository = batchRepository;
     }
 
-    @Transactional(readOnly = true)
-    public List<ProcurementplanResponse> getAll() {
-        return procurementplanRepository.findAll()
-                .stream()
-                .map(ProcurementplanResponse::from)
-                .toList();
-    }
 
+    // lấy danh sách dự trù
     @Transactional(readOnly = true)
     public Page<ProcurementplanResponse> list(String search,
                                               String fromDate,
@@ -105,8 +99,9 @@ public class ProcurementplanService {
                 .map(ProcurementplanResponse::from)
                 .toList();
 
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        // phân trang
+        int start = (int) pageable.getOffset(); //số lượng phần tử bỏ qua
+        int end = Math.min(start + pageable.getPageSize(), filtered.size()); // lấy các phần tử tiếp theo
 
         List<ProcurementplanResponse> content = start >= filtered.size()
                 ? List.of()
@@ -115,11 +110,13 @@ public class ProcurementplanService {
         return new PageImpl<>(content, pageable, filtered.size());
     }
 
+    // lấy các trạng thái của phiếu dự trù
     @Transactional(readOnly = true)
     public List<String> listStatuses() {
         return List.copyOf(ALLOWED_STATUSES);
     }
 
+    // kiểm tra xem phiếu dự trù đã hoàn thành chưa
     @Transactional(readOnly = true)
     public boolean isCompleted(Integer id) {
         return procurementplanRepository.findById(id)
@@ -127,21 +124,25 @@ public class ProcurementplanService {
                 .orElse(false);
     }
 
+    // đếm tất cả số phiếu dự trù
     @Transactional(readOnly = true)
     public long countAll() {
         return procurementplanRepository.count();
     }
 
+    // đếm tất cả số phiếu dự trù đã hoàn thành
     @Transactional(readOnly = true)
     public long countCompleted() {
         return procurementplanRepository.countByStatus(COMPLETED_STATUS);
     }
 
+    // đếm tất cả số phiếu dự trù chưa hoàn thành
     @Transactional(readOnly = true)
     public long countInProgress() {
         return procurementplanRepository.countByStatus(DEFAULT_STATUS);
     }
 
+    // lấy phiếu dự trù theo id
     @Transactional(readOnly = true)
     public ProcurementplanResponse getById(Integer id) {
         return procurementplanRepository.findById(id)
@@ -149,6 +150,8 @@ public class ProcurementplanService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dự trù mua hàng"));
     }
 
+    /* Đọc dữ liệu của một Procurement Plan từ database và chuyển thành
+     ProcurementPlanCreateRequest để hiển thị lên form Update */
     @Transactional(readOnly = true)
     public ProcurementPlanCreateRequest buildUpdateForm(Integer id) {
         Procurementplan plan = procurementplanRepository.findById(id)
@@ -174,6 +177,7 @@ public class ProcurementplanService {
         return form;
     }
 
+    // Lấy toàn bộ thông tin của một Procurement Plan để in
     @Transactional(readOnly = true)
     public ProcurementPlanPrintPageResponse getPrintPage(Integer id) {
         Procurementplan plan = procurementplanRepository.findById(id)
@@ -201,6 +205,8 @@ public class ProcurementplanService {
         );
     }
 
+    /* Chuyển một Procurementplandetail (Entity) thành ProcurementPlanPrintLineResponse (DTO)
+       để hiển thị trên trang in. */
     private ProcurementPlanPrintLineResponse toPrintLine(Procurementplandetail detail) {
         Product product = detail.getProductID();
         Supplier supplier = detail.getSupplierID();
@@ -224,9 +230,14 @@ public class ProcurementplanService {
         );
     }
 
+    // thanh tìm sản phẩm (hiện tồn theo đơn vị nhỏ nhất, hiện đơn vị nhập từ nhà cung cấp )
+    //buildStockByProduct: số lượng tồn
+    //loadMainUnitByProduct: đơn vị nhập từ nhà cung cấp
+    //loadBaseUnitByProduct: đơn vị nhỏ nhất
     @Transactional(readOnly = true)
     public List<ProcurementProductSearchResponse> searchProducts(String keyword, int limit) {
         String normalizedKeyword = normalize(keyword);
+        // nếu tìm kiếm rỗng ko tìm nữa (tức là ko hiển thị j cả)
         if (normalizedKeyword.isBlank()) {
             return List.of();
         }
@@ -246,6 +257,8 @@ public class ProcurementplanService {
                 .toList();
     }
 
+    /* Lấy thông tin đầy đủ của các sản phẩm đã có trong form
+       và chuyển chúng thành ProcurementProductSearchResponse để hiển thị trên giao diện. */
     @Transactional(readOnly = true)
     public List<ProcurementProductSearchResponse> listProductsForDetails(ProcurementPlanCreateRequest form) {
         if (form == null || form.getDetails() == null) {
@@ -273,6 +286,8 @@ public class ProcurementplanService {
                 .toList();
     }
 
+
+    // lấy đơn vị (nhập từ nhà cung cấp) của sản phẩm
     private Map<Integer, Productunit> loadMainUnitByProduct() {
         Map<Integer, Productunit> mainUnitByProduct = new HashMap<>();
         for (Productunit unit : productunitRepository.findAllWithProduct()) {
@@ -289,6 +304,7 @@ public class ProcurementplanService {
         return mainUnitByProduct;
     }
 
+    // lấy đơn vị nhỏ nhất của sản phẩm
     private Map<Integer, Productunit> loadBaseUnitByProduct() {
         Map<Integer, Productunit> baseUnitByProduct = new HashMap<>();
         for (Productunit unit : productunitRepository.findAllWithProduct()) {
@@ -304,6 +320,7 @@ public class ProcurementplanService {
         return baseUnitByProduct;
     }
 
+    // kiểm tra xem nhà cung cấp có ưu tiên cho sản phẩm này ko
     private boolean isPreferredUnit(Productunit candidate, Productunit current) {
         if (Boolean.TRUE.equals(candidate.getIsDefault()) && !Boolean.TRUE.equals(current.getIsDefault())) {
             return true;
@@ -311,6 +328,7 @@ public class ProcurementplanService {
         return Boolean.TRUE.equals(candidate.getIsBaseUnit()) && !Boolean.TRUE.equals(current.getIsDefault());
     }
 
+    // tìm kiếm số lượng và đơn vị tồn, mặc định, nhỏ nhất của sản phẩm
     private ProcurementProductSearchResponse toSearchResponse(Product product,
                                                               Map<Integer, Long> stockByProduct,
                                                               Map<Integer, Productunit> mainUnitByProduct,
@@ -332,16 +350,20 @@ public class ProcurementplanService {
         );
     }
 
+    /*kiểm tra xem một sản phẩm (Product) có khớp với từ khóa tìm kiếm hay không.
+      Nếu mã sản phẩm, tên sản phẩm hoặc mã vạch chứa từ khóa thì trả về true.*/
     private boolean matchesKeyword(Product product, String normalizedKeyword) {
         return containsNormalized(product.getCode(), normalizedKeyword)
                 || containsNormalized(product.getName(), normalizedKeyword)
                 || containsNormalized(product.getBarcode(), normalizedKeyword);
     }
 
+    // kiểm tra xem một chuỗi có chứa từ khóa sau khi đã được chuẩn hóa (normalize) hay không.
     private boolean containsNormalized(String value, String normalizedKeyword) {
         return value != null && normalize(value).contains(normalizedKeyword);
     }
 
+    // tìm kiếm không phân biệt dấu, chữ hoa/thường và khoảng trắng.
     private String normalize(String value) {
         if (value == null) {
             return "";
@@ -352,6 +374,7 @@ public class ProcurementplanService {
         return normalized.toLowerCase(Locale.ROOT).trim();
     }
 
+    // lấy giá nhập cảu 1 nhà cung cấp
     @Transactional(readOnly = true)
     public BigDecimal getSupplierCostPrice(Integer supplierId, Integer productId) {
         if (supplierId == null || productId == null) {
@@ -364,10 +387,12 @@ public class ProcurementplanService {
                 .orElse(null);
     }
 
+    // kiểm tra đơn vị sản phẩm còn active ko
     private boolean isActiveSupplierProduct(Supplierproduct supplierProduct) {
         return supplierProduct.getIsActive() == null || Boolean.TRUE.equals(supplierProduct.getIsActive());
     }
 
+    // danh sách nhà cung cấp
     @Transactional(readOnly = true)
     public List<Supplier> listSuppliers() {
         return supplierRepository.findAll()
@@ -376,6 +401,8 @@ public class ProcurementplanService {
                 .toList();
     }
 
+    /* tìm kiếm danh sách nhà cung cấp (Supplier)
+    và nếu đã biết sản phẩm (productId) thì trả kèm giá nhập của sản phẩm đó từ từng nhà cung cấp. */
     @Transactional(readOnly = true)
     public List<ProcurementSupplierSearchResponse> searchSuppliersForProduct(Integer productId, String keyword) {
         String normalizedKeyword = normalize(keyword);
@@ -393,6 +420,7 @@ public class ProcurementplanService {
                 .toList();
     }
 
+    // số lượng tồn của sản phẩm
     @Transactional(readOnly = true)
     public Map<Integer, Long> buildStockByProduct() {
         Map<Integer, Long> stockByProduct = new HashMap<>();
@@ -402,6 +430,7 @@ public class ProcurementplanService {
         return stockByProduct;
     }
 
+    // tạo phếu dự trù
     @Transactional
     public Integer create(ProcurementPlanCreateRequest request) {
         List<ProcurementPlanDetailCreateRequest> details = normalizeDetails(request);
@@ -421,6 +450,7 @@ public class ProcurementplanService {
         return savedPlan.getId();
     }
 
+    // sửa phiếu dự trù
     @Transactional
     public void update(Integer id, ProcurementPlanCreateRequest request) {
         Procurementplan plan = procurementplanRepository.findById(id)
@@ -439,6 +469,7 @@ public class ProcurementplanService {
         saveDetails(plan, details);
     }
 
+    // xóa phiếu dự trù
     @Transactional
     public void delete(Integer id) {
         if (id == null) {
@@ -453,6 +484,7 @@ public class ProcurementplanService {
         procurementplanRepository.deleteById(id);
     }
 
+    // lưu chi tiết dự trù
     private void saveDetails(Procurementplan plan, List<ProcurementPlanDetailCreateRequest> details) {
         for (ProcurementPlanDetailCreateRequest item : details) {
             Product product = productRepository.findById(item.getProductId())
@@ -477,6 +509,7 @@ public class ProcurementplanService {
         }
     }
 
+    //Xác định giá dự kiến (estimatedPrice) cho một dòng chi tiết của Procurement Plan.
     private BigDecimal resolveEstimatedPrice(ProcurementPlanDetailCreateRequest item) {
         if (item.getEstimatedPrice() != null) {
             return item.getEstimatedPrice().setScale(2, RoundingMode.HALF_UP);
@@ -499,6 +532,7 @@ public class ProcurementplanService {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
+    // Chuẩn hóa danh sách chi tiết (details) của Procurement Plan bằng cách loại bỏ những dòng chưa chọn sản phẩm.
     private List<ProcurementPlanDetailCreateRequest> normalizeDetails(ProcurementPlanCreateRequest request) {
         if (request.getDetails() == null) {
             return List.of();
@@ -509,6 +543,7 @@ public class ProcurementplanService {
                 .toList();
     }
 
+    //kiểm tra dữ liệu (validation) trước khi lưu Procurement Plan vào database
     private void validateCreateRequest(List<ProcurementPlanDetailCreateRequest> details) {
         if (details.isEmpty()) {
             throw new IllegalArgumentException("Dự trù mua hàng phải có ít nhất một sản phẩm");
@@ -525,6 +560,7 @@ public class ProcurementplanService {
         }
     }
 
+    // tạo mã dự trù
     private String generateProcurementCode() {
         int nextId = procurementplanRepository.findAll().stream()
                 .map(Procurementplan::getId)
@@ -535,6 +571,8 @@ public class ProcurementplanService {
         return "DT-" + String.format("%06d", nextId);
     }
 
+    //Nếu chuỗi rỗng hoặc chỉ chứa khoảng trắng thì chuyển thành null;
+    // nếu có nội dung thì xóa khoảng trắng ở đầu và cuối.
     private String trimToNull(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -542,6 +580,8 @@ public class ProcurementplanService {
         return value.trim();
     }
 
+    //Nếu người dùng không nhập trạng thái → dùng trạng thái mặc định
+    //Nếu có nhập → kiểm tra xem trạng thái đó có nằm trong danh sách cho phép (ALLOWED_STATUSES) hay không
     private String normalizeStatus(String status) {
         if (status == null || status.isBlank()) {
             return DEFAULT_STATUS;
@@ -554,12 +594,15 @@ public class ProcurementplanService {
         return normalized;
     }
 
+    // kiểm tra xem một Procurement Plan đã hoàn thành hay chưa.
+    //Nếu đã ở trạng thái Completed thì không cho phép chỉnh sửa hoặc xóa.
     private void ensureNotCompleted(Procurementplan plan) {
         if (COMPLETED_STATUS.equals(plan.getStatus())) {
             throw new IllegalArgumentException("Dự trù mua hàng đã hoàn thành, không thể chỉnh sửa hoặc xóa");
         }
     }
 
+    // kiểm tra xem ngày của một Procurementplan có nằm trong khoảng thời gian người dùng chọn hay không. (filter theo ngay)
     private boolean matchesDate(Procurementplan plan, LocalDate from, LocalDate to) {
         if (from == null && to == null) {
             return true;
@@ -574,6 +617,7 @@ public class ProcurementplanService {
         return to == null || !date.isAfter(to);
     }
 
+    // chuyển chuỗi ngày tháng (String) thành đối tượng LocalDate
     private LocalDate parseDate(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -581,6 +625,7 @@ public class ProcurementplanService {
         return LocalDate.parse(value);
     }
 
+    // chuyển một LocalDateTime thành chuỗi (String)
     private String formatDateTime(LocalDateTime dateTime) {
         if (dateTime == null) {
             return "";

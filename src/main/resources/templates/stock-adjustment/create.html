@@ -275,6 +275,11 @@
                                 <div th:if="${#lists.isEmpty(approvedStockCounts)}" class="form-text text-warning">
                                     <i class="ti ti-alert-triangle me-1"></i>Chưa có phiếu kiểm kê đã duyệt nào khả dụng.
                                 </div>
+                                <div class="form-text">
+                                    <i class="ti ti-info-circle me-1"></i>Chỉ hiện phiếu kiểm kê <strong>đã duyệt</strong>
+                                    và <strong>có chênh lệch</strong> (đếm thực ≠ tồn hệ thống). Phiếu khớp hoàn toàn
+                                    không cần điều chỉnh nên sẽ không xuất hiện.
+                                </div>
                             </div>
 
                             <div class="col-12 col-md-6">
@@ -516,6 +521,12 @@
                 </div>
 
                 <div class="p-4">
+                    <div class="alert alert-light border small d-flex align-items-start mb-3" role="alert">
+                        <i class="ti ti-info-circle me-2 mt-1"></i>
+                        <span>Danh sách chỉ gồm phiếu kiểm kê <strong>đã duyệt</strong> và <strong>có chênh lệch</strong>
+                        (đếm thực khác tồn hệ thống). Phiếu khớp hoàn toàn không cần điều chỉnh nên sẽ không hiện ở đây.</span>
+                    </div>
+
                     <input type="text" class="form-control mb-3" id="countModalSearch"
                            placeholder="Tìm theo mã phiếu, ngày, ghi chú" oninput="filterCountModalRows()">
 
@@ -550,7 +561,8 @@
                             </tr>
                             <tr id="countModalEmpty" th:if="${#lists.isEmpty(approvedStockCounts)}">
                                 <td colspan="5" class="text-center text-secondary py-4">
-                                    Chưa có phiếu kiểm kê đã duyệt nào khả dụng.
+                                    Chưa có phiếu kiểm kê nào khả dụng — cần phiếu <strong>đã duyệt</strong>
+                                    và <strong>có chênh lệch</strong> (đếm thực ≠ tồn hệ thống).
                                 </td>
                             </tr>
                             </tbody>

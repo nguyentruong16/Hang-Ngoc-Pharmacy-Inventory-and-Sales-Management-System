@@ -83,4 +83,7 @@ public class Purchaseinvoice {
     @ColumnDefault("1")
     @Column(name = "isValidForDeduction")
     private Boolean isValidForDeduction;
+
+    @Column(name = "dueDate")
+    private LocalDate dueDate;
 }

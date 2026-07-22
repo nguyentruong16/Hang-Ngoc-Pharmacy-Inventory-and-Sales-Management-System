@@ -68,6 +68,8 @@ public class FinancialSettingPageController {
         form.setEmail(response.getEmail());
         form.setBankAccountNumber(response.getBankAccountNumber());
         form.setBankName(response.getBankName());
+        form.setAutoOffsetDebtOnRefund(response.getAutoOffsetDebtOnRefund());
+        form.setReturnPolicyMaxDays(response.getReturnPolicyMaxDays());
         return form;
     }
 }

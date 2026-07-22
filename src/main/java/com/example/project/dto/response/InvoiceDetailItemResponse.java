@@ -14,8 +14,11 @@ public class InvoiceDetailItemResponse {
     private String productCode;
     private String productName;
     private String batchCode;
+    private String lotNumber;
     private String expirationDateDisplay;
+    private String batchLabel;
     private String unitName;
+    private boolean defaultUnit;
     private Integer quantity;
     private BigDecimal unitSellPrice;
     private BigDecimal subtotal;

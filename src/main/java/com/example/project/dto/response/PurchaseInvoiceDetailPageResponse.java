@@ -39,6 +39,9 @@ public class PurchaseInvoiceDetailPageResponse {
     private String vatInvoiceNumber;
     private String vatInvoiceDateDisplay;
 
+    private String dueDateDisplay;
+    private boolean validForDeduction;
+
     private String note;
 
     private long totalItems;

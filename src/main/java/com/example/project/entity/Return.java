@@ -97,4 +97,7 @@ public class Return {
     @NotNull
     @Column(name = "totalVATRefund", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalVATRefund;
+
+    @Column(name = "appliedRefundRate", precision = 5, scale = 2)
+    private BigDecimal appliedRefundRate;
 }

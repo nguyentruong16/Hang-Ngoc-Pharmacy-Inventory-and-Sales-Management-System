@@ -38,16 +38,11 @@ public class InvoiceController {
         this.currentUserContext = currentUserContext;
     }
 
+    //chuyển dữ liệu từ form (String) sang kiểu dữ liệu Java.
     @InitBinder
     public void initBinder(WebDataBinder binder) {
         binder.registerCustomEditor(BigDecimal.class, new CustomNumberEditor(BigDecimal.class, true));
         binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
-    }
-
-    @GetMapping("/invoices")
-    @ResponseBody
-    public List<InvoiceResponse> getAll() {
-        return invoiceService.getAll();
     }
 
     @GetMapping({"/owner/invoices", "/pharmacist/invoices", "/accountant/invoices"})

@@ -98,7 +98,6 @@
 
         .sell-items-table {
             margin-bottom: 0;
-            table-layout: fixed;
             width: 100%;
         }
 
@@ -107,105 +106,120 @@
             font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
-            padding: 10px 12px;
+            padding: 12px 16px;
             color: #6b7280;
             background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
         }
 
+        .sell-items-table tbody td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .sell-items-table thead th.col-qty,
+        .sell-items-table thead th.col-price,
         .sell-items-table thead th.col-line-total,
         .sell-items-table thead th.col-total {
             text-align: right;
         }
 
         .sell-items-table .col-product {
-            width: 24%;
+            width: 26%;
+            min-width: 160px;
+        }
+
+        .sell-items-table .col-lot {
+            width: 18%;
+            min-width: 130px;
+            max-width: 200px;
         }
 
         .sell-items-table .col-unit-select {
-            width: 18%;
+            width: 12%;
+            min-width: 88px;
         }
 
         .sell-items-table .col-qty {
-            width: 72px;
+            width: 64px;
+            text-align: right;
         }
 
         .sell-items-table .col-price {
-            width: auto;
+            width: 110px;
+            text-align: right;
         }
 
         .sell-items-table .col-line-total {
-            width: 88px;
+            width: 100px;
             text-align: right;
         }
 
         .sell-items-table .col-total {
-            width: 10%;
+            width: 100px;
             text-align: right;
         }
 
         tr.unit-line-row td {
-            border-bottom-color: #f1f5f9;
+            vertical-align: middle;
         }
 
-        tr.unit-line-row:last-child td {
-            border-bottom-width: 1px;
+        tr.product-group-last td {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .product-cell {
+            vertical-align: middle !important;
+        }
+
+        .lot-cell {
+            line-height: 1.35;
+            vertical-align: middle;
+        }
+
+        .lot-text {
+            font-size: 11px;
+            font-weight: 500;
+            color: #059669;
+            word-break: break-word;
         }
 
         .product-title-code {
             font-size: 12px;
             color: #6b7280;
             font-weight: 600;
-            line-height: 1.3;
+            line-height: 1.35;
+            margin-bottom: 2px;
         }
 
         .product-title-name {
             font-size: 14px;
             font-weight: 600;
             color: #111827;
-            line-height: 1.35;
-        }
-
-        .unit-select-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-width: 0;
+            line-height: 1.4;
         }
 
         .unit-line-name {
             font-size: 13px;
-            font-weight: 600;
-            color: #111827;
-            word-break: break-word;
-        }
-
-        .unit-line-tag {
-            font-size: 10px;
-            font-weight: 600;
-            color: #059669;
-            background: #d1fae5;
-            padding: 1px 6px;
-            border-radius: 999px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .unit-line-meta {
-            margin-top: 4px;
-            line-height: 1.35;
+            color: #374151;
         }
 
         .unit-qty-cell,
         .unit-price-cell {
             font-size: 13px;
             color: #111827;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
         }
 
         .unit-total-cell {
             font-size: 13px;
             font-weight: 600;
             color: #111827;
+            text-align: right;
             white-space: nowrap;
+            font-variant-numeric: tabular-nums;
         }
 
         .product-line-total {
@@ -213,18 +227,23 @@
             font-weight: 700;
             color: #047857;
             white-space: nowrap;
+            font-variant-numeric: tabular-nums;
         }
 
         .return-qty-badge {
             display: inline-flex;
             align-items: center;
-            margin-top: 4px;
-            padding: 1px 6px;
+            margin-top: 6px;
+            padding: 2px 8px;
             border-radius: 999px;
             background: #fef3c7;
             color: #d97706;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
+        }
+
+        .sell-items-empty td {
+            padding: 32px 16px;
         }
 
         @media (max-width: 991.98px) {
@@ -369,10 +388,11 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle sell-items-table mb-0">
+                        <table class="table align-middle sell-items-table mb-0">
                             <thead>
                             <tr>
                                 <th class="col-product">Sản phẩm</th>
+                                <th class="col-lot">Mã lô</th>
                                 <th class="col-unit-select">Đơn vị bán</th>
                                 <th class="col-qty">SL</th>
                                 <th class="col-price">Giá bán</th>
@@ -383,22 +403,28 @@
 
                             <tbody>
                             <th:block th:each="group : ${detail.productGroups}">
-                                <tr th:each="line, stat : ${group.lines}" class="unit-line-row">
-                                    <td th:if="${stat.first}" th:rowspan="${#lists.size(group.lines)}">
+                                <tr th:each="line, stat : ${group.lines}"
+                                    th:class="${stat.last ? 'unit-line-row product-group-last' : 'unit-line-row'}">
+                                    <td th:if="${stat.first}"
+                                        th:rowspan="${#lists.size(group.lines)}"
+                                        class="product-cell">
                                         <div class="product-title-code" th:text="${group.productCode}">SP001</div>
                                         <div class="product-title-name" th:text="${group.productName}">Paracetamol 500mg</div>
                                     </td>
+                                    <td class="lot-cell">
+                                        <span class="lot-text"
+                                              th:if="${line.batchLabel != null && !line.batchLabel.isBlank()}"
+                                              th:text="${#strings.contains(line.batchLabel, ' - ')
+                                                  ? #strings.substringBefore(line.batchLabel, ' - ') + ' · HSD ' + #strings.substringAfter(line.batchLabel, ' - ')
+                                                  : line.batchLabel}">
+                                            BATCH-000001-001 · HSD 30/07/2026
+                                        </span>
+                                        <span class="text-secondary"
+                                              th:if="${line.batchLabel == null || line.batchLabel.isBlank()}">—</span>
+                                    </td>
                                     <td class="unit-select-cell">
-                                        <div class="unit-select-wrap">
-                                            <span class="unit-line-name" th:text="${line.unitName}">Hộp</span>
-                                            <span class="unit-line-tag" th:if="${line.defaultUnit}">Mặc định</span>
-                                        </div>
-                                        <div class="unit-line-meta small text-secondary"
-                                             th:if="${line.batchSummary != null && !line.batchSummary.isBlank()}"
-                                             th:text="${line.batchSummary}">
-                                            Lô: LOT-001 · HSD: 01/06/2028
-                                        </div>
-                                        <span class="return-qty-badge"
+                                        <span class="unit-line-name" th:text="${line.unitName}">Hộp</span>
+                                        <span class="return-qty-badge d-block"
                                               th:if="${line.returnedQty != null && line.returnedQty > 0}"
                                               th:text="'Đã trả: ' + ${line.returnedQty}">
                                             Đã trả: 1
@@ -413,7 +439,9 @@
                                         th:text="${#numbers.formatDecimal(line.lineSubtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                         0đ
                                     </td>
-                                    <td th:if="${stat.first}" th:rowspan="${#lists.size(group.lines)}" class="col-total">
+                                    <td th:if="${stat.first}"
+                                        th:rowspan="${#lists.size(group.lines)}"
+                                        class="col-total">
                                         <span class="product-line-total"
                                               th:text="${#numbers.formatDecimal(group.productSubtotal, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                             0đ
@@ -421,6 +449,9 @@
                                     </td>
                                 </tr>
                             </th:block>
+                            <tr th:if="${#lists.isEmpty(detail.productGroups)}" class="sell-items-empty">
+                                <td colspan="7" class="text-center text-secondary">Không có hàng hóa</td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
