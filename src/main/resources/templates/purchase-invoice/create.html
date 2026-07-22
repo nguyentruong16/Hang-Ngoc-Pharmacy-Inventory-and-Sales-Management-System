@@ -124,6 +124,18 @@
             display: block;
         }
 
+        /* Theme Bootstrap mặc định của app dùng --bs-primary màu cam — ghi đè về đúng màu xanh
+           chủ đạo của app (khớp với financial-setting.html và các trang khác). */
+        .form-check-input:checked {
+            background-color: #059669;
+            border-color: #059669;
+        }
+
+        .form-check-input:focus {
+            border-color: #6ee7b7;
+            box-shadow: 0 0 0 0.2rem rgba(5, 150, 105, .15);
+        }
+
         @media (max-width: 991.98px) {
             .purchase-page-content {
                 padding-top: 84px !important;
@@ -155,6 +167,10 @@
         <form th:action="${basePath + '/create'}" th:object="${form}" method="post">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
+            <div th:if="${errorMessage == null and #fields.hasAnyErrors()}" class="alert alert-danger">
+                Vui lòng kiểm tra lại các trường được đánh dấu đỏ bên dưới trước khi lưu phiếu nhập.
+            </div>
+
             <div class="row g-4">
                 <div class="col-12 col-xl-9">
 
@@ -172,6 +188,8 @@
                                            id="supplierSearchInput"
                                            class="form-control product-search-input"
                                            autocomplete="off"
+                                           required
+                                           data-required-message="Vui lòng chọn nhà cung cấp"
                                            placeholder="Tìm nhà cung cấp theo tên"
                                            th:value="${supplierNameById.get(form.supplierId) ?: ''}">
                                     <input type="hidden"
@@ -205,6 +223,8 @@
                                 <input type="text"
                                        class="form-control"
                                        th:field="*{vatInvoiceNumber}"
+                                       required
+                                       data-required-message="Vui lòng nhập số hóa đơn GTGT"
                                        placeholder="VD: 0000123">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('vatInvoiceNumber')}"
@@ -216,7 +236,9 @@
                                 <label class="form-label">Ngày hóa đơn GTGT <span class="text-danger">*</span></label>
                                 <input type="date"
                                        class="form-control"
-                                       th:field="*{vatInvoiceDate}">
+                                       th:field="*{vatInvoiceDate}"
+                                       required
+                                       data-required-message="Vui lòng nhập ngày hóa đơn GTGT">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('vatInvoiceDate')}"
                                      th:errors="*{vatInvoiceDate}">
@@ -268,6 +290,17 @@
                                 </div>
                             </div>
 
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Hạn thanh toán công nợ NCC</label>
+                                <input type="date"
+                                       class="form-control"
+                                       th:field="*{dueDate}">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('dueDate')}"
+                                     th:errors="*{dueDate}">
+                                </div>
+                            </div>
+
                             <div class="col-12">
                                 <label class="form-label">Ghi chú</label>
                                 <textarea class="form-control" rows="3" th:field="*{note}"
@@ -313,6 +346,8 @@
                                             <input type="text"
                                                    class="form-control product-search-input"
                                                    autocomplete="off"
+                                                   required
+                                                   data-required-message="Vui lòng chọn sản phẩm"
                                                    placeholder="Tìm sản phẩm theo tên"
                                                    th:value="${detail.productId != null ? (productNameById.get(detail.productId) ?: '') : ''}">
                                             <input type="hidden"
@@ -320,14 +355,24 @@
                                                    th:field="*{details[__${iterStat.index}__].productId}">
                                             <div class="product-search-results"></div>
                                         </div>
+                                        <div class="text-danger small mt-1"
+                                             th:if="${#fields.hasErrors('details[__${iterStat.index}__].productId')}"
+                                             th:errors="*{details[__${iterStat.index}__].productId}">
+                                        </div>
                                     </td>
 
                                     <td>
                                         <input type="number"
                                                min="1"
+                                               required
+                                               data-required-message="Vui lòng nhập số lượng"
                                                class="form-control quantity-input"
                                                th:field="*{details[__${iterStat.index}__].quantity}"
                                                oninput="calculateSummary()">
+                                        <div class="text-danger small mt-1"
+                                             th:if="${#fields.hasErrors('details[__${iterStat.index}__].quantity')}"
+                                             th:errors="*{details[__${iterStat.index}__].quantity}">
+                                        </div>
                                     </td>
 
                                     <td>
@@ -341,9 +386,15 @@
                                         <input type="number"
                                                min="0"
                                                step="1000"
+                                               required
+                                               data-required-message="Vui lòng nhập giá nhập"
                                                class="form-control price-input"
                                                th:field="*{details[__${iterStat.index}__].importPrice}"
                                                oninput="calculateSummary()">
+                                        <div class="text-danger small mt-1"
+                                             th:if="${#fields.hasErrors('details[__${iterStat.index}__].importPrice')}"
+                                             th:errors="*{details[__${iterStat.index}__].importPrice}">
+                                        </div>
                                     </td>
 
                                     <td>
@@ -380,6 +431,7 @@
                                                        class="form-control lot-number-input"
                                                        th:field="*{details[__${iterStat.index}__].lotNumber}"
                                                        required
+                                                       data-required-message="Vui lòng nhập số lô"
                                                        placeholder="VD: LOT-001">
                                             </div>
 
@@ -395,7 +447,13 @@
                                                 <input type="date"
                                                        class="form-control expiration-date-input"
                                                        th:field="*{details[__${iterStat.index}__].expirationDate}"
-                                                       required>
+                                                       required
+                                                       data-required-message="Vui lòng nhập hạn dùng hoặc tích &quot;Không có hạn sử dụng&quot;">
+                                                <label class="form-check-label small d-flex align-items-center gap-1 mt-1">
+                                                    <input type="checkbox" class="form-check-input no-expiration-checkbox"
+                                                           th:field="*{details[__${iterStat.index}__].noExpirationDate}">
+                                                    Không có hạn sử dụng
+                                                </label>
                                             </div>
                                         </div>
                                     </td>
@@ -471,7 +529,7 @@
 
                         <div class="text-secondary small">
                             <p class="mb-2">1. Chọn đúng nhà cung cấp và dự trù mua hàng liên quan.</p>
-                            <p class="mb-2">2. Số lô và hạn dùng là bắt buộc — lô hàng được tạo ngay khi lưu phiếu.</p>
+                            <p class="mb-2">2. Số lô luôn bắt buộc; hạn dùng bắt buộc trừ khi tích "Không có hạn sử dụng" — lô hàng được tạo ngay khi lưu phiếu.</p>
                             <p class="mb-2">3. Mỗi dòng nhập luôn tạo một lô hàng mới — nhập đúng số lô, ngày SX, hạn dùng theo phiếu giao hàng của nhà cung cấp.</p>
                             <p class="mb-0">4. Hạn dùng không được trước ngày sản xuất, và phải sau ngày hiện tại.</p>
                         </div>
@@ -561,6 +619,53 @@
 
     function wireImportUnitDisplay(row) {
         applyImportUnitDisplay(row);
+    }
+
+    // "Không có hạn sử dụng" phải được tích chủ động — không suy ra từ việc để trống ô ngày, để
+    // tránh nhầm "quên điền" với "xác nhận không có hạn" (xem PurchaseinvoiceService.validateCreateRequest).
+    function applyNoExpirationToggle(row) {
+        const checkbox = row.querySelector('.no-expiration-checkbox');
+        const dateInput = row.querySelector('.expiration-date-input');
+        if (!checkbox || !dateInput) return;
+
+        function sync() {
+            if (checkbox.checked) {
+                dateInput.value = '';
+                dateInput.required = false;
+                dateInput.disabled = true;
+                dateInput.setCustomValidity('');
+            } else {
+                dateInput.disabled = false;
+                dateInput.required = true;
+            }
+        }
+
+        checkbox.addEventListener('change', sync);
+        sync();
+    }
+
+    function wireNoExpirationToggle(row) {
+        applyNoExpirationToggle(row);
+    }
+
+    // Thay thông báo mặc định của trình duyệt ("Please fill out this field.") bằng tiếng Việt —
+    // lấy nội dung từ data-required-message trên từng ô, chỉ can thiệp vào lỗi "để trống", các lỗi
+    // định dạng/khoảng giá trị khác vẫn để trình duyệt tự báo.
+    function wireVietnameseRequiredMessages(scope) {
+        scope.querySelectorAll('[required]').forEach(function (input) {
+            function updateValidity() {
+                if (input.validity.valueMissing) {
+                    input.setCustomValidity(input.dataset.requiredMessage || 'Vui lòng điền vào trường này');
+                } else {
+                    input.setCustomValidity('');
+                }
+            }
+
+            input.addEventListener('invalid', updateValidity);
+            input.addEventListener('input', updateValidity);
+            input.addEventListener('change', updateValidity);
+            updateValidity();
+        });
     }
 
     function formatMoney(value) {
@@ -922,7 +1027,8 @@
             <tr>
                 <td>
                     <div class="product-search-wrap">
-                        <input type="text" class="form-control product-search-input" autocomplete="off"
+                        <input type="text" class="form-control product-search-input" autocomplete="off" required
+                               data-required-message="Vui lòng chọn sản phẩm"
                                placeholder="Tìm sản phẩm theo tên">
                         <input type="hidden" class="product-select" data-field="productId"
                                name="details[${index}].productId">
@@ -931,7 +1037,8 @@
                 </td>
 
                 <td>
-                    <input type="number" min="1" class="form-control quantity-input"
+                    <input type="number" min="1" required data-required-message="Vui lòng nhập số lượng"
+                           class="form-control quantity-input"
                            data-field="quantity" name="details[${index}].quantity"
                            oninput="calculateSummary()">
                 </td>
@@ -941,7 +1048,8 @@
                 </td>
 
                 <td>
-                    <input type="number" min="0" step="1000" class="form-control price-input"
+                    <input type="number" min="0" step="1000" required data-required-message="Vui lòng nhập giá nhập"
+                           class="form-control price-input"
                            data-field="importPrice" name="details[${index}].importPrice"
                            oninput="calculateSummary()">
                 </td>
@@ -971,6 +1079,7 @@
                         <div class="subrow-field">
                             <label>Số lô <span class="text-danger">*</span></label>
                             <input type="text" class="form-control lot-number-input" required
+                                   data-required-message="Vui lòng nhập số lô"
                                    data-field="lotNumber" name="details[${index}].lotNumber"
                                    placeholder="VD: LOT-001">
                         </div>
@@ -984,7 +1093,13 @@
                         <div class="subrow-field">
                             <label>Hạn dùng <span class="text-danger">*</span></label>
                             <input type="date" class="form-control expiration-date-input" required
+                                   data-required-message="Vui lòng nhập hạn dùng hoặc tích &quot;Không có hạn sử dụng&quot;"
                                    data-field="expirationDate" name="details[${index}].expirationDate">
+                            <label class="form-check-label small d-flex align-items-center gap-1 mt-1">
+                                <input type="checkbox" class="form-check-input no-expiration-checkbox"
+                                       data-field="noExpirationDate" name="details[${index}].noExpirationDate">
+                                Không có hạn sử dụng
+                            </label>
                         </div>
                     </div>
                 </td>
@@ -997,6 +1112,8 @@
         wirePriceSuggestion(tbody);
         wireVatRateSuggestion(tbody);
         wireImportUnitDisplay(tbody);
+        wireNoExpirationToggle(tbody);
+        wireVietnameseRequiredMessages(tbody);
         calculateSummary();
     }
 
@@ -1031,9 +1148,11 @@
             wirePriceSuggestion(row);
             wireVatRateSuggestion(row);
             wireImportUnitDisplay(row);
+            wireNoExpirationToggle(row);
         });
 
         wireSupplierSearch();
+        wireVietnameseRequiredMessages(document);
 
         const requisitionSelect = document.getElementById('requisitionId');
         if (requisitionSelect) {

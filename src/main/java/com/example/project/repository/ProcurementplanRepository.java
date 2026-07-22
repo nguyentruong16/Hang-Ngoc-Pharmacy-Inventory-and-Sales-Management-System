@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProcurementplanRepository extends JpaRepository<Procurementplan, Integer> {
 
-    Page<Procurementplan> findByProcurementCodeContainingIgnoreCase(String procurementCode, Pageable pageable);
-
+    //đếm dự trù theo trạng thái
     long countByStatus(String status);
 }

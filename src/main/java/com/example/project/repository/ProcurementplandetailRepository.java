@@ -11,6 +11,8 @@ public interface ProcurementplandetailRepository extends JpaRepository<Procureme
 
     List<Procurementplandetail> findByProcurementID_Id(Integer procurementId);
 
+
+    // lấy tất cả chi tiết phiếu dự trù theo id phiếu dự trù
     @Query("""
             SELECT d FROM Procurementplandetail d
             JOIN FETCH d.productID
@@ -19,5 +21,6 @@ public interface ProcurementplandetailRepository extends JpaRepository<Procureme
             """)
     List<Procurementplandetail> findByProcurementID_IdWithRelations(@Param("procurementId") Integer procurementId);
 
+    //xóa chi tiết dự trù theo theo id dự trù
     void deleteByProcurementID_Id(Integer procurementId);
 }

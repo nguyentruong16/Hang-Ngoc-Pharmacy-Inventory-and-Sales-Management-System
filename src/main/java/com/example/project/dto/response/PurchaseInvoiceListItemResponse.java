@@ -26,4 +26,6 @@ public class PurchaseInvoiceListItemResponse {
 
     private String paymentStatus;
     private String statusCssClass;
+
+    private boolean validForDeduction;
 }

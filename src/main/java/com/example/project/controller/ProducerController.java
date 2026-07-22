@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Controller
 public class ProducerController {
@@ -30,12 +27,8 @@ public class ProducerController {
         this.producerService = producerService;
     }
 
-    @GetMapping("/producers")
-    @ResponseBody
-    public List<ProducerResponse> getAll() {
-        return producerService.getAll();
-    }
-
+    // như position (comment bên position)
+    // hiện danh sách nhà sản xuất
     @GetMapping({
             "/owner/producers",
             "/pharmacist/producers",
@@ -70,6 +63,7 @@ public class ProducerController {
         return "owner/producer-list";
     }
 
+    // tạo from create
     @GetMapping("/owner/producers/create-producer")
     public String createProducerForm(HttpServletRequest request, Model model) {
         if (!model.containsAttribute("producerForm")) {
@@ -80,6 +74,7 @@ public class ProducerController {
         return "owner/create-producer";
     }
 
+    //tạo nhà sản xuất
     @PostMapping("/owner/producers/create-producer")
     public String createProducer(@Valid @ModelAttribute("producerForm") ProducerCreateRequest form,
                                  BindingResult bindingResult,
@@ -98,6 +93,7 @@ public class ProducerController {
         return "redirect:" + basePath;
     }
 
+    //tạo form update
     @GetMapping("/owner/producers/update-producer/{id}")
     public String updateProducerForm(@PathVariable Integer id,
                                      HttpServletRequest request,
@@ -116,6 +112,7 @@ public class ProducerController {
         return "owner/update-producer";
     }
 
+    // chỉnh sửa nhà sản xuất
     @PostMapping("/owner/producers/update-producer/{id}")
     public String updateProducer(@PathVariable Integer id,
                                  @Valid @ModelAttribute("producerForm") ProducerCreateRequest form,
@@ -136,6 +133,7 @@ public class ProducerController {
         return "redirect:" + basePath;
     }
 
+    // lấy url
     private String resolveBasePath(HttpServletRequest request) {
         String uri = request.getRequestURI();
         if (uri.startsWith("/pharmacist/producers")) {

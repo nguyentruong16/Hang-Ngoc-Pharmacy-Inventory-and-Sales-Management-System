@@ -86,5 +86,7 @@ public class Income {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stockAdjustmentID")
+    private Stockadjustment stockAdjustmentID;
 }

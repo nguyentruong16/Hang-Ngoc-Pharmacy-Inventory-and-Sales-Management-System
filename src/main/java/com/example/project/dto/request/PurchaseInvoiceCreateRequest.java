@@ -40,6 +40,9 @@ public class PurchaseInvoiceCreateRequest {
     @NotNull(message = "Vui lòng nhập ngày hóa đơn GTGT")
     private LocalDate vatInvoiceDate;
 
+    /** Optional — hạn thanh toán công nợ NCC theo thỏa thuận, dùng để tự áp dụng Điều 26 NĐ 181/2025/NĐ-CP. */
+    private LocalDate dueDate;
+
     @Valid
     @NotEmpty(message = "Phiếu nhập phải có ít nhất một sản phẩm")
     private List<PurchaseInvoiceDetailCreateRequest> details = new ArrayList<>();

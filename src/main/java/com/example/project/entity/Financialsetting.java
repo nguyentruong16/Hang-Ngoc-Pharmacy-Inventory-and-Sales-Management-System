@@ -87,4 +87,10 @@ public class Financialsetting {
     @Column(name = "annualRevenueThreshold2", precision = 15, scale = 2)
     private BigDecimal annualRevenueThreshold2;
 
+    @ColumnDefault("1")
+    @Column(name = "autoOffsetDebtOnRefund")
+    private Boolean autoOffsetDebtOnRefund;
+
+    @Column(name = "returnPolicyMaxDays")
+    private Integer returnPolicyMaxDays;
 }

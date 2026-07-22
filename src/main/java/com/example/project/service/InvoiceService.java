@@ -59,10 +59,8 @@ public class InvoiceService {
     private static final String RETURN_FULL = "FULL";
 
     private static final String INVOICE_TYPE_NORMAL = "Bán hàng";
-    /** Legacy DB value before invoiceType was stored in Vietnamese. */
     private static final String INVOICE_TYPE_NORMAL_LEGACY = "normal";
     private static final String INVOICE_TYPE_ADJUSTMENT = "Điều chỉnh";
-    /** Legacy DB value before invoiceType was stored in Vietnamese. */
     private static final String INVOICE_TYPE_ADJUSTMENT_LEGACY = "adjustment";
     private static final String INVOICE_TYPE_RETURN = "return";
 
@@ -107,14 +105,6 @@ public class InvoiceService {
         this.accountRepository = accountRepository;
         this.financialsettingRepository = financialsettingRepository;
         this.returnRepository = returnRepository;
-    }
-
-    @Transactional(readOnly = true)
-    public List<InvoiceResponse> getAll() {
-        return invoiceRepository.findAll()
-                .stream()
-                .map(InvoiceResponse::from)
-                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -163,7 +153,6 @@ public class InvoiceService {
                 .toList();
     }
 
-    /** Distinct sellers (accounts) that have created at least one invoice, for the list filter. */
     @Transactional(readOnly = true)
     public List<CustomerOptionResponse> listSellers() {
         Map<Integer, String> byId = new LinkedHashMap<>();
@@ -180,7 +169,6 @@ public class InvoiceService {
                 .toList();
     }
 
-    /** Payment-method code → Vietnamese label, in dropdown order. */
     public Map<String, String> paymentTypeLabels() {
         Map<String, String> labels = new LinkedHashMap<>();
         labels.put(PAYMENT_CASH, "Tiền mặt");
@@ -236,11 +224,6 @@ public class InvoiceService {
                 .count();
     }
 
-    /**
-     * Return state per invoice, derived from how much of its lines have been returned:
-     * {@code NONE} (nothing), {@code PARTIAL} (some), {@code FULL} (everything). Replaces the removed
-     * {@code returnStatus} column.
-     */
     private Map<Integer, String> returnStateByInvoice() {
         Map<Integer, String> map = new LinkedHashMap<>();
         for (Object[] row : invoicedetailRepository.sumQuantitiesGroupedByInvoice()) {
@@ -260,9 +243,6 @@ public class InvoiceService {
         return map;
     }
 
-    // ------------------------------------------------------------------ sell (create invoice)
-
-    /** Active products with stock &gt; 0 and at least one active sell unit, for the POS picker. */
     @Transactional(readOnly = true)
     public List<SellProductOptionResponse> listSellableProducts() {
         Map<Integer, Long> stockByProduct = new LinkedHashMap<>();
@@ -336,16 +316,6 @@ public class InvoiceService {
                 .toList();
     }
 
-    /**
-     * Creates one sale invoice + its lines, deducting stock from the product's batches soonest-expiry
-     * first (FEFO). Each line's stored quantity is in the chosen sell unit; {@code baseQtyDeducted}
-     * is that quantity times the unit ratio. When a line's deduction spans several batches, it is
-     * persisted as one {@code Invoicedetail} row per batch actually touched (each expressed in the
-     * product's base unit, money split proportionally by base quantity) so stock-history reporting can
-     * show every lot involved — see {@link #saveLineAndDeductStock}.
-     *
-     * @return the new invoice id, for the redirect.
-     */
     @Transactional
     public Integer createSaleInvoice(InvoiceCreateRequest request, Integer currentAccountId) {
         if (request.getDetails() == null || request.getDetails().isEmpty()) {
@@ -435,7 +405,6 @@ public class InvoiceService {
         return savedInvoice.getId();
     }
 
-    /** Persists one line, deducts its base quantity across batches (FEFO), returns its priced totals. */
     private SavedLineTotals saveLineAndDeductStock(Invoice invoice, InvoiceDetailCreateRequest item) {
         if (item.getProductId() == null || item.getProductUnitId() == null) {
             throw new IllegalArgumentException("Dòng hàng chưa chọn sản phẩm hoặc đơn vị bán");

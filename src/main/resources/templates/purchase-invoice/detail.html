@@ -64,6 +64,11 @@
             color: #dc2626;
         }
 
+        .status-cancelled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
         .btn-purchase-primary {
             background: #059669;
             border-color: #059669;
@@ -119,6 +124,12 @@
 
         <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        <div th:if="${!detail.validForDeduction && detail.paymentStatus != 'Đã hủy'}" class="alert alert-warning">
+            <i class="ti ti-alert-triangle me-1"></i>
+            Phiếu nhập đã quá hạn thanh toán (<span th:text="${detail.dueDateDisplay}"></span>) mà vẫn chưa
+            thanh toán đủ và có giá trị từ 5.000.000đ trở lên — không còn hợp lệ để tạm khấu trừ GTGT đầu vào
+            theo Điều 26 Nghị định 181/2025/NĐ-CP, cần kê khai điều chỉnh giảm.
+        </div>
 
         <div class="row g-4">
             <div class="col-12 col-xl-9">
@@ -181,6 +192,11 @@
                         <div class="info-row">
                             <div class="info-label">Ngày hóa đơn GTGT</div>
                             <div th:text="${detail.vatInvoiceDateDisplay}">01/06/2026</div>
+                        </div>
+
+                        <div class="info-row" th:if="${detail.dueDateDisplay != null && !detail.dueDateDisplay.isBlank()}">
+                            <div class="info-label">Hạn thanh toán công nợ NCC</div>
+                            <div th:text="${detail.dueDateDisplay}">01/07/2026</div>
                         </div>
 
                         <div class="info-row">
@@ -363,6 +379,13 @@
                         In phiếu nhập
                     </button>
 
+                    <button type="button" class="btn btn-outline-danger w-100 mb-3"
+                            th:if="${basePath != '/accountant/purchase-invoices' && detail.paymentStatus != 'Đã hủy'}"
+                            data-bs-toggle="modal" data-bs-target="#cancelPurchaseInvoiceModal">
+                        <i class="ti ti-ban me-1"></i>
+                        Hủy phiếu nhập
+                    </button>
+
                     <a th:href="${basePath}" class="btn btn-outline-secondary w-100">
                         <i class="ti ti-arrow-left me-1"></i>
                         Quay lại danh sách
@@ -374,6 +397,41 @@
 
     </div>
 </main>
+
+<div class="modal fade" id="cancelPurchaseInvoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;">
+            <form th:action="${basePath + '/' + detail.id + '/cancel'}" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title fs-6 mb-0">Hủy phiếu nhập <span th:text="${detail.purchaseCode}"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-warning small mb-3">
+                        <i class="ti ti-alert-triangle me-1"></i>
+                        Chỉ dùng để sửa lỗi lập phiếu — tồn kho đã cộng từ phiếu này sẽ được trừ lại. Chỉ hủy được
+                        khi lô hàng của phiếu chưa phát sinh giao dịch nào (bán ra, điều chỉnh kho, trả hàng...).
+                    </div>
+
+                    <label for="cancelReason" class="form-label">Lý do hủy</label>
+                    <textarea id="cancelReason" name="reason" class="form-control" rows="3"
+                              placeholder="VD: Nhập nhầm nhà cung cấp, sai số lượng..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="ti ti-ban me-1"></i>
+                        Xác nhận hủy phiếu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script th:inline="none">
     document.getElementById('printPurchaseInvoiceBtn').addEventListener('click', function () {
