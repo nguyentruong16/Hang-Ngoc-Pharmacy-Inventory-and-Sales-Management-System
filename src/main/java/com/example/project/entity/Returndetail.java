@@ -78,4 +78,8 @@ public class Returndetail {
     @Column(name = "vatAmount", nullable = false, precision = 15, scale = 2)
     private BigDecimal vatAmount;
 
+    @NotNull
+    @Column(name = "originalLineValue", nullable = false, precision = 15, scale = 2)
+    private BigDecimal originalLineValue;
+
 }

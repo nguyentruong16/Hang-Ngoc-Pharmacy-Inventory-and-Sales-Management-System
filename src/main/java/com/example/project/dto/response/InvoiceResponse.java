@@ -34,6 +34,7 @@ public class InvoiceResponse {
     private String prescriptionCode;
     private String note;
     private BigDecimal totalVATOutput;
+    private Integer rootInvoiceID;
 
     public static InvoiceResponse from(Invoice invoice) {
         return new InvoiceResponse(
@@ -57,7 +58,8 @@ public class InvoiceResponse {
                 invoice.getShiftReportID() != null ? invoice.getShiftReportID().getId() : null,
                 invoice.getPrescriptionCode(),
                 invoice.getNote(),
-                invoice.getTotalVATOutput()
+                invoice.getTotalVATOutput(),
+                invoice.getRootInvoiceID() != null ? invoice.getRootInvoiceID().getId() : null
         );
     }
 }

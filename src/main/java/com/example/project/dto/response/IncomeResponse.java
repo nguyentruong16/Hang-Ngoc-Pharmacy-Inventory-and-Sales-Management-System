@@ -30,6 +30,7 @@ public class IncomeResponse {
     private Integer accountId;
     private String status;
     private String note;
+    private Integer stockAdjustmentID;
 
     public static IncomeResponse from(Income income) {
         return new IncomeResponse(
@@ -49,7 +50,8 @@ public class IncomeResponse {
                 income.getCustomerID() != null ? income.getCustomerID().getId() : null,
                 income.getAccountID() != null ? income.getAccountID().getId() : null,
                 income.getStatus(),
-                income.getNote()
+                income.getNote(),
+                income.getStockAdjustmentID() != null ? income.getStockAdjustmentID().getId() : null
         );
     }
 }

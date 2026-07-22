@@ -28,6 +28,8 @@ public class FinancialsettingResponse {
     private Integer revenueGroup;
     private BigDecimal annualRevenueThreshold1;
     private BigDecimal annualRevenueThreshold2;
+    private Boolean autoOffsetDebtOnRefund;
+    private Integer returnPolicyMaxDays;
 
     public static FinancialsettingResponse from(Financialsetting financialsetting) {
         return new FinancialsettingResponse(
@@ -46,7 +48,9 @@ public class FinancialsettingResponse {
                 financialsetting.getBankName(),
                 financialsetting.getRevenueGroup(),
                 financialsetting.getAnnualRevenueThreshold1(),
-                financialsetting.getAnnualRevenueThreshold2()
+                financialsetting.getAnnualRevenueThreshold2(),
+                financialsetting.getAutoOffsetDebtOnRefund(),
+                financialsetting.getReturnPolicyMaxDays()
         );
     }
 }
