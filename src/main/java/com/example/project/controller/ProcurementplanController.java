@@ -150,7 +150,7 @@ public class ProcurementplanController {
 
         try {
             procurementplanService.create(form);
-            redirectAttributes.addFlashAttribute("success", "Tạo dự trù mua hàng thành công");
+            redirectAttributes.addFlashAttribute("successMessage", "Tạo dự trù mua hàng thành công");
             return "redirect:" + basePath;
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
@@ -212,7 +212,7 @@ public class ProcurementplanController {
             if ("Đã hoàn thành".equals(form.getStatus())) {
                 successMessage = "Cập nhật dự trù mua hàng thành công. Dự trù đã hoàn thành nên không thể cập nhật hoặc xóa.";
             }
-            redirectAttributes.addFlashAttribute("success", successMessage);
+            redirectAttributes.addFlashAttribute("successMessage", successMessage);
             return "redirect:" + basePath;
         } catch (IllegalArgumentException exception) {
             if (exception.getMessage() != null
@@ -248,7 +248,7 @@ public class ProcurementplanController {
                                         RedirectAttributes redirectAttributes) {
         try {
             procurementplanService.delete(id);
-            redirectAttributes.addFlashAttribute("success", "Xóa dự trù mua hàng thành công");
+            redirectAttributes.addFlashAttribute("successMessage", "Xóa dự trù mua hàng thành công");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
