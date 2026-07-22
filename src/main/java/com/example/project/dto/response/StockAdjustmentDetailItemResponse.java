@@ -27,4 +27,11 @@ public class StockAdjustmentDetailItemResponse {
     private BigDecimal unitCostPrice;
     private BigDecimal lineCost;
     private String note;
+
+    // Thuế GTGT đầu ra (chỉ INTERNAL_USE/GIFT/SAMPLE; null với DESTROY/COUNT_*).
+    // refSellPrice = giá bán/đơn vị (đã gồm VAT); preTaxAmount/vatAmount tách net-thuế của giá trị tính thuế.
+    private BigDecimal refSellPrice;
+    private BigDecimal vatRate;
+    private BigDecimal preTaxAmount;
+    private BigDecimal vatAmount;
 }

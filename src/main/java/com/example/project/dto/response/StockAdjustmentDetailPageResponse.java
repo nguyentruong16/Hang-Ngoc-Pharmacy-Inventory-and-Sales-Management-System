@@ -46,4 +46,10 @@ public class StockAdjustmentDetailPageResponse {
     private boolean approvalChecked;
 
     private List<StockAdjustmentDetailItemResponse> items;
+
+    /** True chỉ khi loại phiếu là INTERNAL_USE/GIFT/SAMPLE → hiện cột thuế GTGT đầu ra trên màn chi tiết. */
+    private boolean showOutputVat;
+
+    /** Tổng thuế GTGT đầu ra của phiếu (0 nếu loại không phát sinh). */
+    private BigDecimal totalOutputVat;
 }
