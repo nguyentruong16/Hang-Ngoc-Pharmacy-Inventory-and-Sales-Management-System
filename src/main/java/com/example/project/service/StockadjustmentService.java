@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -46,6 +47,12 @@ public class StockadjustmentService {
 
     /** Adjustment types a user may pick when creating a slip by hand (COUNT_* comes from stock count). */
     private static final List<String> CREATABLE_TYPES = List.of("DESTROY", "INTERNAL_USE", "SAMPLE", "GIFT");
+
+    /**
+     * Chỉ 3/6 loại phải tính thuế GTGT ĐẦU RA theo giá bán: dùng nội bộ / biếu tặng / hàng mẫu.
+     * DESTROY và COUNT_INCREASE/COUNT_DECREASE không phát sinh GTGT đầu ra → để 4 field thuế null.
+     */
+    private static final Set<String> VAT_OUTPUT_TYPES = Set.of("INTERNAL_USE", "GIFT", "SAMPLE");
 
     private final StockadjustmentRepository stockadjustmentRepository;
     private final StockadjustmentdetailRepository stockadjustmentdetailRepository;
@@ -185,6 +192,12 @@ public class StockadjustmentService {
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // Tổng thuế GTGT đầu ra của phiếu (chỉ INTERNAL_USE/GIFT/SAMPLE có; loại khác vatAmount null → 0).
+        BigDecimal totalOutputVat = details.stream()
+                .map(Stockadjustmentdetail::getVatAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         String statusName = getStatusName(adjustment);
 
         boolean itemsChecked = totalItems > 0;
@@ -237,7 +250,9 @@ public class StockadjustmentService {
                 batchChecked,
                 valueChecked,
                 approvalChecked,
-                itemResponses
+                itemResponses,
+                VAT_OUTPUT_TYPES.contains(adjustment.getAdjustmentType()),
+                totalOutputVat
         );
     }
 
@@ -531,6 +546,8 @@ public class StockadjustmentService {
             detail.setUnitCostPrice(unitCost);
             detail.setLineCost(lineCost);
             detail.setNote(trimToNull(item.getReason()));
+            // Thuế GTGT đầu ra theo GIÁ BÁN — chỉ INTERNAL_USE/GIFT/SAMPLE; loại khác để null.
+            applyOutputVat(detail, adjustmentType, unit, item.getQuantity(), product, item.getVatRate());
 
             savedDetails.add(stockadjustmentdetailRepository.save(detail));
         }
@@ -801,7 +818,11 @@ public class StockadjustmentService {
                 DIRECTION_IN.equals(detail.getDirection()) ? "Tăng" : "Giảm",
                 detail.getUnitCostPrice(),
                 detail.getLineCost(),
-                detail.getNote()
+                detail.getNote(),
+                detail.getRefSellPrice(),
+                detail.getVatRate(),
+                detail.getPreTaxAmount(),
+                detail.getVatAmount()
         );
     }
 
@@ -819,8 +840,61 @@ public class StockadjustmentService {
                 batch.getStorageQuantity(),
                 unit != null ? unit.getId() : null,
                 unit != null ? unit.getUnitName() : "Đơn vị",
-                resolveUnitCost(batch)
+                resolveUnitCost(batch),
+                unit != null && unit.getSellPrice() != null ? unit.getSellPrice() : BigDecimal.ZERO,
+                resolveVatRateSnapshot(product)
         );
+    }
+
+    /**
+     * Điền thuế GTGT đầu ra cho dòng điều chỉnh — CHỈ áp dụng INTERNAL_USE/GIFT/SAMPLE, tính theo
+     * GIÁ BÁN (không phải giá vốn). Người lập tự nhập {@code vatRate} (0 nếu KM đã đăng ký); mặc định
+     * = thuế suất thường của sản phẩm. Loại DESTROY/COUNT_* để 4 field null (không phát sinh GTGT đầu ra).
+     * refSellPrice = giá bán/đơn vị (đã gồm VAT); tách net/thuế nhất quán với InvoiceDetail.
+     */
+    private void applyOutputVat(Stockadjustmentdetail detail, String adjustmentType,
+                                Productunit unit, int quantity, Product product, BigDecimal requestedVatRate) {
+        if (!VAT_OUTPUT_TYPES.contains(adjustmentType)) {
+            return;
+        }
+        BigDecimal sellPrice = unit != null && unit.getSellPrice() != null ? unit.getSellPrice() : BigDecimal.ZERO;
+        BigDecimal vatRate = requestedVatRate != null ? requestedVatRate : resolveVatRateSnapshot(product);
+        if (vatRate.compareTo(BigDecimal.ZERO) < 0) {
+            vatRate = BigDecimal.ZERO;
+        }
+        BigDecimal grossValue = sellPrice.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal preTax;
+        BigDecimal vat;
+        if (vatRate.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal divisor = BigDecimal.ONE.add(vatRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
+            preTax = grossValue.divide(divisor, 2, RoundingMode.HALF_UP);
+            vat = grossValue.subtract(preTax);
+        } else {
+            preTax = grossValue;
+            vat = BigDecimal.ZERO;
+        }
+        detail.setRefSellPrice(sellPrice);
+        detail.setVatRate(vatRate);
+        detail.setPreTaxAmount(preTax);
+        detail.setVatAmount(vat);
+    }
+
+    /**
+     * Thuế suất GTGT thường của sản phẩm (mirror {@code InvoiceService}): {@code Product.vatRateOverride}
+     * nếu có, ngược lại {@code Type.defaultVATRate}, mặc định 0.
+     */
+    private BigDecimal resolveVatRateSnapshot(Product product) {
+        if (product == null) {
+            return BigDecimal.ZERO;
+        }
+        if (product.getVatRateOverride() != null) {
+            return product.getVatRateOverride();
+        }
+        Type type = product.getTypeID();
+        if (type != null && type.getDefaultVATRate() != null) {
+            return type.getDefaultVATRate();
+        }
+        return BigDecimal.ZERO;
     }
 
     // ------------------------------------------------------------------ unit / cost resolution

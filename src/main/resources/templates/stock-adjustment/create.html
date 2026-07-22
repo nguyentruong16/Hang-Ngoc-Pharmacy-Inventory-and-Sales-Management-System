@@ -346,6 +346,12 @@
                                 Danh sách hàng điều chỉnh
                                 <span class="badge bg-success-subtle text-success ms-2" id="selectedCountBadge">0</span>
                             </div>
+                            <p class="text-secondary small mb-0 mt-1 vat-col" style="display: none;">
+                                <i class="ti ti-receipt-tax me-1"></i>
+                                Loại này phải kê <strong>thuế GTGT đầu ra</strong> theo <strong>giá bán</strong>.
+                                Nhập thuế suất từng dòng — đặt <strong>0%</strong> nếu chương trình khuyến mãi
+                                đã đăng ký hợp lệ với Sở Công Thương.
+                            </p>
                         </div>
 
                         <div class="table-responsive">
@@ -359,6 +365,7 @@
                                     <th>Tồn hiện tại</th>
                                     <th style="min-width: 120px;">Số lượng</th>
                                     <th style="min-width: 160px;">Lý do</th>
+                                    <th class="vat-col" style="min-width: 150px; display: none;">Thuế GTGT đầu ra</th>
                                     <th>Giá trị ước tính</th>
                                     <th class="text-end">Thao tác</th>
                                 </tr>
@@ -366,7 +373,7 @@
 
                                 <tbody id="selectedItemsBody">
                                 <tr id="emptyRow">
-                                    <td colspan="9" class="text-center text-secondary py-4">
+                                    <td colspan="10" class="text-center text-secondary py-4">
                                         Chưa chọn hàng hóa cần điều chỉnh.
                                     </td>
                                 </tr>
@@ -674,7 +681,7 @@
     }
 
     /** Appends a table row for a candidate batch. Shared by manual "Thêm" and draft restore. */
-    function addBatchRow(candidate, quantity, reason) {
+    function addBatchRow(candidate, quantity, reason, vatRate) {
         selectedBatchIds.add(candidate.batchId);
 
         const emptyRow = document.getElementById('emptyRow');
@@ -693,6 +700,7 @@
         row.setAttribute('data-batch-id', candidate.batchId);
         row.setAttribute('data-stock', candidate.storageQuantity);
         row.setAttribute('data-unit-cost', candidate.unitCostPrice || 0);
+        row.setAttribute('data-sell-price', candidate.sellPrice || 0);
 
         row.innerHTML = `
             <td class="fw-semibold text-success">
@@ -736,6 +744,19 @@
                        placeholder="VD: Sắp hết hạn">
             </td>
 
+            <td class="vat-col" style="display: none;">
+                <div class="input-group input-group-sm">
+                    <input type="number" min="0" max="100" step="0.01"
+                           value="${candidate.defaultVatRate != null ? candidate.defaultVatRate : 0}"
+                           class="form-control form-control-sm vat-rate-input"
+                           name="items[${index}].vatRate"
+                           data-field="vatRate"
+                           oninput="calculateSummary()">
+                    <span class="input-group-text auto-addon">%</span>
+                </div>
+                <div class="small text-secondary mt-1">Thuế: <span class="line-vat">0đ</span></div>
+            </td>
+
             <td class="fw-semibold line-cost">${formatMoney(candidate.unitCostPrice || 0)}</td>
 
             <td class="text-end">
@@ -747,6 +768,16 @@
         `;
 
         tbody.appendChild(row);
+
+        // Restore a user-overridden VAT rate from the draft (default was pre-filled in the markup).
+        if (vatRate !== undefined && vatRate !== null && vatRate !== '') {
+            const rateInput = row.querySelector('.vat-rate-input');
+            if (rateInput) {
+                rateInput.value = vatRate;
+            }
+        }
+
+        applyVatColumnVisibility();
     }
 
     function removeRow(button) {
@@ -761,7 +792,7 @@
         if (tbody.querySelectorAll('tr').length === 0) {
             tbody.innerHTML = `
                 <tr id="emptyRow">
-                    <td colspan="9" class="text-center text-secondary py-4">
+                    <td colspan="10" class="text-center text-secondary py-4">
                         Chưa chọn hàng hóa cần điều chỉnh.
                     </td>
                 </tr>
@@ -789,6 +820,8 @@
         let totalValue = 0;
         let quantityValid = true;
 
+        const vatApplicable = isVatOutputType();
+
         document.querySelectorAll('#selectedItemsBody tr[data-batch-id]').forEach(row => {
             totalItems++;
 
@@ -807,6 +840,17 @@
             totalValue += lineCost;
 
             row.querySelector('.line-cost').textContent = formatMoney(lineCost);
+
+            // Thuế GTGT đầu ra (chỉ INTERNAL_USE/GIFT/SAMPLE): theo GIÁ BÁN gồm VAT → tách ngược.
+            const lineVat = row.querySelector('.line-vat');
+            if (lineVat) {
+                const sellPrice = Number(row.getAttribute('data-sell-price') || 0);
+                const rateInput = row.querySelector('.vat-rate-input');
+                const rate = Number(rateInput ? rateInput.value : 0) || 0;
+                const gross = sellPrice * quantity;
+                const preTax = rate > 0 ? gross / (1 + rate / 100) : gross;
+                lineVat.textContent = formatMoney(vatApplicable ? gross - preTax : 0);
+            }
         });
 
         document.getElementById('selectedCountBadge').textContent = totalItems;
@@ -879,6 +923,21 @@
         const show = !!type && type !== 'STOCK_COUNT';
         document.getElementById('itemsSection').style.display = show ? '' : 'none';
         document.getElementById('typePrompt').style.display = show ? 'none' : '';
+        applyVatColumnVisibility();
+    }
+
+    /** Chỉ 3 loại này tính thuế GTGT đầu ra (theo giá bán) — khớp VAT_OUTPUT_TYPES phía server. */
+    function isVatOutputType() {
+        const type = document.getElementById('adjustmentTypeSelect').value;
+        return type === 'INTERNAL_USE' || type === 'GIFT' || type === 'SAMPLE';
+    }
+
+    /** Hiện/ẩn cột "Thuế GTGT đầu ra" theo loại phiếu (chỉ INTERNAL_USE/GIFT/SAMPLE). */
+    function applyVatColumnVisibility() {
+        const show = isVatOutputType();
+        document.querySelectorAll('.vat-col').forEach(cell => {
+            cell.style.display = show ? '' : 'none';
+        });
     }
 
     // ------------------------------------------------ stock-count picker modal
@@ -1016,10 +1075,12 @@
     function serializeDraft() {
         const items = [];
         document.querySelectorAll('#selectedItemsBody tr[data-batch-id]').forEach(row => {
+            const rateInput = row.querySelector('.vat-rate-input');
             items.push({
                 batchId: Number(row.getAttribute('data-batch-id')),
                 quantity: Number(row.querySelector('.quantity-input').value || 0),
-                reason: row.querySelector('[data-field="reason"]').value || ''
+                reason: row.querySelector('[data-field="reason"]').value || '',
+                vatRate: rateInput ? rateInput.value : ''
             });
         });
         return {
@@ -1095,7 +1156,7 @@
             if (!candidate) {
                 return; // batch depleted / deactivated since the draft was saved
             }
-            addBatchRow(candidate, item.quantity, item.reason);
+            addBatchRow(candidate, item.quantity, item.reason, item.vatRate);
             applied = true;
         });
 

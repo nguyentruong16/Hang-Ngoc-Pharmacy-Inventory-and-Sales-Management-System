@@ -252,6 +252,7 @@
                                 <th>Tồn hiện tại</th>
                                 <th>Chênh lệch</th>
                                 <th>Giá trị ước tính</th>
+                                <th th:if="${detail.showOutputVat}">Thuế GTGT đầu ra</th>
                                 <th>Ghi chú</th>
                             </tr>
                             </thead>
@@ -279,6 +280,15 @@
                                     th:text="${#numbers.formatDecimal(item.lineCost, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     350.000đ
                                 </td>
+                                <td th:if="${detail.showOutputVat}">
+                                    <span th:if="${item.vatAmount != null}">
+                                        <span class="fw-semibold"
+                                              th:text="${#numbers.formatDecimal(item.vatAmount, 0, 'POINT', 0, 'COMMA') + 'đ'}">19.047đ</span>
+                                        <span class="badge bg-secondary-subtle text-secondary ms-1"
+                                              th:text="${#numbers.formatDecimal(item.vatRate, 0, 'POINT', 0, 'COMMA') + '%'}">8%</span>
+                                    </span>
+                                    <span th:unless="${item.vatAmount != null}" class="text-secondary">—</span>
+                                </td>
                                 <td th:text="${item.note}">Hết hạn sử dụng</td>
                             </tr>
 
@@ -288,6 +298,10 @@
                                 <td class="text-success"
                                     th:text="${#numbers.formatDecimal(detail.estimatedValue, 0, 'POINT', 0, 'COMMA') + 'đ'}">
                                     650.000đ
+                                </td>
+                                <td th:if="${detail.showOutputVat}" class="text-success"
+                                    th:text="${#numbers.formatDecimal(detail.totalOutputVat, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                    0đ
                                 </td>
                                 <td></td>
                             </tr>
