@@ -80,4 +80,9 @@ public class FinancialSettingUpdateRequest {
     @NotBlank(message = "Tên ngân hàng không được để trống")
     @Size(max = 100, message = "Tên ngân hàng không được vượt quá 100 ký tự")
     private String bankName;
+
+    private Boolean autoOffsetDebtOnRefund;
+
+    @Min(value = 1, message = "Số ngày cho phép trả hàng phải lớn hơn 0")
+    private Integer returnPolicyMaxDays;
 }

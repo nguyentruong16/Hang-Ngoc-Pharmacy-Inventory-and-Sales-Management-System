@@ -268,6 +268,17 @@
                                 </div>
                             </div>
 
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Hạn thanh toán công nợ NCC</label>
+                                <input type="date"
+                                       class="form-control"
+                                       th:field="*{dueDate}">
+                                <div class="text-danger small mt-1"
+                                     th:if="${#fields.hasErrors('dueDate')}"
+                                     th:errors="*{dueDate}">
+                                </div>
+                            </div>
+
                             <div class="col-12">
                                 <label class="form-label">Ghi chú</label>
                                 <textarea class="form-control" rows="3" th:field="*{note}"

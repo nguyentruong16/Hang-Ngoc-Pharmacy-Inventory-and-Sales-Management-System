@@ -60,6 +60,8 @@ public class FinancialsettingService {
         entity.setEmail(request.getEmail());
         entity.setBankAccountNumber(request.getBankAccountNumber());
         entity.setBankName(request.getBankName());
+        entity.setAutoOffsetDebtOnRefund(Boolean.TRUE.equals(request.getAutoOffsetDebtOnRefund()));
+        entity.setReturnPolicyMaxDays(request.getReturnPolicyMaxDays());
 
         return FinancialsettingResponse.from(financialsettingRepository.save(entity));
     }
@@ -83,7 +85,7 @@ public class FinancialsettingService {
                 BigDecimal.valueOf(1_000_000_000L),
                 BigDecimal.valueOf(3_000_000_000L),
                 true,
-                1
+                null
         );
     }
 }
