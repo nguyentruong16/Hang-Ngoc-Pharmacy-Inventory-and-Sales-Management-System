@@ -180,6 +180,7 @@ public class StockadjustmentController {
 
     @PostMapping(OWNER_BASE + "/{adjustmentId}/approve")
     public String approve(@PathVariable Integer adjustmentId,
+                          @RequestParam(name = "redirectTo", required = false) String redirectTo,
                           RedirectAttributes redirectAttributes) {
         try {
             stockadjustmentService.approve(adjustmentId, currentUserContext.getCurrentAccountId());
@@ -187,11 +188,12 @@ public class StockadjustmentController {
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
-        return "redirect:" + OWNER_BASE + "/" + adjustmentId;
+        return "redirect:" + (redirectTo != null && !redirectTo.isBlank() ? redirectTo : OWNER_BASE + "/" + adjustmentId);
     }
 
     @PostMapping(OWNER_BASE + "/{adjustmentId}/reject")
     public String reject(@PathVariable Integer adjustmentId,
+                         @RequestParam(name = "redirectTo", required = false) String redirectTo,
                          RedirectAttributes redirectAttributes) {
         try {
             stockadjustmentService.reject(adjustmentId, currentUserContext.getCurrentAccountId());
@@ -199,7 +201,7 @@ public class StockadjustmentController {
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
-        return "redirect:" + OWNER_BASE + "/" + adjustmentId;
+        return "redirect:" + (redirectTo != null && !redirectTo.isBlank() ? redirectTo : OWNER_BASE + "/" + adjustmentId);
     }
 
     private String resolveBasePath(HttpServletRequest request) {

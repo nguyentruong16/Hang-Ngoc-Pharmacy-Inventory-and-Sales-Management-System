@@ -65,6 +65,11 @@ public class IncomeService {
     private final ReturnRepository returnRepository;
     private final PurchaseinvoiceRepository purchaseinvoiceRepository;
     private final StockadjustmentRepository stockadjustmentRepository;
+    // Lazily opens/reuses the collector's shift the moment an income is actually recorded — same
+    // hook as InvoiceService/ReturnService (phát sinh giao dịch là tạo báo cáo ca). Income is
+    // only creatable by Owner/Pharmacist (see IncomeController routes), so this never opens a shift
+    // for an Accountant.
+    private final ShiftreportService shiftreportService;
 
     public IncomeService(IncomeRepository incomeRepository,
                          AccountRepository accountRepository,
@@ -73,7 +78,8 @@ public class IncomeService {
                          InvoiceRepository invoiceRepository,
                          ReturnRepository returnRepository,
                          PurchaseinvoiceRepository purchaseinvoiceRepository,
-                         StockadjustmentRepository stockadjustmentRepository) {
+                         StockadjustmentRepository stockadjustmentRepository,
+                         ShiftreportService shiftreportService) {
         this.incomeRepository = incomeRepository;
         this.accountRepository = accountRepository;
         this.customerRepository = customerRepository;
@@ -82,6 +88,7 @@ public class IncomeService {
         this.returnRepository = returnRepository;
         this.purchaseinvoiceRepository = purchaseinvoiceRepository;
         this.stockadjustmentRepository = stockadjustmentRepository;
+        this.shiftreportService = shiftreportService;
     }
 
     @Transactional(readOnly = true)
@@ -283,6 +290,13 @@ public class IncomeService {
             income.setStatus(STATUS_APPROVED);
         } else {
             income.setStatus(STATUS_PENDING);
+        }
+
+        // A submitted income is a real counter transaction (cash/banking physically received) →
+        // attach the collector's open shift. Drafts are not transactions yet, so they stay
+        // unattached until they are actually sent (no submit flow exists for drafts yet).
+        if (!asDraft) {
+            income.setShiftReportID(shiftreportService.ensureOpenShiftFor(currentAccountId));
         }
 
         income.setIncomeCode(generateCode());

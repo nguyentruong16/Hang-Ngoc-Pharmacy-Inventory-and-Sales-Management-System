@@ -91,6 +91,9 @@ public class ReturnService {
     private final InvoicedetailRepository invoicedetailRepository;
     // Read-only: current tax revenue group (Nhóm 2/3) drives how the refund VAT is split.
     private final FinancialsettingRepository financialsettingRepository;
+    // Lazily opens/reuses the acting account's shift the moment a return is actually approved
+    // (becomes Nợ) — mirrors the same hook on the Invoice side (see ShiftreportService).
+    private final ShiftreportService shiftreportService;
 
     public ReturnService(ReturnRepository returnRepository,
                          ReturndetailRepository returndetailRepository,
@@ -98,7 +101,8 @@ public class ReturnService {
                          BatchRepository batchRepository,
                          InvoiceRepository invoiceRepository,
                          InvoicedetailRepository invoicedetailRepository,
-                         FinancialsettingRepository financialsettingRepository) {
+                         FinancialsettingRepository financialsettingRepository,
+                         ShiftreportService shiftreportService) {
         this.returnRepository = returnRepository;
         this.returndetailRepository = returndetailRepository;
         this.accountRepository = accountRepository;
@@ -106,6 +110,7 @@ public class ReturnService {
         this.invoiceRepository = invoiceRepository;
         this.invoicedetailRepository = invoicedetailRepository;
         this.financialsettingRepository = financialsettingRepository;
+        this.shiftreportService = shiftreportService;
     }
 
     // ------------------------------------------------------------------ list / search
@@ -427,8 +432,20 @@ public class ReturnService {
      * </ul>
      * TODO(finance): create the Expense (phiếu chi) payout here once that module's contract is agreed; for
      * now only the refund amounts on the slip are recorded.
+     *
+     * <p>Also lazily opens/reuses the <strong>creator's</strong> (not the approver's) shift report right
+     * here — the physical counter transaction with the customer happens when the slip is created, even
+     * if an Owner reviews/approves it asynchronously later from elsewhere. Using the approver's account
+     * here would misattach the return to whichever shift the Owner happens to be in at review time (or
+     * spawn a stray extra shift for the Owner), instead of the shift the sale itself is already sitting
+     * in. A return is a real transaction the moment it is approved, regardless of whether it nets out to
+     * cash, banking or pure debt offset ("phát sinh giao dịch là tạo báo cáo ca").</p>
      */
     private void applyReturnEffect(Return ret, List<Returndetail> details) {
+        Shiftreport shift = shiftreportService.ensureOpenShiftFor(ret.getReturnedBy().getId());
+        ret.setShiftReportID(shift);
+        returnRepository.save(ret);
+
         boolean signed = isSigned(ret.getInvoiceID());
         for (Returndetail detail : details) {
             Invoicedetail invoiceLine = detail.getInvoiceDetailID();
