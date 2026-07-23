@@ -38,6 +38,7 @@ public class PlaceholderController {
             "/owner/approvals",
             "/owner/notifications",
             "/owner/incomes",
+            "/owner/expenses",
             "/owner/shift-reports",
             "/owner/daily-reports"
     })
@@ -50,7 +51,6 @@ public class PlaceholderController {
             "/pharmacist/customers",
             "/pharmacist/shift-reports",
             "/pharmacist/notifications",
-            "/pharmacist/incomes",
             "/pharmacist/stock-outs/create"
     })
     public String pharmacist(HttpServletRequest request, Model model) {
