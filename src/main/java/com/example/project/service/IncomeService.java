@@ -1,10 +1,26 @@
 package com.example.project.service;
 
+import com.example.project.dto.request.IncomeCreateRequest;
 import com.example.project.dto.response.CustomerOptionResponse;
 import com.example.project.dto.response.IncomeListItemResponse;
+import com.example.project.dto.response.IncomeReferenceOptionResponse;
+import com.example.project.dto.response.IncomeTypeOptionResponse;
 import com.example.project.entity.Account;
+import com.example.project.entity.Customer;
 import com.example.project.entity.Income;
+import com.example.project.entity.Invoice;
+import com.example.project.entity.Purchaseinvoice;
+import com.example.project.entity.Return;
+import com.example.project.entity.Stockadjustment;
+import com.example.project.entity.Supplier;
+import com.example.project.repository.AccountRepository;
+import com.example.project.repository.CustomerRepository;
 import com.example.project.repository.IncomeRepository;
+import com.example.project.repository.InvoiceRepository;
+import com.example.project.repository.PurchaseinvoiceRepository;
+import com.example.project.repository.ReturnRepository;
+import com.example.project.repository.StockadjustmentRepository;
+import com.example.project.repository.SupplierRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -12,9 +28,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -23,6 +41,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class IncomeService {
@@ -32,15 +53,35 @@ public class IncomeService {
     private static final String STATUS_APPROVED = "Duyệt";
     private static final String STATUS_REJECTED = "Từ chối";
 
-    private static final String TYPE_SUPPLIER = "SUPPLIER";
-    private static final String TYPE_EMPLOYEE = "EMPLOYEE";
-    private static final String TYPE_CUSTOMER = "CUSTOMER";
-    private static final String TYPE_OTHER = "OTHER";
+    private static final String INVOICE_STATUS_DEBT = "Còn nợ";
+    private static final String SUPPLIER_RETURN_STATUS_APPROVED = "Đã duyệt";
+    private static final String STOCK_ADJUSTMENT_STATUS_APPROVED = "Duyệt";
 
     private final IncomeRepository incomeRepository;
+    private final AccountRepository accountRepository;
+    private final CustomerRepository customerRepository;
+    private final SupplierRepository supplierRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final ReturnRepository returnRepository;
+    private final PurchaseinvoiceRepository purchaseinvoiceRepository;
+    private final StockadjustmentRepository stockadjustmentRepository;
 
-    public IncomeService(IncomeRepository incomeRepository) {
+    public IncomeService(IncomeRepository incomeRepository,
+                         AccountRepository accountRepository,
+                         CustomerRepository customerRepository,
+                         SupplierRepository supplierRepository,
+                         InvoiceRepository invoiceRepository,
+                         ReturnRepository returnRepository,
+                         PurchaseinvoiceRepository purchaseinvoiceRepository,
+                         StockadjustmentRepository stockadjustmentRepository) {
         this.incomeRepository = incomeRepository;
+        this.accountRepository = accountRepository;
+        this.customerRepository = customerRepository;
+        this.supplierRepository = supplierRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.returnRepository = returnRepository;
+        this.purchaseinvoiceRepository = purchaseinvoiceRepository;
+        this.stockadjustmentRepository = stockadjustmentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -102,13 +143,164 @@ public class IncomeService {
                 .toList();
     }
 
-    public Map<String, String> incomeTypeLabels() {
-        Map<String, String> labels = new LinkedHashMap<>();
-        labels.put(TYPE_SUPPLIER, "Nhà cung cấp");
-        labels.put(TYPE_EMPLOYEE, "Nhân viên");
-        labels.put(TYPE_CUSTOMER, "Khách hàng");
-        labels.put(TYPE_OTHER, "Khác");
-        return labels;
+    public List<IncomeTypeOptionResponse> listIncomeTypes() {
+        return IncomeTypeOptionResponse.all();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerOptionResponse> listCustomers() {
+        return customerRepository.findAll().stream()
+                .sorted(Comparator.comparing(Customer::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(customer -> new CustomerOptionResponse(
+                        customer.getId(), customer.getName(), customer.getPhoneNumber()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerOptionResponse> listSuppliers() {
+        return supplierRepository.findAll().stream()
+                .sorted(Comparator.comparing(Supplier::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(supplier -> new CustomerOptionResponse(supplier.getId(), supplier.getName(), null))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerOptionResponse> listEmployees() {
+        return accountRepository.findAll().stream()
+                .filter(account -> Boolean.TRUE.equals(account.getStatus()))
+                .sorted(Comparator.comparing(Account::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(account -> new CustomerOptionResponse(account.getId(), account.getName(), null))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<IncomeReferenceOptionResponse> listDebtInvoices(Integer customerId) {
+        if (customerId == null) {
+            return List.of();
+        }
+        return invoiceRepository.findAllWithRelations().stream()
+                .filter(invoice -> invoice.getCustomerID() != null
+                        && customerId.equals(invoice.getCustomerID().getId()))
+                .filter(this::isDebtInvoice)
+                .sorted(Comparator.comparing(Invoice::getDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Invoice::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(invoice -> new IncomeReferenceOptionResponse(
+                        invoice.getId(),
+                        invoice.getInvoiceNumber(),
+                        formatInvoiceDate(invoice.getDate()),
+                        invoice.getDebtAmount(),
+                        "Tổng HĐ: " + formatMoney(invoice.getTotal())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<IncomeReferenceOptionResponse> listSupplierReturns(Integer supplierId) {
+        if (supplierId == null) {
+            return List.of();
+        }
+        Map<Integer, Purchaseinvoice> purchasesById = purchaseinvoiceRepository.findAllWithRelations().stream()
+                .collect(Collectors.toMap(Purchaseinvoice::getId, purchase -> purchase, (a, b) -> a));
+        Set<Integer> linkedReturnIds = linkedReturnIds();
+
+        return returnRepository.findAll().stream()
+                .filter(ret -> ret.getPurchaseID() != null && ret.getInvoiceID() == null)
+                .filter(ret -> SUPPLIER_RETURN_STATUS_APPROVED.equals(ret.getStatus()))
+                .filter(ret -> ret.getIncomeID() == null && !linkedReturnIds.contains(ret.getId()))
+                .filter(this::hasCashRefund)
+                .filter(ret -> {
+                    Purchaseinvoice purchase = purchasesById.get(ret.getPurchaseID().getId());
+                    return purchase != null && purchase.getSupplierID() != null
+                            && supplierId.equals(purchase.getSupplierID().getId());
+                })
+                .sorted(Comparator.comparing(Return::getReturnDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Return::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(ret -> {
+                    Purchaseinvoice purchase = purchasesById.get(ret.getPurchaseID().getId());
+                    String purchaseCode = purchase != null ? purchase.getPurchaseInvoiceCode() : "—";
+                    return new IncomeReferenceOptionResponse(
+                            ret.getId(),
+                            ret.getReturnCode(),
+                            formatInstant(ret.getReturnDate()),
+                            cashRefundAmount(ret),
+                            "Phiếu nhập: " + purchaseCode);
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<IncomeReferenceOptionResponse> listStockAdjustments(Integer accountId) {
+        if (accountId == null) {
+            return List.of();
+        }
+        Set<Integer> linkedAdjustmentIds = linkedStockAdjustmentIds();
+
+        return stockadjustmentRepository.findAllWithRelations().stream()
+                .filter(adjustment -> STOCK_ADJUSTMENT_STATUS_APPROVED.equals(adjustment.getStatus()))
+                .filter(adjustment -> adjustment.getCreatedBy() != null
+                        && accountId.equals(adjustment.getCreatedBy().getId()))
+                .filter(adjustment -> !linkedAdjustmentIds.contains(adjustment.getId()))
+                .sorted(Comparator.comparing(Stockadjustment::getDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Stockadjustment::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(adjustment -> new IncomeReferenceOptionResponse(
+                        adjustment.getId(),
+                        adjustment.getStockAdjustmentCode(),
+                        formatInstant(adjustment.getDate()),
+                        null,
+                        adjustment.getReason()))
+                .toList();
+    }
+
+    /**
+     * Creates a manual income slip. When {@code asDraft} is true it is saved as {@link #STATUS_DRAFT};
+     * otherwise the Owner's slip is auto-approved and anyone else's goes to {@link #STATUS_PENDING}.
+     */
+    @Transactional
+    public Integer createIncome(IncomeCreateRequest request, Integer currentAccountId, boolean isOwner,
+                                boolean asDraft) {
+        validateCreateRequest(request);
+
+        Account applicant = accountRepository.findById(currentAccountId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
+
+        String incomeType = resolveIncomeType(request.getIncomeType());
+        BigDecimal[] split = resolveSplit(request);
+
+        Income income = new Income();
+        income.setApplicantID(applicant);
+        income.setIncomeType(incomeType);
+        income.setDate(Instant.now());
+        income.setReason(request.getReason() != null ? request.getReason().trim() : "");
+        income.setAmount(request.getAmount());
+        income.setPaidByCash(split[0]);
+        income.setPaidByBanking(split[1]);
+        income.setNote(trimToNull(request.getNote()));
+        applyPartyLinks(income, incomeType, request);
+        applyReferenceLinks(income, incomeType, request);
+
+        if (asDraft) {
+            income.setStatus(STATUS_DRAFT);
+        } else if (isOwner) {
+            income.setStatus(STATUS_APPROVED);
+        } else {
+            income.setStatus(STATUS_PENDING);
+        }
+
+        income.setIncomeCode(generateCode());
+        Income saved = incomeRepository.save(income);
+        saved.setIncomeCode(formatCode(saved.getId()));
+        saved = incomeRepository.save(saved);
+        linkReturnIncome(saved, incomeType, request.getReturnId());
+        return saved.getId();
+    }
+
+    private void linkReturnIncome(Income saved, String incomeType, Integer returnId) {
+        if (!IncomeTypeOptionResponse.SUPPLIER.equals(incomeType) || returnId == null) {
+            return;
+        }
+        Return ret = returnRepository.findById(returnId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu trả hàng nhà cung cấp"));
+        ret.setIncomeID(saved);
+        returnRepository.save(ret);
     }
 
     @Transactional(readOnly = true)
@@ -194,19 +386,19 @@ public class IncomeService {
     /** {@code incomeType} by party collected from; falls back to FK hints when DB value is unknown. */
     private String resolveIncomeType(Income income) {
         String stored = income.getIncomeType();
-        if (stored != null && incomeTypeLabels().containsKey(stored)) {
+        if (stored != null && IncomeTypeOptionResponse.isValid(stored)) {
             return stored;
         }
         if (income.getSupplierID() != null) {
-            return TYPE_SUPPLIER;
+            return IncomeTypeOptionResponse.SUPPLIER;
         }
         if (income.getCustomerID() != null) {
-            return TYPE_CUSTOMER;
+            return IncomeTypeOptionResponse.CUSTOMER;
         }
         if (income.getAccountID() != null) {
-            return TYPE_EMPLOYEE;
+            return IncomeTypeOptionResponse.EMPLOYEE;
         }
-        return TYPE_OTHER;
+        return IncomeTypeOptionResponse.OTHER;
     }
 
     private String referenceCode(Income income) {
@@ -218,6 +410,9 @@ public class IncomeService {
         }
         if (income.getShiftReportID() != null && income.getShiftReportID().getShiftReportCode() != null) {
             return income.getShiftReportID().getShiftReportCode();
+        }
+        if (income.getStockAdjustmentID() != null && income.getStockAdjustmentID().getStockAdjustmentCode() != null) {
+            return income.getStockAdjustmentID().getStockAdjustmentCode();
         }
         return "—";
     }
@@ -290,7 +485,8 @@ public class IncomeService {
         if (type == null) {
             return "Không rõ";
         }
-        return incomeTypeLabels().getOrDefault(type, type);
+        String label = IncomeTypeOptionResponse.labelOf(type);
+        return label.isBlank() ? type : label;
     }
 
     private String formatInstant(Instant instant) {
@@ -329,5 +525,229 @@ public class IncomeService {
         normalized = normalized.replaceAll("\\p{M}", "");
         normalized = normalized.replace("Đ", "D").replace("đ", "d");
         return normalized.toLowerCase(Locale.ROOT).trim();
+    }
+
+    private void validateCreateRequest(IncomeCreateRequest request) {
+        if (request.getIncomeType() == null || request.getIncomeType().isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn loại phiếu thu");
+        }
+        if (request.getReason() == null || request.getReason().isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập nội dung thu");
+        }
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số tiền thu phải lớn hơn 0");
+        }
+        String incomeType = resolveIncomeType(request.getIncomeType());
+        if (IncomeTypeOptionResponse.SUPPLIER.equals(incomeType) && request.getSupplierId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn nhà cung cấp");
+        }
+        if (IncomeTypeOptionResponse.SUPPLIER.equals(incomeType) && request.getReturnId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn phiếu trả hàng nhà cung cấp");
+        }
+        if (IncomeTypeOptionResponse.CUSTOMER.equals(incomeType) && request.getCustomerId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn khách hàng");
+        }
+        if (IncomeTypeOptionResponse.CUSTOMER.equals(incomeType) && request.getInvoiceId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn hóa đơn bán hàng còn nợ");
+        }
+        if (IncomeTypeOptionResponse.EMPLOYEE.equals(incomeType) && request.getAccountId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn nhân viên");
+        }
+        if (IncomeTypeOptionResponse.EMPLOYEE.equals(incomeType) && request.getStockAdjustmentId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn phiếu điều chỉnh kho");
+        }
+        validateReferenceSelection(incomeType, request);
+    }
+
+    private void validateReferenceSelection(String incomeType, IncomeCreateRequest request) {
+        if (IncomeTypeOptionResponse.CUSTOMER.equals(incomeType)) {
+            Invoice invoice = invoiceRepository.findById(request.getInvoiceId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn bán hàng"));
+            if (invoice.getCustomerID() == null || !request.getCustomerId().equals(invoice.getCustomerID().getId())) {
+                throw new IllegalArgumentException("Hóa đơn không thuộc khách hàng đã chọn");
+            }
+            if (!isDebtInvoice(invoice)) {
+                throw new IllegalArgumentException("Hóa đơn không còn ở trạng thái nợ");
+            }
+        }
+        if (IncomeTypeOptionResponse.SUPPLIER.equals(incomeType)) {
+            Return ret = returnRepository.findById(request.getReturnId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu trả hàng nhà cung cấp"));
+            if (ret.getPurchaseID() == null || ret.getInvoiceID() != null) {
+                throw new IllegalArgumentException("Phiếu trả hàng không hợp lệ");
+            }
+            if (!SUPPLIER_RETURN_STATUS_APPROVED.equals(ret.getStatus())) {
+                throw new IllegalArgumentException("Chỉ có thể thu tiền từ phiếu trả NCC đã duyệt");
+            }
+            if (ret.getIncomeID() != null || linkedReturnIds().contains(ret.getId())) {
+                throw new IllegalArgumentException("Phiếu trả hàng này đã được ghi nhận thu tiền");
+            }
+            Purchaseinvoice purchase = purchaseinvoiceRepository.findById(ret.getPurchaseID().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập liên quan"));
+            if (purchase.getSupplierID() == null || !request.getSupplierId().equals(purchase.getSupplierID().getId())) {
+                throw new IllegalArgumentException("Phiếu trả hàng không thuộc nhà cung cấp đã chọn");
+            }
+            if (!hasCashRefund(ret)) {
+                throw new IllegalArgumentException("Phiếu trả hàng không có khoản tiền NCC hoàn lại");
+            }
+        }
+        if (IncomeTypeOptionResponse.EMPLOYEE.equals(incomeType)) {
+            Stockadjustment adjustment = stockadjustmentRepository.findById(request.getStockAdjustmentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu điều chỉnh kho"));
+            if (!STOCK_ADJUSTMENT_STATUS_APPROVED.equals(adjustment.getStatus())) {
+                throw new IllegalArgumentException("Chỉ có thể liên kết phiếu điều chỉnh đã duyệt");
+            }
+            if (adjustment.getCreatedBy() == null
+                    || !request.getAccountId().equals(adjustment.getCreatedBy().getId())) {
+                throw new IllegalArgumentException("Phiếu điều chỉnh không thuộc nhân viên đã chọn");
+            }
+            if (linkedStockAdjustmentIds().contains(adjustment.getId())) {
+                throw new IllegalArgumentException("Phiếu điều chỉnh này đã được liên kết với phiếu thu khác");
+            }
+        }
+    }
+
+    private String resolveIncomeType(String rawType) {
+        if (rawType == null || rawType.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn loại phiếu thu");
+        }
+        String type = rawType.trim().toUpperCase(Locale.ROOT);
+        if (!IncomeTypeOptionResponse.isValid(type)) {
+            throw new IllegalArgumentException("Loại phiếu thu không hợp lệ");
+        }
+        return type;
+    }
+
+    private void applyPartyLinks(Income income, String incomeType, IncomeCreateRequest request) {
+        income.setSupplierID(null);
+        income.setCustomerID(null);
+        income.setAccountID(null);
+
+        if (IncomeTypeOptionResponse.SUPPLIER.equals(incomeType)) {
+            income.setSupplierID(supplierRepository.findById(request.getSupplierId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp")));
+        } else if (IncomeTypeOptionResponse.CUSTOMER.equals(incomeType)) {
+            income.setCustomerID(customerRepository.findById(request.getCustomerId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng")));
+        } else if (IncomeTypeOptionResponse.EMPLOYEE.equals(incomeType)) {
+            income.setAccountID(accountRepository.findById(request.getAccountId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên")));
+        }
+    }
+
+    private void applyReferenceLinks(Income income, String incomeType, IncomeCreateRequest request) {
+        income.setInvoiceID(null);
+        income.setReturnID(null);
+        income.setStockAdjustmentID(null);
+
+        if (IncomeTypeOptionResponse.CUSTOMER.equals(incomeType)) {
+            income.setInvoiceID(invoiceRepository.findById(request.getInvoiceId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn bán hàng")));
+        } else if (IncomeTypeOptionResponse.SUPPLIER.equals(incomeType)) {
+            income.setReturnID(returnRepository.findById(request.getReturnId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu trả hàng nhà cung cấp")));
+        } else if (IncomeTypeOptionResponse.EMPLOYEE.equals(incomeType)) {
+            income.setStockAdjustmentID(stockadjustmentRepository.findById(request.getStockAdjustmentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu điều chỉnh kho")));
+        }
+    }
+
+    /** Returns {@code [paidByCash, paidByBanking]}, defaulting an unsplit amount entirely to cash. */
+    private BigDecimal[] resolveSplit(IncomeCreateRequest request) {
+        BigDecimal amount = request.getAmount();
+        BigDecimal cash = request.getPaidByCash();
+        BigDecimal banking = request.getPaidByBanking();
+        if (cash == null && banking == null) {
+            return new BigDecimal[]{amount, BigDecimal.ZERO};
+        }
+        cash = nullToZero(cash);
+        banking = nullToZero(banking);
+        if (cash.add(banking).setScale(2, RoundingMode.HALF_UP)
+                .compareTo(amount.setScale(2, RoundingMode.HALF_UP)) != 0) {
+            throw new IllegalArgumentException("Tiền mặt + chuyển khoản phải bằng tổng số tiền thu");
+        }
+        if (cash.compareTo(BigDecimal.ZERO) < 0 || banking.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Số tiền thanh toán không hợp lệ");
+        }
+        return new BigDecimal[]{cash, banking};
+    }
+
+    private String formatCode(Integer id) {
+        if (id == null) {
+            return "PT-000000";
+        }
+        return "PT-" + String.format("%06d", id);
+    }
+
+    private String generateCode() {
+        int nextId = incomeRepository.findAll().stream()
+                .map(Income::getId)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+        return formatCode(nextId);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private BigDecimal nullToZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private boolean isDebtInvoice(Invoice invoice) {
+        if (invoice == null) {
+            return false;
+        }
+        if (INVOICE_STATUS_DEBT.equals(invoice.getStatus())) {
+            return true;
+        }
+        return isPositive(invoice.getDebtAmount());
+    }
+
+    private boolean hasCashRefund(Return ret) {
+        return cashRefundAmount(ret).compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private BigDecimal cashRefundAmount(Return ret) {
+        return nullToZero(ret.getRefundCash()).add(nullToZero(ret.getRefundBanking()));
+    }
+
+    private Set<Integer> linkedReturnIds() {
+        return incomeRepository.findAllWithRelations().stream()
+                .map(Income::getReturnID)
+                .filter(Objects::nonNull)
+                .map(Return::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<Integer> linkedStockAdjustmentIds() {
+        return incomeRepository.findAllWithRelations().stream()
+                .map(Income::getStockAdjustmentID)
+                .filter(Objects::nonNull)
+                .map(Stockadjustment::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private boolean isPositive(BigDecimal value) {
+        return value != null && value.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private String formatInvoiceDate(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        return dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
+
+    private String formatMoney(BigDecimal amount) {
+        if (amount == null) {
+            return "0đ";
+        }
+        return amount.stripTrailingZeros().toPlainString() + "đ";
     }
 }

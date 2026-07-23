@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo phiếu thu | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .income-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .income-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .btn-income-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-income-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #ffffff;
+        }
+
+        .auto-field {
+            background: #fbfdfc !important;
+            color: #6b7280 !important;
+            border-color: #e5e7eb;
+            cursor: default;
+            font-style: italic;
+        }
+
+        .party-field {
+            display: none;
+        }
+
+        .party-field.show,
+        .reference-field.show {
+            display: block;
+        }
+
+        .reference-field {
+            display: none;
+        }
+
+        @media (max-width: 991.98px) {
+            .income-page-content {
+                padding-top: 84px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content income-page-content">
+    <div class="container-fluid">
+
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h1 class="fs-4 mb-1">Tạo phiếu thu</h1>
+                <p class="text-secondary mb-0">Ghi nhận một khoản tiền thu vào quỹ.</p>
+            </div>
+            <a th:href="${basePath}" class="btn btn-outline-secondary">
+                <i class="ti ti-arrow-left me-1"></i>
+                Quay lại danh sách
+            </a>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <form th:action="${basePath + '/create'}" th:object="${form}" method="post" id="incomeForm">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div class="row g-4">
+                <div class="col-12 col-xl-8">
+
+                    <div class="income-card p-4 mb-4">
+                        <div class="section-title mb-4">
+                            <i class="ti ti-cash-banknote text-success me-1"></i>
+                            Thông tin phiếu thu
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Người lập</label>
+                                <input type="text" class="form-control auto-field"
+                                       th:value="${creatorName != null ? creatorName : 'Tài khoản hiện tại'}"
+                                       value="Tài khoản hiện tại" readonly tabindex="-1">
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Loại phiếu thu <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{incomeType}" id="incomeTypeInput" required>
+                                    <option value="">-- Chọn loại phiếu thu --</option>
+                                    <option th:each="item : ${incomeTypes}"
+                                            th:value="${item.code}"
+                                            th:text="${item.label}">Khách hàng</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6 party-field" id="customerField">
+                                <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{customerId}" id="customerIdInput">
+                                    <option value="">-- Chọn khách hàng --</option>
+                                    <option th:each="item : ${customers}"
+                                            th:value="${item.id}"
+                                            th:text="${item.name + (item.phoneNumber != null ? ' — ' + item.phoneNumber : '')}">
+                                        Khách A
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6 reference-field" id="debtInvoiceField">
+                                <label class="form-label">Hóa đơn bán hàng còn nợ <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{invoiceId}" id="invoiceIdInput">
+                                    <option value="">-- Chọn hóa đơn còn nợ --</option>
+                                    <option th:each="item : ${debtInvoices}"
+                                            th:value="${item.id}"
+                                            th:attr="data-amount=${item.amount}"
+                                            th:text="${item.code + ' — ' + item.dateDisplay + ' — Nợ: ' + #numbers.formatDecimal(item.amount, 0, 'POINT', 0, 'COMMA') + 'đ'}">
+                                        HD-001
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6 party-field" id="supplierField">
+                                <label class="form-label">Nhà cung cấp <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{supplierId}" id="supplierIdInput">
+                                    <option value="">-- Chọn nhà cung cấp --</option>
+                                    <option th:each="item : ${suppliers}"
+                                            th:value="${item.id}"
+                                            th:text="${item.name}">NCC A</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6 reference-field" id="supplierReturnField">
+                                <label class="form-label">Phiếu trả hàng NCC <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{returnId}" id="returnIdInput">
+                                    <option value="">-- Chọn phiếu trả hàng NCC --</option>
+                                    <option th:each="item : ${supplierReturns}"
+                                            th:value="${item.id}"
+                                            th:attr="data-amount=${item.amount}"
+                                            th:text="${item.code + ' — ' + item.dateDisplay + (item.amount != null ? ' — ' + #numbers.formatDecimal(item.amount, 0, 'POINT', 0, 'COMMA') + 'đ' : '') + (item.detail != null ? ' — ' + item.detail : '')}">
+                                        THNCC-001
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6 party-field" id="employeeField">
+                                <label class="form-label">Nhân viên <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{accountId}" id="accountIdInput">
+                                    <option value="">-- Chọn nhân viên --</option>
+                                    <option th:each="item : ${employees}"
+                                            th:value="${item.id}"
+                                            th:text="${item.name}">NV A</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6 reference-field" id="stockAdjustmentField">
+                                <label class="form-label">Phiếu điều chỉnh kho <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{stockAdjustmentId}" id="stockAdjustmentIdInput">
+                                    <option value="">-- Chọn phiếu điều chỉnh --</option>
+                                    <option th:each="item : ${stockAdjustments}"
+                                            th:value="${item.id}"
+                                            th:text="${item.code + ' — ' + item.dateDisplay + (item.detail != null ? ' — ' + item.detail : '')}">
+                                        PDC-001
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Nội dung thu <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" th:field="*{reason}"
+                                       placeholder="VD: Thu nợ khách hàng, hoàn ứng nhân viên…">
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Tổng số tiền thu <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" min="0" step="1" class="form-control"
+                                           th:field="*{amount}" id="amountInput" placeholder="0">
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Tiền mặt</label>
+                                <div class="input-group">
+                                    <input type="number" min="0" step="1" class="form-control"
+                                           th:field="*{paidByCash}" id="cashInput" placeholder="0">
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">Chuyển khoản</label>
+                                <div class="input-group">
+                                    <input type="number" min="0" step="1" class="form-control"
+                                           th:field="*{paidByBanking}" id="bankingInput" placeholder="0">
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-text">
+                                    <i class="ti ti-info-circle me-1"></i>
+                                    Để trống tiền mặt và chuyển khoản sẽ mặc định ghi nhận toàn bộ bằng tiền mặt.
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Ghi chú</label>
+                                <textarea class="form-control" rows="3" th:field="*{note}"
+                                          placeholder="Nhập ghi chú nếu có"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="income-card p-4">
+                        <button th:if="${#strings.startsWith(basePath, '/owner')}"
+                                type="submit" name="action" value="submit"
+                                class="btn btn-income-primary w-100 mb-3">
+                            <i class="ti ti-circle-check me-1"></i>
+                            Tạo &amp; duyệt
+                        </button>
+
+                        <button th:unless="${#strings.startsWith(basePath, '/owner')}"
+                                type="submit" name="action" value="submit"
+                                class="btn btn-income-primary w-100 mb-3">
+                            <i class="ti ti-send me-1"></i>
+                            Gửi duyệt
+                        </button>
+
+                        <button type="submit" name="action" value="draft"
+                                class="btn btn-outline-secondary w-100">
+                            <i class="ti ti-device-floppy me-1"></i>
+                            Lưu nháp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const basePath = /*[[${basePath}]]*/ '/owner/incomes';
+
+    function formatMoney(value) {
+        if (value == null || value === '') {
+            return '';
+        }
+        return Number(value).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function toggleTypeFields() {
+        const type = document.getElementById('incomeTypeInput').value;
+        document.getElementById('supplierField').classList.toggle('show', type === 'SUPPLIER');
+        document.getElementById('customerField').classList.toggle('show', type === 'CUSTOMER');
+        document.getElementById('employeeField').classList.toggle('show', type === 'EMPLOYEE');
+        document.getElementById('debtInvoiceField').classList.toggle('show', type === 'CUSTOMER');
+        document.getElementById('supplierReturnField').classList.toggle('show', type === 'SUPPLIER');
+        document.getElementById('stockAdjustmentField').classList.toggle('show', type === 'EMPLOYEE');
+    }
+
+    function populateReferenceSelect(selectId, placeholder, items, selectedValue, buildLabel) {
+        const select = document.getElementById(selectId);
+        select.innerHTML = '';
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = placeholder;
+        select.appendChild(empty);
+
+        items.forEach(function (item) {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = buildLabel(item);
+            if (item.amount != null) {
+                option.dataset.amount = item.amount;
+            }
+            if (String(selectedValue || '') === String(item.id)) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
+    async function loadDebtInvoices(customerId, selectedValue) {
+        if (!customerId) {
+            populateReferenceSelect('invoiceIdInput', '-- Chọn hóa đơn còn nợ --', [], null, function () { return ''; });
+            return;
+        }
+        const response = await fetch(basePath + '/references/debt-invoices?customerId=' + customerId);
+        const items = await response.json();
+        populateReferenceSelect('invoiceIdInput', '-- Chọn hóa đơn còn nợ --', items, selectedValue, function (item) {
+            return item.code + ' — ' + item.dateDisplay + ' — Nợ: ' + formatMoney(item.amount)
+                + (item.detail ? ' — ' + item.detail : '');
+        });
+    }
+
+    async function loadSupplierReturns(supplierId, selectedValue) {
+        if (!supplierId) {
+            populateReferenceSelect('returnIdInput', '-- Chọn phiếu trả hàng NCC --', [], null, function () { return ''; });
+            return;
+        }
+        const response = await fetch(basePath + '/references/supplier-returns?supplierId=' + supplierId);
+        const items = await response.json();
+        populateReferenceSelect('returnIdInput', '-- Chọn phiếu trả hàng NCC --', items, selectedValue, function (item) {
+            let label = item.code + ' — ' + item.dateDisplay;
+            if (item.amount != null) {
+                label += ' — ' + formatMoney(item.amount);
+            }
+            if (item.detail) {
+                label += ' — ' + item.detail;
+            }
+            return label;
+        });
+    }
+
+    async function loadStockAdjustments(accountId, selectedValue) {
+        if (!accountId) {
+            populateReferenceSelect('stockAdjustmentIdInput', '-- Chọn phiếu điều chỉnh --', [], null, function () { return ''; });
+            return;
+        }
+        const response = await fetch(basePath + '/references/stock-adjustments?accountId=' + accountId);
+        const items = await response.json();
+        populateReferenceSelect('stockAdjustmentIdInput', '-- Chọn phiếu điều chỉnh --', items, selectedValue, function (item) {
+            return item.code + ' — ' + item.dateDisplay + (item.detail ? ' — ' + item.detail : '');
+        });
+    }
+
+    function applySuggestedAmount(selectElement) {
+        const option = selectElement.options[selectElement.selectedIndex];
+        const amount = option && option.dataset.amount ? Number(option.dataset.amount) : null;
+        if (amount && amount > 0) {
+            document.getElementById('amountInput').value = Math.round(amount);
+            document.getElementById('cashInput').value = '';
+            document.getElementById('bankingInput').value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const invoiceIdInput = document.getElementById('invoiceIdInput');
+        const returnIdInput = document.getElementById('returnIdInput');
+        const stockAdjustmentIdInput = document.getElementById('stockAdjustmentIdInput');
+
+        document.getElementById('incomeTypeInput').addEventListener('change', function () {
+            toggleTypeFields();
+        });
+
+        document.getElementById('customerIdInput').addEventListener('change', function () {
+            loadDebtInvoices(this.value, null);
+        });
+
+        document.getElementById('supplierIdInput').addEventListener('change', function () {
+            loadSupplierReturns(this.value, null);
+        });
+
+        document.getElementById('accountIdInput').addEventListener('change', function () {
+            loadStockAdjustments(this.value, null);
+        });
+
+        invoiceIdInput.addEventListener('change', function () { applySuggestedAmount(this); });
+        returnIdInput.addEventListener('change', function () { applySuggestedAmount(this); });
+
+        toggleTypeFields();
+
+        document.getElementById('incomeForm').addEventListener('submit', function (event) {
+            const type = document.getElementById('incomeTypeInput').value;
+            const amount = Number(document.getElementById('amountInput').value || 0);
+            if (amount <= 0) {
+                event.preventDefault();
+                if (window.pmToast) {
+                    pmToast('Vui lòng nhập số tiền thu lớn hơn 0.', 'error');
+                } else {
+                    alert('Vui lòng nhập số tiền thu lớn hơn 0.');
+                }
+                return;
+            }
+
+            if (type === 'CUSTOMER' && !document.getElementById('invoiceIdInput').value) {
+                event.preventDefault();
+                const message = 'Vui lòng chọn hóa đơn bán hàng còn nợ.';
+                if (window.pmToast) { pmToast(message, 'error'); } else { alert(message); }
+                return;
+            }
+            if (type === 'SUPPLIER' && !document.getElementById('returnIdInput').value) {
+                event.preventDefault();
+                const message = 'Vui lòng chọn phiếu trả hàng nhà cung cấp.';
+                if (window.pmToast) { pmToast(message, 'error'); } else { alert(message); }
+                return;
+            }
+            if (type === 'EMPLOYEE' && !document.getElementById('stockAdjustmentIdInput').value) {
+                event.preventDefault();
+                const message = 'Vui lòng chọn phiếu điều chỉnh kho.';
+                if (window.pmToast) { pmToast(message, 'error'); } else { alert(message); }
+                return;
+            }
+
+            const cashRaw = document.getElementById('cashInput').value;
+            const bankingRaw = document.getElementById('bankingInput').value;
+            if (cashRaw !== '' || bankingRaw !== '') {
+                const cash = Number(cashRaw || 0);
+                const banking = Number(bankingRaw || 0);
+                if (cash + banking !== amount) {
+                    event.preventDefault();
+                    const message = 'Tiền mặt + chuyển khoản phải bằng tổng số tiền thu.';
+                    if (window.pmToast) {
+                        pmToast(message, 'error');
+                    } else {
+                        alert(message);
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

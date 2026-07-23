@@ -18,6 +18,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer> {
            left join fetch i.supplierID
            left join fetch i.customerID
            left join fetch i.accountID
+           left join fetch i.stockAdjustmentID
            """)
     List<Income> findAllWithRelations();
 }

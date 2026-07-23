@@ -260,8 +260,11 @@
     </div>
 
     <div class="main-card">
-      <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <h2 class="fs-5 fw-semibold mb-0" style="color:#111827;">Danh sách khoản thu</h2>
+        <a th:href="${basePath + '/create'}" class="btn btn-search primary">
+          <i class="ti ti-plus"></i>Tạo phiếu thu
+        </a>
       </div>
 
       <form th:action="${basePath}" method="get">
@@ -285,10 +288,10 @@
                  title="Đến ngày">
           <select class="filter-select" name="incomeType">
             <option value="">Loại phiếu thu</option>
-            <option th:each="entry : ${incomeTypeLabels}"
-                    th:value="${entry.key}"
-                    th:text="${entry.value}"
-                    th:selected="${filterIncomeType == entry.key}">
+            <option th:each="item : ${incomeTypes}"
+                    th:value="${item.code}"
+                    th:text="${item.label}"
+                    th:selected="${filterIncomeType == item.code}">
             </option>
           </select>
           <select class="filter-select" name="status">
