@@ -1,9 +1,9 @@
 INSERT INTO product (name, code, barcode, typeID, maxStock, minStock, producerID, origin, registrationNumber, status, vatRateOverride, note)
-SELECT 'Ampicillin MKP 500', 'SP5122419', NULL, 1, 200, 0, 6, 'Việt Nam', '893110402724', 1, 5.00, NULL
+SELECT 'Ampicillin MKP 500', 'SP5122423', NULL, 1, 200, 0, 6, 'Việt Nam', '893110402724', 1, 5.00, NULL
 WHERE NOT EXISTS (
     SELECT 1
     FROM product
-    WHERE code = 'SP5122419'
+    WHERE code = 'SP5122423'
 );
 
 INSERT INTO product (name, code, barcode, typeID, maxStock, minStock, producerID, origin, registrationNumber, status, vatRateOverride, note)
@@ -119,7 +119,7 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO product (name, code, barcode, typeID, maxStock, minStock, producerID, origin, registrationNumber, status, vatRateOverride, note)
-SELECT 'Fujii PG-2507', 'SP5122434', NULL, 7, 10, 0, 20, 'Trung Quốc', NULL, 1, 5.00, NULL
+SELECT 'Fuji PG-2507', 'SP5122434', NULL, 7, 10, 0, 20, 'Trung Quốc', NULL, 1, 5.00, NULL
 WHERE NOT EXISTS (
     SELECT 1
     FROM product
