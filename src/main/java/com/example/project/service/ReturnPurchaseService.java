@@ -238,8 +238,8 @@ public class ReturnPurchaseService {
                 continue;
             }
             int returnedUnit = returnedByDetail.getOrDefault(line.getId(), 0L).intValue() / ratio;
-            // Theo tài liệu (sheet 10, ô C7): importPricePerBase là giá NHẬP CHƯA THUẾ → net/đơn vị nhập = net×ratio.
-            BigDecimal netPerUnit = importPricePerBase(primary).multiply(BigDecimal.valueOf(ratio));
+            // Chốt nhóm: importPricePerBase là giá đã gồm thuế (gross) → giá nhập/đơn vị nhập = gross × ratio = đúng số đã trả NCC.
+            BigDecimal grossPerUnit = importPricePerBase(primary).multiply(BigDecimal.valueOf(ratio));
             lines.add(new ReturnPurchaseLineResponse(
                     line.getId(),
                     product != null ? product.getProductID() : null,
@@ -250,8 +250,8 @@ public class ReturnPurchaseService {
                     orZero(line.getQuantity()),   // Đã nhập (theo đơn vị nhập)
                     returnedUnit,                 // Đã trả (theo đơn vị nhập)
                     onHandUnit,                   // Tồn / SL trả tối đa (theo đơn vị nhập)
-                    netPerUnit,                   // Đơn giá nhập (net / đơn vị nhập)
-                    grossUnitPrice(netPerUnit, line.getVatRate())));  // Tiền hoàn/đơn vị = net + VAT (gross)
+                    grossPerUnit,                 // Đơn giá nhập (gross / đơn vị nhập)
+                    grossPerUnit));               // Tiền hoàn/đơn vị = 100% gross (NCC hoàn đúng số đã trả)
         }
         return lines;
     }
@@ -274,14 +274,6 @@ public class ReturnPurchaseService {
                     .divide(batch.getImportPricePerBase(), 0, RoundingMode.HALF_UP).intValue());
         }
         return 1;
-    }
-
-    /** Gross unit refund price = net × (1 + vatRate%) — NCC hoàn cả phần thuế đầu vào (net theo tài liệu). */
-    private BigDecimal grossUnitPrice(BigDecimal net, BigDecimal vatRate) {
-        BigDecimal base = net != null ? net : BigDecimal.ZERO;
-        BigDecimal rate = vatRate != null ? vatRate : BigDecimal.ZERO;
-        BigDecimal vatUnit = base.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        return base.add(vatUnit);
     }
 
     // ------------------------------------------------------------------ create
@@ -402,9 +394,9 @@ public class ReturnPurchaseService {
             detail.setLineRefund(chunk.grossRefund());
             // NCC hoàn 100% (gross) nên originalLineValue = lineRefund (không áp tỷ lệ như trả khách).
             detail.setOriginalLineValue(chunk.grossRefund());
-            // Theo tài liệu: importPricePerBase là NET → preTax = net, vatAmount = net×vatRate (thuế đầu vào cộng lên).
+            // importPricePerBase là GROSS (chốt nhóm) → tách net/VAT TỪ TRONG gross: preTax = net, vatAmount = thuế đầu vào.
             detail.setVatRate(chunk.vatRate() != null ? chunk.vatRate() : BigDecimal.ZERO);
-            detail.setPreTaxAmount(chunk.netAmount());
+            detail.setPreTaxAmount(chunk.preTaxAmount());
             detail.setVatAmount(chunk.vatAmount());
             detail.setRestockable(false);
             returndetailRepository.save(detail);
@@ -862,36 +854,37 @@ public class ReturnPurchaseService {
 
     /**
      * A validated, priced return chunk (one batch worth of a returned purchase line). The supplier refunds
-     * 100% of the import value = <b>gross</b> (chưa thuế + thuế) for both tax groups.
+     * 100% of the import value.
      *
-     * <p><b>Theo tài liệu (Huong_dan_tinh_thue_2026, sheet 10 "Logic tài chính & Giá bán", ô C7):</b>
-     * {@code Batch.importPricePerBase} = "giá NHẬP CHƯA THUẾ trên 1 đơn vị cơ bản" → {@code unitImportPrice}
-     * là NET/đơn vị cơ sở, {@code vatRate} là thuế suất đầu vào của dòng nhập. Tiền hoàn NCC = net + VAT
-     * (cộng thuế lên trên net). ⚠️ Module phiếu nhập của teammate hiện lưu importPricePerBase là GROSS
-     * (ngược tài liệu) — teammate sẽ sửa; đến khi đó return này mới khớp đúng số đã trả.</p>
+     * <p><b>Chốt nhóm 2026-07-22 (BA xác nhận tài liệu sheet 10 SAI):</b> "Giá nhập" bên phiếu nhập là
+     * GIÁ CUỐI ĐÃ GỒM THUẾ (gross) → {@code batch.importPricePerBase} lưu gross/đơn vị cơ sở → {@code
+     * unitImportPrice} là GROSS. Vì vậy tiền hoàn NCC = gross = ĐÚNG số nhà thuốc đã trả (không cộng thêm
+     * VAT lên trên); net/VAT được TÁCH RA từ trong gross để ghi sổ thuế (giảm GTGT đầu vào Nhóm 3).</p>
      */
     private record Chunk(Purchasedetail line, Batch batch, int qty, BigDecimal unitImportPrice, BigDecimal vatRate) {
-        /** Net (pre-tax) value of this chunk = importPricePerBase (net) × qty. */
-        BigDecimal netAmount() {
+        /** Gross (VAT-inclusive) value of this chunk = importPricePerBase × qty — số NCC hoàn 100%. */
+        BigDecimal grossRefund() {
             return unitImportPrice.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
         }
 
-        /** Input VAT of this chunk = netAmount × vatRate% (đầu vào đã khấu trừ, dùng cho Nhóm 3). */
+        /** Net (pre-tax) portion tách từ gross = gross ÷ (1 + vatRate%). */
+        BigDecimal preTaxAmount() {
+            BigDecimal rate = vatRate != null ? vatRate : BigDecimal.ZERO;
+            if (rate.compareTo(BigDecimal.ZERO) <= 0) {
+                return grossRefund();
+            }
+            BigDecimal divisor = BigDecimal.ONE.add(rate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
+            return grossRefund().divide(divisor, 2, RoundingMode.HALF_UP);
+        }
+
+        /** Input VAT tách từ gross = gross − net (đầu vào đã khấu trừ, dùng cho Nhóm 3). */
         BigDecimal vatAmount() {
-            BigDecimal rate = vatRate != null ? vatRate : BigDecimal.ZERO;
-            return netAmount().multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            return grossRefund().subtract(preTaxAmount());
         }
 
-        /** Gross refund of this chunk = net + input VAT (số tiền NCC hoàn 100%). */
-        BigDecimal grossRefund() {
-            return netAmount().add(vatAmount());
-        }
-
-        /** Gross unit import price = net × (1 + vatRate%), for display/line unit price. */
+        /** Gross unit import price (per base) — đã gồm thuế, dùng làm đơn giá dòng chi tiết. */
         BigDecimal grossUnitPrice() {
-            BigDecimal rate = vatRate != null ? vatRate : BigDecimal.ZERO;
-            BigDecimal vatUnit = unitImportPrice.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            return unitImportPrice.add(vatUnit);
+            return unitImportPrice;
         }
     }
 }
