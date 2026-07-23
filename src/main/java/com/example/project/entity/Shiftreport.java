@@ -100,10 +100,6 @@ public class Shiftreport {
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approvedBy")
-    private Account approvedBy;
-
     @Column(name = "approvedAt")
     private Instant approvedAt;
 

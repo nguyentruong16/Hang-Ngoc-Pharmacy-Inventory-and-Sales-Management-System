@@ -35,7 +35,6 @@ public class ShiftreportResponse {
     private BigDecimal cashDiscrepancy;
     private String noteDiscrepancy;
     private String status;
-    private Integer approvedById;
     private Instant approvedAt;
     private String note;
     private Instant createdAt;
@@ -63,7 +62,6 @@ public class ShiftreportResponse {
                 shiftreport.getCashDiscrepancy(),
                 shiftreport.getNoteDiscrepancy(),
                 shiftreport.getStatus(),
-                shiftreport.getApprovedBy() != null ? shiftreport.getApprovedBy().getId() : null,
                 shiftreport.getApprovedAt(),
                 shiftreport.getNote(),
                 shiftreport.getCreatedAt()
