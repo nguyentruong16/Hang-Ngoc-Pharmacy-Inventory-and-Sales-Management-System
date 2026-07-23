@@ -1,0 +1,212 @@
+package com.example.project.controller;
+
+import com.example.project.context.CurrentUserContext;
+import com.example.project.dto.request.ExpenseCreateRequest;
+import com.example.project.dto.response.ExpenseDetailResponse;
+import com.example.project.dto.response.ExpenseListItemResponse;
+import com.example.project.service.ExpenseService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+
+/**
+ * Expense ("Phiếu chi") screens (list / detail / create / submit / approve / reject / mark-paid /
+ * cancel). Reachable by the Owner and the Accountant (both share the same templates; there is no
+ * Pharmacist route — matches {@code SidebarMenuService}, which only lists this under those two
+ * roles). Approve/reject are Owner-only, same as Stock Adjustment.
+ */
+@Controller
+public class ExpensePageController {
+
+    private static final String OWNER_BASE = "/owner/expenses";
+    private static final String ACCOUNTANT_BASE = "/accountant/expenses";
+
+    private final ExpenseService expenseService;
+    private final CurrentUserContext currentUserContext;
+
+    public ExpensePageController(ExpenseService expenseService, CurrentUserContext currentUserContext) {
+        this.expenseService = expenseService;
+        this.currentUserContext = currentUserContext;
+    }
+
+    @GetMapping({OWNER_BASE, ACCOUNTANT_BASE})
+    public String list(@RequestParam(name = "keyword", required = false) String keyword,
+                        @RequestParam(name = "fromDate", required = false) String fromDate,
+                        @RequestParam(name = "toDate", required = false) String toDate,
+                        @RequestParam(name = "expenseType", required = false) String expenseType,
+                        @RequestParam(name = "status", required = false) String status,
+                        @RequestParam(name = "page", defaultValue = "0") int page,
+                        @RequestParam(name = "size", defaultValue = "10") int size,
+                        HttpServletRequest request,
+                        Model model) {
+        if (page < 0) {
+            page = 0;
+        }
+        if (size <= 0) {
+            size = 10;
+        }
+
+        Page<ExpenseListItemResponse> expensePage =
+                expenseService.search(keyword, fromDate, toDate, expenseType, status, PageRequest.of(page, size));
+
+        model.addAttribute("expensePage", expensePage);
+        model.addAttribute("expenses", expensePage.getContent());
+        model.addAttribute("stats", expenseService.getStats());
+
+        model.addAttribute("statuses", expenseService.listStatuses());
+        model.addAttribute("expenseTypeLabels", expenseService.expenseTypeLabels());
+
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("fromDate", fromDate);
+        model.addAttribute("toDate", toDate);
+        model.addAttribute("filterExpenseType", expenseType);
+        model.addAttribute("filterStatus", status);
+
+        model.addAttribute("currentPage", expensePage.getNumber());
+        model.addAttribute("totalPages", expensePage.getTotalPages());
+        model.addAttribute("pageSize", size);
+        model.addAttribute("totalItems", expensePage.getTotalElements());
+
+        model.addAttribute("basePath", resolveBasePath(request));
+
+        return "expense/list";
+    }
+
+    @GetMapping({OWNER_BASE + "/create", ACCOUNTANT_BASE + "/create"})
+    public String createPage(HttpServletRequest request, Model model) {
+        model.addAttribute("form", new ExpenseCreateRequest());
+        model.addAttribute("expenseTypeLabels", expenseService.expenseTypeLabels());
+        model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
+        model.addAttribute("basePath", resolveBasePath(request));
+
+        return "expense/create";
+    }
+
+    @PostMapping({OWNER_BASE + "/create", ACCOUNTANT_BASE + "/create"})
+    public String create(@ModelAttribute("form") ExpenseCreateRequest form,
+                          @RequestParam(name = "action", required = false) String action,
+                          HttpServletRequest request,
+                          RedirectAttributes redirectAttributes,
+                          Model model) {
+        String basePath = resolveBasePath(request);
+        boolean isOwner = currentUserContext.isOwner();
+        boolean asDraft = "draft".equals(action);
+        try {
+            Integer expenseId = expenseService.createExpense(
+                    form,
+                    currentUserContext.getCurrentAccountId(),
+                    isOwner,
+                    asDraft);
+
+            String message;
+            if (asDraft) {
+                message = "Đã lưu nháp phiếu chi";
+            } else if (isOwner) {
+                message = "Tạo phiếu chi thành công (đã tự động duyệt)";
+            } else {
+                message = "Đã gửi phiếu chi, đang chờ duyệt";
+            }
+            redirectAttributes.addFlashAttribute("successMessage", message);
+            return "redirect:" + basePath + "/" + expenseId;
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("errorMessage", exception.getMessage());
+            model.addAttribute("form", form);
+            model.addAttribute("expenseTypeLabels", expenseService.expenseTypeLabels());
+            model.addAttribute("creatorName", currentUserContext.getCurrentAccountName());
+            model.addAttribute("basePath", basePath);
+            return "expense/create";
+        }
+    }
+
+    @GetMapping({OWNER_BASE + "/{expenseId}", ACCOUNTANT_BASE + "/{expenseId}"})
+    public String detail(@PathVariable Integer expenseId, HttpServletRequest request, Model model) {
+        ExpenseDetailResponse detail = expenseService.getDetail(expenseId);
+
+        model.addAttribute("detail", detail);
+        model.addAttribute("basePath", resolveBasePath(request));
+
+        return "expense/detail";
+    }
+
+    @PostMapping({OWNER_BASE + "/{expenseId}/submit", ACCOUNTANT_BASE + "/{expenseId}/submit"})
+    public String submit(@PathVariable Integer expenseId,
+                          HttpServletRequest request,
+                          RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            expenseService.submit(expenseId, currentUserContext.getCurrentAccountId(), currentUserContext.isOwner());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    currentUserContext.isOwner() ? "Đã duyệt phiếu chi" : "Đã gửi phiếu chi, đang chờ duyệt");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + basePath + "/" + expenseId;
+    }
+
+    @PostMapping(OWNER_BASE + "/{expenseId}/approve")
+    public String approve(@PathVariable Integer expenseId, RedirectAttributes redirectAttributes) {
+        try {
+            expenseService.approve(expenseId, currentUserContext.getCurrentAccountId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã duyệt phiếu chi");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + OWNER_BASE + "/" + expenseId;
+    }
+
+    @PostMapping(OWNER_BASE + "/{expenseId}/reject")
+    public String reject(@PathVariable Integer expenseId, RedirectAttributes redirectAttributes) {
+        try {
+            expenseService.reject(expenseId, currentUserContext.getCurrentAccountId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối phiếu chi");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + OWNER_BASE + "/" + expenseId;
+    }
+
+    @PostMapping({OWNER_BASE + "/{expenseId}/mark-paid", ACCOUNTANT_BASE + "/{expenseId}/mark-paid"})
+    public String markPaid(@PathVariable Integer expenseId,
+                            @RequestParam(name = "cashPortion", required = false) BigDecimal cashPortion,
+                            @RequestParam(name = "bankingPortion", required = false) BigDecimal bankingPortion,
+                            HttpServletRequest request,
+                            RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            expenseService.markPaid(expenseId, cashPortion, bankingPortion);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã ghi nhận thanh toán");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + basePath + "/" + expenseId;
+    }
+
+    @PostMapping({OWNER_BASE + "/{expenseId}/cancel", ACCOUNTANT_BASE + "/{expenseId}/cancel"})
+    public String cancel(@PathVariable Integer expenseId,
+                          @RequestParam(name = "reason", required = false) String reason,
+                          HttpServletRequest request,
+                          RedirectAttributes redirectAttributes) {
+        String basePath = resolveBasePath(request);
+        try {
+            expenseService.cancel(expenseId, reason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy phiếu chi");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:" + basePath + "/" + expenseId;
+    }
+
+    private String resolveBasePath(HttpServletRequest request) {
+        return request.getRequestURI().startsWith(ACCOUNTANT_BASE) ? ACCOUNTANT_BASE : OWNER_BASE;
+    }
+}
