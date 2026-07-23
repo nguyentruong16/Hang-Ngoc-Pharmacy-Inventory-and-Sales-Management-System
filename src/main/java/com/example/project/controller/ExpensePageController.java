@@ -153,26 +153,32 @@ public class ExpensePageController {
         return "redirect:" + basePath + "/" + expenseId;
     }
 
+    // redirectTo: optional override used by the unified Approve List (/owner/approvals) so its
+    // Duyệt/Từ chối buttons land back on that screen; absent → original behaviour (expense detail).
     @PostMapping(OWNER_BASE + "/{expenseId}/approve")
-    public String approve(@PathVariable Integer expenseId, RedirectAttributes redirectAttributes) {
+    public String approve(@PathVariable Integer expenseId,
+                          @RequestParam(name = "redirectTo", required = false) String redirectTo,
+                          RedirectAttributes redirectAttributes) {
         try {
             expenseService.approve(expenseId, currentUserContext.getCurrentAccountId());
             redirectAttributes.addFlashAttribute("successMessage", "Đã duyệt phiếu chi");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
-        return "redirect:" + OWNER_BASE + "/" + expenseId;
+        return "redirect:" + (redirectTo != null && !redirectTo.isBlank() ? redirectTo : OWNER_BASE + "/" + expenseId);
     }
 
     @PostMapping(OWNER_BASE + "/{expenseId}/reject")
-    public String reject(@PathVariable Integer expenseId, RedirectAttributes redirectAttributes) {
+    public String reject(@PathVariable Integer expenseId,
+                         @RequestParam(name = "redirectTo", required = false) String redirectTo,
+                         RedirectAttributes redirectAttributes) {
         try {
             expenseService.reject(expenseId, currentUserContext.getCurrentAccountId());
             redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối phiếu chi");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
-        return "redirect:" + OWNER_BASE + "/" + expenseId;
+        return "redirect:" + (redirectTo != null && !redirectTo.isBlank() ? redirectTo : OWNER_BASE + "/" + expenseId);
     }
 
     @PostMapping({OWNER_BASE + "/{expenseId}/mark-paid", ACCOUNTANT_BASE + "/{expenseId}/mark-paid"})

@@ -126,7 +126,7 @@
                         </div>
 
                         <div class="border-top px-3 py-3">
-                            <form th:action="@{/logout}" method="post" class="m-0">
+                            <form th:action="@{/logout-guard}" method="post" class="m-0">
                                 <input type="hidden"
                                        th:if="${_csrf}"
                                        th:name="${_csrf.parameterName}"

@@ -35,9 +35,7 @@ public class PlaceholderController {
             "/owner/debts",
             "/owner/vat-invoices",
             "/owner/customers",
-            "/owner/approvals",
             "/owner/notifications",
-            "/owner/shift-reports",
             "/owner/daily-reports"
     })
     public String owner(HttpServletRequest request, Model model) {
@@ -47,7 +45,6 @@ public class PlaceholderController {
     @GetMapping({
             "/pharmacist/dashboard",
             "/pharmacist/customers",
-            "/pharmacist/shift-reports",
             "/pharmacist/notifications",
             "/pharmacist/stock-outs/create"
     })

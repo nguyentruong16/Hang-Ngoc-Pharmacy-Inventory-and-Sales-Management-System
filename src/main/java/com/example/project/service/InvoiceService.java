@@ -86,6 +86,10 @@ public class InvoiceService {
     private final AccountRepository accountRepository;
     private final FinancialsettingRepository financialsettingRepository;
     private final ReturnRepository returnRepository;
+    // Lazily opens/reuses the seller's shift the moment a sale invoice is actually recorded —
+    // mirrors the same hook on the Return side (see ShiftreportService), unconditionally (even a
+    // fully-on-credit invoice with no cash/banking movement still counts as a transaction).
+    private final ShiftreportService shiftreportService;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                           InvoicedetailRepository invoicedetailRepository,
@@ -95,7 +99,8 @@ public class InvoiceService {
                           CustomerRepository customerRepository,
                           AccountRepository accountRepository,
                           FinancialsettingRepository financialsettingRepository,
-                          ReturnRepository returnRepository) {
+                          ReturnRepository returnRepository,
+                          ShiftreportService shiftreportService) {
         this.invoiceRepository = invoiceRepository;
         this.invoicedetailRepository = invoicedetailRepository;
         this.productRepository = productRepository;
@@ -105,6 +110,7 @@ public class InvoiceService {
         this.accountRepository = accountRepository;
         this.financialsettingRepository = financialsettingRepository;
         this.returnRepository = returnRepository;
+        this.shiftreportService = shiftreportService;
     }
 
     @Transactional(readOnly = true)
@@ -400,6 +406,11 @@ public class InvoiceService {
         savedInvoice.setDebtAmount(debt);
         savedInvoice.setTotalVATOutput(totalVATOutput);
         savedInvoice.setStatus(debt.compareTo(BigDecimal.ZERO) > 0 ? STATUS_DEBT : STATUS_COMPLETED);
+
+        // A sale is a real transaction the instant it's recorded, regardless of payment mix —
+        // open/reuse the seller's shift and attach it (no amount-based condition).
+        savedInvoice.setShiftReportID(shiftreportService.ensureOpenShiftFor(currentAccountId));
+
         invoiceRepository.save(savedInvoice);
 
         return savedInvoice.getId();

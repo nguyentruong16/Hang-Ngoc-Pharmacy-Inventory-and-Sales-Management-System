@@ -158,7 +158,9 @@ public class ReturnController {
     }
 
     @PostMapping(OWNER_BASE + "/{returnId}/approve")
-    public String approve(@PathVariable Integer returnId, RedirectAttributes redirectAttributes) {
+    public String approve(@PathVariable Integer returnId,
+                          @RequestParam(name = "redirectTo", required = false) String redirectTo,
+                          RedirectAttributes redirectAttributes) {
         try {
             returnService.approve(returnId);
             redirectAttributes.addFlashAttribute("successMessage",
@@ -166,18 +168,20 @@ public class ReturnController {
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
-        return "redirect:" + OWNER_BASE + "/" + returnId;
+        return "redirect:" + (redirectTo != null && !redirectTo.isBlank() ? redirectTo : OWNER_BASE + "/" + returnId);
     }
 
     @PostMapping(OWNER_BASE + "/{returnId}/reject")
-    public String reject(@PathVariable Integer returnId, RedirectAttributes redirectAttributes) {
+    public String reject(@PathVariable Integer returnId,
+                         @RequestParam(name = "redirectTo", required = false) String redirectTo,
+                         RedirectAttributes redirectAttributes) {
         try {
             returnService.reject(returnId);
             redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối phiếu trả hàng");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
-        return "redirect:" + OWNER_BASE + "/" + returnId;
+        return "redirect:" + (redirectTo != null && !redirectTo.isBlank() ? redirectTo : OWNER_BASE + "/" + returnId);
     }
 
     private String resolveBasePath(HttpServletRequest request) {
