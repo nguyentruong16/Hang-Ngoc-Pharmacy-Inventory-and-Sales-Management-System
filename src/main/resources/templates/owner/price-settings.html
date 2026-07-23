@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cài đặt giá bán | PharmaManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" crossorigin th:src="@{/assets/js/main.js}"></script>
+    <link rel="stylesheet" crossorigin th:href="@{/assets/css/main.css}">
+
+    <style>
+        .price-page-content {
+            padding-top: 96px !important;
+            padding-bottom: 48px;
+        }
+
+        .price-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+        }
+
+        .btn-price-primary {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+            border-radius: 12px;
+        }
+
+        .btn-price-primary:hover {
+            background: #047857;
+            border-color: #047857;
+            color: #fff;
+        }
+
+        .table thead th {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .price-cell-form {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .price-cell-form input {
+            max-width: 140px;
+        }
+
+        .base-unit-badge {
+            font-size: 10px;
+        }
+
+        .pagination .page-link {
+            color: #059669;
+            border-color: #e5e7eb;
+            font-size: 13px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: #059669;
+            border-color: #059669;
+            color: #fff;
+        }
+
+        @media (max-width: 991.98px) {
+            .price-page-content {
+                padding-top: 84px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div th:replace="~{fragments/topbar :: topbar}"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+<main id="content" class="content price-page-content">
+    <div class="container-fluid">
+
+        <div class="mb-4">
+            <h1 class="fs-4 mb-1">Cài đặt giá bán</h1>
+            <p class="text-secondary mb-0">
+                Thay đổi giá bán của từng sản phẩm trực tiếp tại đây, không cần mở chi tiết từng sản phẩm.
+                "Giá nhập gần nhất" chỉ để tham khảo, đã bao gồm VAT.
+            </p>
+            <p class="text-secondary small mb-0 mt-1">
+                <i class="ti ti-info-circle me-1"></i>
+                Sửa giá <strong>đơn vị cơ bản</strong> sẽ tự đồng bộ sang các đơn vị khác theo đúng tỷ lệ quy đổi
+                — trừ đơn vị nào đã từng được chỉnh giá riêng (không theo tỷ lệ) thì giữ nguyên.
+            </p>
+        </div>
+
+        <div th:replace="~{fragments/toast :: flash}"></div>
+
+        <div class="price-card p-4 mb-4">
+            <form method="get" th:action="@{/owner/price-settings}" class="row g-3">
+                <input type="hidden" name="size" th:value="${pageSize}">
+
+                <div class="col-12 col-xl-6">
+                    <input type="text" class="form-control" name="keyword" th:value="${keyword}"
+                           placeholder="Tìm theo mã sản phẩm, tên sản phẩm hoặc đơn vị">
+                </div>
+
+                <div class="col-12 col-xl-3">
+                    <select class="form-select" name="typeId">
+                        <option value="">Loại hàng</option>
+                        <option th:each="type : ${types}"
+                                th:value="${type.id}"
+                                th:text="${type.name}"
+                                th:selected="${filterTypeId == type.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-xl-2">
+                    <button type="submit" class="btn btn-price-primary w-100">
+                        <i class="ti ti-search me-1"></i>
+                        Tìm kiếm
+                    </button>
+                </div>
+
+                <div class="col-6 col-xl-1">
+                    <a th:href="@{/owner/price-settings}" class="btn btn-outline-secondary w-100">
+                        <i class="ti ti-refresh"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="price-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="fs-6 mb-0">
+                    Danh sách giá bán
+                    <span class="badge bg-success-subtle text-success ms-2"
+                          th:text="${totalItems + ' đơn vị'}">0 đơn vị</span>
+                </h2>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Mã SP</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Loại hàng</th>
+                        <th>Đơn vị</th>
+                        <th>Giá nhập gần nhất</th>
+                        <th style="min-width: 260px;">Giá bán hiện tại</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="row : ${rows}">
+                        <td class="fw-semibold text-success" th:text="${row.productCode}">SP0001</td>
+                        <td>
+                            <span th:text="${row.productName}">Paracetamol 500mg</span>
+                            <span th:if="${row.baseUnit}" class="badge bg-secondary-subtle text-secondary base-unit-badge ms-1">Đơn vị cơ bản</span>
+                        </td>
+                        <td class="text-secondary" th:text="${row.typeName}">Thuốc kê đơn</td>
+                        <td th:text="${row.unitName}">Hộp</td>
+                        <td>
+                            <span th:if="${row.latestImportPricePerBase != null}">
+                                <span th:text="${#numbers.formatDecimal(row.latestImportPricePerBase, 0, 'POINT', 0, 'COMMA') + 'đ'}">10.000đ</span>
+                                <span class="text-secondary small" th:text="${'(' + row.latestImportDateDisplay + ')'}">(01/06/2026)</span>
+                            </span>
+                            <span th:unless="${row.latestImportPricePerBase != null}" class="text-secondary">Chưa nhập lô nào</span>
+                        </td>
+                        <td>
+                            <form method="post" th:action="@{/owner/price-settings/cell}" class="price-cell-form mb-0">
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <input type="hidden" name="productUnitId" th:value="${row.productUnitId}">
+                                <input type="hidden" name="keyword" th:value="${keyword}">
+                                <input type="hidden" name="typeId" th:value="${filterTypeId}">
+                                <input type="hidden" name="page" th:value="${currentPage}">
+                                <input type="hidden" name="size" th:value="${pageSize}">
+                                <div class="input-group input-group-sm">
+                                    <input type="number" min="0" step="1" class="form-control"
+                                           name="sellPrice" th:value="${row.currentSellPrice}">
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-price-primary">Lưu</button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(rows)}">
+                        <td colspan="6" class="text-center text-secondary py-4">
+                            Không tìm thấy sản phẩm nào.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4"
+                 th:if="${totalItems > 0}">
+                <div class="text-secondary small">
+                    Hiển thị
+                    <span th:text="${currentPage * pageSize + 1}">1</span>
+                    -
+                    <span th:text="${currentPage * pageSize + rows.size()}">10</span>
+                    trong tổng số
+                    <span th:text="${totalItems}">0</span>
+                    đơn vị
+                </div>
+
+                <nav th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/price-settings(keyword=${keyword}, typeId=${filterTypeId}, page=${currentPage - 1}, size=${pageSize})}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${pageNumber == currentPage} ? ' active'">
+                            <a class="page-link"
+                               th:text="${pageNumber + 1}"
+                               th:href="@{/owner/price-settings(keyword=${keyword}, typeId=${filterTypeId}, page=${pageNumber}, size=${pageSize})}">
+                                1
+                            </a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? ' disabled'">
+                            <a class="page-link"
+                               th:href="@{/owner/price-settings(keyword=${keyword}, typeId=${filterTypeId}, page=${currentPage + 1}, size=${pageSize})}">
+                                Sau
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>

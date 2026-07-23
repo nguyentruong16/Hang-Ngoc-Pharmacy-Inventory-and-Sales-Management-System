@@ -119,7 +119,8 @@ public class SidebarMenuService {
                         i("Bán hàng", "/owner/selling", "ti ti-shopping-cart")),
 
                 menuGroup("Hàng hóa", "ti ti-package",
-                        i("Danh sách hàng hóa", "/owner/products", "ti ti-package")),
+                        i("Danh sách hàng hóa", "/owner/products", "ti ti-package"),
+                        i("Cài đặt giá bán", "/owner/price-settings", "ti ti-tag")),
 
                 menuGroup("Danh mục hàng hóa", "ti ti-layout-grid",
                         i("Danh sách vị trí", "/owner/positions", "ti ti-map-pin"),
