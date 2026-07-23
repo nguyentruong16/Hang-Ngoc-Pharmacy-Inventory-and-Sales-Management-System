@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -35,7 +36,7 @@ public class IncomeResponse {
     public static IncomeResponse from(Income income) {
         return new IncomeResponse(
                 income.getId(),
-                income.getIncomeCode(), 
+                income.getIncomeCode(),
                 income.getApplicantID() != null ? income.getApplicantID().getId() : null,
                 income.getIncomeType(),
                 income.getInvoiceID() != null ? income.getInvoiceID().getId() : null,
