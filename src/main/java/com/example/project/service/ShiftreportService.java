@@ -5,6 +5,7 @@ import com.example.project.constant.ShiftReportStatus;
 import com.example.project.dto.response.ShiftReportDetailPageResponse;
 import com.example.project.dto.response.ShiftReportListItemResponse;
 import com.example.project.dto.response.ShiftReportStatsResponse;
+import com.example.project.dto.response.IncomeTypeOptionResponse;
 import com.example.project.entity.Account;
 import com.example.project.entity.Financialsetting;
 import com.example.project.entity.Income;
@@ -51,8 +52,6 @@ public class ShiftreportService {
     // yet) — mirror just the two states excluded from register cash: drafts and rejected slips.
     private static final String INCOME_STATUS_DRAFT = "Nháp";
     private static final String INCOME_STATUS_REJECTED = "Từ chối";
-    /** Income.incomeType for customer debt collection ("Thu nợ khách hàng"). */
-    private static final String INCOME_TYPE_CUSTOMER = "CUSTOMER";
 
     private final ShiftreportRepository shiftreportRepository;
     private final AccountRepository accountRepository;
@@ -365,7 +364,7 @@ public class ShiftreportService {
         }
 
         BigDecimal totalDebtCollected = incomes.stream()
-                .filter(inc -> INCOME_TYPE_CUSTOMER.equalsIgnoreCase(inc.getIncomeType())
+                .filter(inc -> IncomeTypeOptionResponse.isCustomer(inc.getIncomeType())
                         || inc.getCustomerID() != null)
                 .map(Income::getAmount)
                 .filter(Objects::nonNull)

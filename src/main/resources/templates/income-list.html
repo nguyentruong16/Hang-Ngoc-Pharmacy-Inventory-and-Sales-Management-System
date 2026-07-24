@@ -177,7 +177,7 @@
       background: #f3f4f6;
       color: #4b5563;
     }
-    .status-badge.status-approved { background: #e8f7f1; color: #059669; }
+    .status-badge.status-completed { background: #e8f7f1; color: #059669; }
     .status-badge.status-pending { background: #fef3c7; color: #d97706; }
     .status-badge.status-rejected { background: #fee2e2; color: #dc2626; }
     .status-badge.status-draft { background: #f3f4f6; color: #4b5563; }
@@ -249,7 +249,7 @@
       <div class="col-12 col-md-6 col-xl-3">
         <div class="kpi-card kpi-approved">
           <span class="kpi-icon"><i class="ti ti-circle-check"></i></span>
-          <div class="kpi-label">Đã duyệt</div>
+          <div class="kpi-label">Hoàn thành</div>
           <div class="kpi-number" th:text="${approvedIncomes}">0</div>
           <div class="kpi-sub"
                th:text="'Tổng: ' + ${#numbers.formatDecimal(approvedAmount, 0, 'POINT', 0, 'COMMA')} + 'đ'">
@@ -348,7 +348,7 @@
               <td>
                 <span class="status-badge"
                       th:classappend="${' ' + item.statusCssClass}"
-                      th:text="${item.statusName}">Duyệt</span>
+                      th:text="${item.statusName}">Hoàn thành</span>
               </td>
             </tr>
 

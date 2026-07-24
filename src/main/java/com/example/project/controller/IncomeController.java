@@ -141,7 +141,7 @@ public class IncomeController {
             if (asDraft) {
                 message = "Đã lưu nháp phiếu thu";
             } else if (currentUserContext.isOwner()) {
-                message = "Tạo phiếu thu thành công (đã tự động duyệt)";
+                message = "Tạo phiếu thu thành công";
             } else {
                 message = "Đã gửi phiếu thu, đang chờ duyệt";
             }

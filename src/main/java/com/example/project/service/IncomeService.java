@@ -50,7 +50,8 @@ public class IncomeService {
 
     private static final String STATUS_DRAFT = "Nháp";
     private static final String STATUS_PENDING = "Chờ duyệt";
-    private static final String STATUS_APPROVED = "Duyệt";
+    private static final String STATUS_COMPLETED = "Hoàn thành";
+    private static final String STATUS_COMPLETED_LEGACY = "Duyệt";
     private static final String STATUS_REJECTED = "Từ chối";
 
     private static final String INVOICE_STATUS_DEBT = "Còn nợ";
@@ -108,10 +109,9 @@ public class IncomeService {
                 .filter(income -> matchesKeyword(income, normalizedKeyword))
                 .filter(income -> matchesDate(income, from, to))
                 .filter(income -> incomeType == null || incomeType.isBlank()
-                        || incomeType.equals(resolveIncomeType(income)))
+                        || resolveIncomeType(income).equals(IncomeTypeOptionResponse.codeOf(incomeType)))
                 .filter(income -> applicantId == null || matchesApplicant(income, applicantId))
-                .filter(income -> normalizedStatus.isEmpty()
-                        || normalize(normalizedStatus).equals(normalize(income.getStatus())))
+                .filter(income -> normalizedStatus.isEmpty() || matchesStatus(income, normalizedStatus))
                 .sorted(Comparator.comparing(Income::getDate, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(Income::getId, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toListItem)
@@ -126,12 +126,7 @@ public class IncomeService {
 
     @Transactional(readOnly = true)
     public List<String> listStatuses() {
-        return incomeRepository.findAll().stream()
-                .map(Income::getStatus)
-                .filter(item -> item != null && !item.isBlank())
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .toList();
+        return List.of(STATUS_DRAFT, STATUS_PENDING, STATUS_COMPLETED, STATUS_REJECTED);
     }
 
     @Transactional(readOnly = true)
@@ -259,7 +254,7 @@ public class IncomeService {
 
     /**
      * Creates a manual income slip. When {@code asDraft} is true it is saved as {@link #STATUS_DRAFT};
-     * otherwise the Owner's slip is auto-approved and anyone else's goes to {@link #STATUS_PENDING}.
+     * otherwise the Owner's slip is auto-completed and anyone else's goes to {@link #STATUS_PENDING}.
      */
     @Transactional
     public Integer createIncome(IncomeCreateRequest request, Integer currentAccountId, boolean isOwner,
@@ -269,25 +264,25 @@ public class IncomeService {
         Account applicant = accountRepository.findById(currentAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản hiện tại"));
 
-        String incomeType = resolveIncomeType(request.getIncomeType());
+        String incomeTypeCode = resolveIncomeType(request.getIncomeType());
         BigDecimal[] split = resolveSplit(request);
 
         Income income = new Income();
         income.setApplicantID(applicant);
-        income.setIncomeType(incomeType);
+        income.setIncomeType(IncomeTypeOptionResponse.storageLabelOf(incomeTypeCode));
         income.setDate(Instant.now());
         income.setReason(request.getReason() != null ? request.getReason().trim() : "");
         income.setAmount(request.getAmount());
         income.setPaidByCash(split[0]);
         income.setPaidByBanking(split[1]);
         income.setNote(trimToNull(request.getNote()));
-        applyPartyLinks(income, incomeType, request);
-        applyReferenceLinks(income, incomeType, request);
+        applyPartyLinks(income, incomeTypeCode, request);
+        applyReferenceLinks(income, incomeTypeCode, request);
 
         if (asDraft) {
             income.setStatus(STATUS_DRAFT);
         } else if (isOwner) {
-            income.setStatus(STATUS_APPROVED);
+            income.setStatus(STATUS_COMPLETED);
         } else {
             income.setStatus(STATUS_PENDING);
         }
@@ -303,7 +298,7 @@ public class IncomeService {
         Income saved = incomeRepository.save(income);
         saved.setIncomeCode(formatCode(saved.getId()));
         saved = incomeRepository.save(saved);
-        linkReturnIncome(saved, incomeType, request.getReturnId());
+        linkReturnIncome(saved, incomeTypeCode, request.getReturnId());
         return saved.getId();
     }
 
@@ -352,12 +347,12 @@ public class IncomeService {
 
     @Transactional(readOnly = true)
     public long countApproved() {
-        return countByStatus(STATUS_APPROVED);
+        return countCompleted();
     }
 
     @Transactional(readOnly = true)
     public BigDecimal sumApprovedAmount() {
-        return sumAmountByStatus(STATUS_APPROVED);
+        return sumCompletedAmount();
     }
 
     private long countByStatus(String status) {
@@ -374,8 +369,22 @@ public class IncomeService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    private long countCompleted() {
+        return incomeRepository.findAll().stream()
+                .filter(income -> isCompletedStatus(income.getStatus()))
+                .count();
+    }
+
+    private BigDecimal sumCompletedAmount() {
+        return incomeRepository.findAll().stream()
+                .filter(income -> isCompletedStatus(income.getStatus()))
+                .map(Income::getAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     private IncomeListItemResponse toListItem(Income income) {
-        String statusName = income.getStatus() != null ? income.getStatus() : "Không rõ";
+        String statusName = income.getStatus() != null ? displayStatus(income.getStatus()) : "Không rõ";
         return new IncomeListItemResponse(
                 income.getId(),
                 income.getIncomeCode(),
@@ -397,11 +406,11 @@ public class IncomeService {
         return income.getReason();
     }
 
-    /** {@code incomeType} by party collected from; falls back to FK hints when DB value is unknown. */
+    /** Internal type code; DB may store the Vietnamese label or a legacy English code. */
     private String resolveIncomeType(Income income) {
         String stored = income.getIncomeType();
         if (stored != null && IncomeTypeOptionResponse.isValid(stored)) {
-            return stored;
+            return IncomeTypeOptionResponse.codeOf(stored);
         }
         if (income.getSupplierID() != null) {
             return IncomeTypeOptionResponse.SUPPLIER;
@@ -475,13 +484,31 @@ public class IncomeService {
         return income.getApplicantID() != null && applicantId.equals(income.getApplicantID().getId());
     }
 
+    private boolean matchesStatus(Income income, String filterStatus) {
+        if (isStatus(filterStatus, STATUS_COMPLETED)) {
+            return isCompletedStatus(income.getStatus());
+        }
+        return isStatus(income.getStatus(), filterStatus);
+    }
+
     private boolean isStatus(String actual, String expected) {
         return normalize(actual).equals(normalize(expected));
     }
 
+    private boolean isCompletedStatus(String status) {
+        return isStatus(status, STATUS_COMPLETED) || isStatus(status, STATUS_COMPLETED_LEGACY);
+    }
+
+    private String displayStatus(String status) {
+        if (isCompletedStatus(status)) {
+            return STATUS_COMPLETED;
+        }
+        return status;
+    }
+
     private String statusCssClass(String statusName) {
-        if (isStatus(statusName, STATUS_APPROVED)) {
-            return "status-approved";
+        if (isCompletedStatus(statusName)) {
+            return "status-completed";
         }
         if (isStatus(statusName, STATUS_REJECTED)) {
             return "status-rejected";
@@ -495,12 +522,12 @@ public class IncomeService {
         return "status-default";
     }
 
-    private String formatIncomeType(String type) {
-        if (type == null) {
+    private String formatIncomeType(String typeCode) {
+        if (typeCode == null) {
             return "Không rõ";
         }
-        String label = IncomeTypeOptionResponse.labelOf(type);
-        return label.isBlank() ? type : label;
+        String label = IncomeTypeOptionResponse.labelOf(typeCode);
+        return label.isBlank() ? typeCode : label;
     }
 
     private String formatInstant(Instant instant) {

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Locale;
 
 /** One income-type option for dropdowns (code + Vietnamese label). */
 @Getter
@@ -28,17 +29,48 @@ public class IncomeTypeOptionResponse {
     }
 
     public static boolean isValid(String type) {
-        return type != null && all().stream().anyMatch(option -> option.code.equals(type));
+        if (type == null || type.isBlank()) {
+            return false;
+        }
+        String trimmed = type.trim();
+        return all().stream().anyMatch(option -> matches(option, trimmed));
+    }
+
+    /** Normalizes a stored Vietnamese label or legacy English code to the internal code. */
+    public static String codeOf(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String trimmed = value.trim();
+        return all().stream()
+                .filter(option -> matches(option, trimmed))
+                .map(IncomeTypeOptionResponse::getCode)
+                .findFirst()
+                .orElse(trimmed.toUpperCase(Locale.ROOT));
+    }
+
+    /** Vietnamese label persisted in {@code Income.incomeType}. */
+    public static String storageLabelOf(String codeOrLabel) {
+        return labelOf(codeOrLabel);
     }
 
     public static String labelOf(String type) {
         if (type == null) {
             return "";
         }
+        String trimmed = type.trim();
         return all().stream()
-                .filter(option -> option.code.equals(type))
+                .filter(option -> matches(option, trimmed))
                 .map(IncomeTypeOptionResponse::getLabel)
                 .findFirst()
-                .orElse(type);
+                .orElse(trimmed);
+    }
+
+    public static boolean isCustomer(String storedOrCode) {
+        return CUSTOMER.equals(codeOf(storedOrCode));
+    }
+
+    private static boolean matches(IncomeTypeOptionResponse option, String value) {
+        return option.code.equalsIgnoreCase(value) || option.label.equalsIgnoreCase(value);
     }
 }
